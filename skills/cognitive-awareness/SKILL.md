@@ -35,6 +35,13 @@ Worked four-bucket cases (incl. RTA citation + JR outcome):
 
 **Legal cite rule:** Wrong section + hedge ≠ calibrated. Use BC Laws for Known.
 
+## Module 3 — Failure mode catalog
+
+Ten modes with antidotes and RTB/legal cues:  
+`references/failure-mode-catalog.md`
+
+**Meta:** One response can hit several modes — fix the most load-bearing first.
+
 ## Module 6 — Synthesis library
 
 Validated cross-domain case studies (capability↔standing, signatures↔evidence, federated RL↔litigation):

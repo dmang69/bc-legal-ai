@@ -16,6 +16,7 @@
 | cognitive-awareness | 1.0 | Proactive metacognition companion |
 | cognitive-awareness | 1.0.1 | Module 6 case studies + synthesis library + quality gate |
 | cognitive-awareness | 1.0.2 | Confidence calibration worked examples; RTA s.6 false-cite trap |
+| cognitive-awareness | 1.0.3 | Expanded failure-mode catalog (10 modes + antidotes + meta) |
 
 ## Log
 
