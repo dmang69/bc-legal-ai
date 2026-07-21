@@ -17,6 +17,7 @@ Research and drafting workbench for **British Columbia civil / administrative li
 | **bc-judicial-review-guide** | [`skills/bc-judicial-review-guide/`](skills/bc-judicial-review-guide/) | JR petitions, stays, Vavilov, BCSC |
 | **bc-tenancy-substantive** | [`skills/bc-tenancy-substantive/`](skills/bc-tenancy-substantive/) | **Deep RTA:** sections, bad-faith, eviction defence, repairs, s.8, rent, deposits |
 | **canlii-boa-builder** | [`skills/canlii-boa-builder/`](skills/canlii-boa-builder/) | Verified authorities / BOA |
+| **self-improvement** | [`skills/self-improvement/`](skills/self-improvement/) | Meta-learning: gaps, corrections, audits, skill patches |
 
 Full professional framework: [`skills/supreme-court-civil-counsel/counsel-framework.md`](skills/supreme-court-civil-counsel/counsel-framework.md)
 
