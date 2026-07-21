@@ -18,6 +18,7 @@ Research and drafting workbench for **British Columbia civil / administrative li
 | **bc-tenancy-substantive** | [`skills/bc-tenancy-substantive/`](skills/bc-tenancy-substantive/) | **Deep RTA:** sections, bad-faith, eviction defence, repairs, s.8, rent, deposits |
 | **canlii-boa-builder** | [`skills/canlii-boa-builder/`](skills/canlii-boa-builder/) | Verified authorities / BOA |
 | **self-improvement** | [`skills/self-improvement/`](skills/self-improvement/) | Meta-learning: gaps, corrections, audits, skill patches |
+| **learning-mode** | [`skills/learning-mode/`](skills/learning-mode/) | Tutor mode: diagnose, scaffold, integrity — teach how, not dump |
 
 Full professional framework: [`skills/supreme-court-civil-counsel/counsel-framework.md`](skills/supreme-court-civil-counsel/counsel-framework.md)
 
