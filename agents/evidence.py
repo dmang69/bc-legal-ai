@@ -3,6 +3,13 @@
 from __future__ import annotations
 
 from architecture.schemas import EvidenceItem
+from backend.evidence.crossref import (
+    build_chronology,
+    detect_corroboration_candidates,
+    detect_temporal_conflicts,
+    format_chronology_markdown,
+    suggest_claim_tags,
+)
 
 
 def detect_gap_claims(
@@ -28,3 +35,16 @@ def link_contradiction(a: EvidenceItem, b: EvidenceItem) -> None:
         a.contradicts.append(b.id)
     if a.id not in b.contradicts:
         b.contradicts.append(a.id)
+
+
+# Re-export Layer 2 analysis helpers for agent workflows
+__all__ = [
+    "build_chronology",
+    "detect_corroboration_candidates",
+    "detect_gap_claims",
+    "detect_temporal_conflicts",
+    "format_chronology_markdown",
+    "link_contradiction",
+    "link_corroboration",
+    "suggest_claim_tags",
+]

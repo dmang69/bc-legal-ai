@@ -15,6 +15,7 @@ Target modules (not fully implemented):
 | `exports/` | DOCX + searchable PDF + verification report |
 | `audit/` | Immutable action log |
 | `privilege/` | Privilege state machine, tagger, access control, production gate |
+| `evidence/` | **Evidence Matrix** — matter-isolated store, ingest hash, cross-ref, chronology |
 
 **Security rule:** no cross-matter ambient authority. Every request is scoped to a matter ID and principal.
 

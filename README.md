@@ -19,6 +19,7 @@
 | Schemas / citation gate | [`architecture/`](architecture/) |
 | Full ALA system architecture | [`architecture/ALA_SYSTEM.md`](architecture/ALA_SYSTEM.md) |
 | Privilege / confidentiality layer | [`architecture/PRIVILEGE.md`](architecture/PRIVILEGE.md) |
+| Evidence Matrix (Layer 2) | [`architecture/EVIDENCE_MATRIX.md`](architecture/EVIDENCE_MATRIX.md) |
 
 ```
 AI Legal Associate

@@ -175,7 +175,7 @@ V1 is complete only when the system can reliably:
 | 2 | Default branch `main` | In progress |
 | 3 | Deploy a **private** Hugging Face Space | Blocked on HF write token / privacy choice |
 | 4 | Authentication + isolated matters | Not started |
-| 5 | OCR + page-level document citations | Not started |
+| 5 | OCR + page-level document citations | Partial: Evidence Matrix store + chronology (no OCR yet) |
 | 6 | Official-source legal retrieval | Partial (BC Laws discipline + local extracts) |
 | 7 | Authority verification gate | Schema only |
 | 8 | Structured legal workflows / agents | Scaffold |
