@@ -18,6 +18,7 @@
 | cognitive-awareness | 1.0.2 | Confidence calibration worked examples; RTA s.6 false-cite trap |
 | cognitive-awareness | 1.0.3 | Expanded failure-mode catalog (10 modes + antidotes + meta) |
 | cognitive-awareness | 1.0.4 | Expanded situational signals vocabulary (Module 1) |
+| critical-reading | 1.0 | Document decomposition for legal/academic/technical sources |
 
 ## Log
 

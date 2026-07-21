@@ -130,6 +130,11 @@ Mark **`[INDEPENDENT COUNSEL RECOMMENDED]`** when any of the following apply (no
 - Criminal/parallel proceedings or privilege issues  
 - User requests filing of a document that would benefit from local practice knowledge  
 
+## Critical reading of opposing materials / decisions
+
+Use **`critical-reading`** for: RTB/court decisions, opposing affidavits, expert reports, contracts.  
+Then apply counsel analytical tags and (for BC statutes) **`bc-legislation-admin`**.
+
 ## BC RTB matters
 
 Combine with:
