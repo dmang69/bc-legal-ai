@@ -14,15 +14,16 @@ from pathlib import Path
 from typing import Any, Optional
 from uuid import uuid4
 
+from architecture.evidence_node import EvidenceNode
 from architecture.schemas import EvidenceItem, LegalArgument, Matter
 from backend.evidence.crossref import (
     detect_corroboration_candidates,
     detect_temporal_conflicts,
     format_chronology_markdown,
-    suggest_claim_tags,
 )
 from backend.evidence.ingest import ingest_bytes, ingest_text_record
 from backend.evidence.matrix import EvidenceMatrix
+from backend.evidence.nodes import EvidenceNodeStore, sync_items_to_nodes
 from backend.privilege.production_gate import (
     ProductionDecision,
     export_items_from_evidence,
@@ -68,8 +69,10 @@ class MatterSession:
         self.matter_id = matter_id
         self.root = (root or Path("matters")).resolve()
         self.matrix = EvidenceMatrix(matter_id, root=self.root)
+        self.nodes = EvidenceNodeStore(matter_id, root=self.root)
         self._meta_path = self.root / matter_id / "matter.json"
         self.meta = self._load_or_create_meta()
+        self.custodian_default = "tenant"
 
     @property
     def matter_dir(self) -> Path:
@@ -130,24 +133,38 @@ class MatterSession:
         data: bytes,
         **kwargs: Any,
     ) -> EvidenceItem:
+        custodian = kwargs.pop("custodian", self.custodian_default)
         item = ingest_bytes(self.matrix, filename=filename, data=data, **kwargs)
-        # Grow claimed tags from auto-suggestions
         for t in item.claim_tags:
             if t not in self.meta.claimed_tags:
                 self.meta.claimed_tags.append(t)
+        self.nodes.allocate_from_item(item, custodian=custodian)
         self._save_meta()
         return item
 
     def ingest_text(self, filename: str, text: str, **kwargs: Any) -> EvidenceItem:
+        custodian = kwargs.pop("custodian", self.custodian_default)
         item = ingest_text_record(self.matrix, filename=filename, text=text, **kwargs)
         for t in item.claim_tags:
             if t not in self.meta.claimed_tags:
                 self.meta.claimed_tags.append(t)
+        self.nodes.allocate_from_item(
+            item, extracted_text=text, custodian=custodian
+        )
         self._save_meta()
         return item
 
+    def sync_nodes(self) -> list[EvidenceNode]:
+        return sync_items_to_nodes(
+            self.matrix.all(),
+            self.nodes,
+            custodian=self.custodian_default,
+        )
+
     def analysis_report(self) -> dict[str, Any]:
         items = self.matrix.all()
+        # Ensure graph layer is current
+        self.sync_nodes()
         gaps = self.matrix.gap_report(self.meta.claimed_tags)
         conflicts = [c.to_dict() for c in detect_temporal_conflicts(items)]
         corr = [
@@ -155,14 +172,18 @@ class MatterSession:
             for a, b, tags in detect_corroboration_candidates(items)
         ]
         locked = [e.evidence_id for e in self.matrix.locked_for_export()]
+        nodes = self.nodes.all()
         return {
             "matter_id": self.matter_id,
             "title": self.meta.title,
             "summary": self.matrix.summary(),
+            "nodes_summary": self.nodes.summary(),
+            "node_ids": [n.node_id for n in nodes],
             "gaps": gaps,
             "temporal_conflicts": conflicts,
             "corroboration_candidates": corr,
             "privilege_gated_ids": locked,
+            "protected_nodes": [n.node_id for n in self.nodes.protected_nodes()],
             "chronology_markdown": format_chronology_markdown(items),
             "generated_at": _utcnow(),
         }

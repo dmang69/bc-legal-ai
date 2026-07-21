@@ -4,7 +4,30 @@
 **Purpose:** Factual backbone for arguments, contradictions, corroboration, gaps, and chronology.  
 **Status:** Runtime store + cross-ref helpers (no OCR yet). Privilege fields on every row (see `PRIVILEGE.md`).
 
-## Canonical row schema
+## EvidenceNode (graph unit)
+
+Canonical graph node: `architecture/evidence_node.py` · store: `backend/evidence/nodes.py`.
+
+| Field | Notes |
+| --- | --- |
+| `node_id` | Sequential immutable `EV-YYYY-NNNNNN` |
+| `doc_hash` | `sha256:…` of source file |
+| `privilege_class` | OPEN / PROTECTED / RESTRICTED / WAIVED (Layer 0) |
+| `source_type` | PHOTO, EMAIL, RTB_DECISION, LEASE_AGREEMENT, … |
+| `date_created` / `date_received` / `date_entered_system` | ISO timestamps |
+| `custodian` | Who produced/possesses |
+| `authenticity_status` | VERIFIED / DISPUTED / UNVERIFIED |
+| `hearsay_flag` / `hearsay_exception` | Assessment fields (not court findings) |
+| `best_evidence_rule` | ORIGINAL / CERTIFIED_COPY / PHOTOCOPY / DIGITAL |
+| `extracted_text` / `key_facts` / `entities_mentioned` | Semantic layer |
+| `corroborates` / `contradicts` / `causally_linked_to` | Node ID edges |
+| `temporal_sequence` | `{ before: [], after: [] }` |
+| `chain_of_custody` / `alteration_history` | Provenance |
+| `exhibit_number` / `admissibility_assessment` | Hearing readiness |
+
+Matrix rows (`EvidenceItem`) remain the ingest ledger; nodes are the graph view with sequential IDs.
+
+## Canonical matrix row schema
 
 | Field | Type | Description |
 | --- | --- | --- |

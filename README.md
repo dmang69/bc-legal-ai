@@ -20,6 +20,7 @@
 | Full ALA system architecture | [`architecture/ALA_SYSTEM.md`](architecture/ALA_SYSTEM.md) |
 | Privilege / confidentiality layer | [`architecture/PRIVILEGE.md`](architecture/PRIVILEGE.md) |
 | Evidence Matrix (Layer 2) | [`architecture/EVIDENCE_MATRIX.md`](architecture/EVIDENCE_MATRIX.md) |
+| EvidenceNode graph model | [`architecture/evidence_node.py`](architecture/evidence_node.py) |
 
 ```
 AI Legal Associate
