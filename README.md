@@ -15,7 +15,7 @@ Research and drafting workbench for **British Columbia civil / administrative li
 | **bc-tenancy-advocacy** | [`skills/bc-tenancy-advocacy/`](skills/bc-tenancy-advocacy/) | Advanced: JR, human rights, strata, MHPTA, trauma-informed, ethics, Level 99 |
 | **bc-tenancy-advanced** | [`skills/bc-tenancy-advanced/`](skills/bc-tenancy-advanced/) | Alias → `bc-tenancy-advocacy` |
 | **bc-judicial-review-guide** | [`skills/bc-judicial-review-guide/`](skills/bc-judicial-review-guide/) | JR petitions, stays, Vavilov, BCSC |
-| **bc-tenancy-substantive** | [`skills/bc-tenancy-substantive/`](skills/bc-tenancy-substantive/) | RTA doctrine scaffold |
+| **bc-tenancy-substantive** | [`skills/bc-tenancy-substantive/`](skills/bc-tenancy-substantive/) | **Deep RTA:** sections, bad-faith, eviction defence, repairs, s.8, rent, deposits |
 | **canlii-boa-builder** | [`skills/canlii-boa-builder/`](skills/canlii-boa-builder/) | Verified authorities / BOA |
 
 Full professional framework: [`skills/supreme-court-civil-counsel/counsel-framework.md`](skills/supreme-court-civil-counsel/counsel-framework.md)

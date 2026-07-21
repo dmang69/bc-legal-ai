@@ -18,7 +18,7 @@ description: >
 
 | Need | Skill |
 |------|--------|
-| Substantive RTA (sections, eviction defence, illegal charges) | `bc-tenancy-substantive` |
+| Substantive RTA (sections, bad-faith, eviction defence, illegal charges, deposits) | `bc-tenancy-substantive` (deep Modules 1–7) |
 | JR, human rights, strata, MHPTA, trauma-informed, ethics | `bc-tenancy-advocacy` (alias: `bc-tenancy-advanced`) |
 | Court drafting / JR petition standard | `supreme-court-civil-counsel` + `bc-judicial-review-guide` |
 
