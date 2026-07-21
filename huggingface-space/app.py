@@ -278,8 +278,8 @@ def laws_markdown() -> str:
     return "\n".join(lines)
 
 
-with gr.Blocks(title="BC Legal AI Associate") as demo:
-    gr.Markdown("# BC Legal AI Associate — Public Demo")
+with gr.Blocks(title="BC Legal AI Workbench") as demo:
+    gr.Markdown("# BC Legal AI Workbench — Demo")
     gr.Markdown(DISCLAIMER)
 
     with gr.Tabs():

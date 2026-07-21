@@ -1,28 +1,38 @@
 ---
-title: BC Legal AI Associate
+title: BC Legal AI Workbench
 emoji: ⚖️
-colorFrom: indigo
+colorFrom: blue
 colorTo: gray
 sdk: gradio
-sdk_version: 6.20.0
+sdk_version: 4.44.0
 app_file: app.py
-short_description: CPU demo — triage, tags, BC Laws routing (no model weights)
-python_version: "3.12"
+pinned: false
+license: mit
 ---
 
-# BC Legal AI Associate — Public Demo
+# BC Legal AI Workbench — Demo
 
-CPU-only Gradio Space. **No model weights. No LLM inference.**
+Legal research, evidence analysis, and drafting **support** for British Columbia
+civil and administrative work (RTB pathways, judicial review, superior court practice).
 
-Demonstrates:
+**Not a lawyer. Not legal advice.** No solicitor–client relationship is created.
+Do not upload confidential client or litigation files to this public Space.
+Verify all legislation on the official **BC Laws** portal before filing or reliance.
 
-- Matter triage (notice windows + forum routing)
-- Analytical tag decomposition (FACT / ALLEGATION / …)
-- Official BC Laws links + verified RTA section map
-- RTA pin self-check (common wrong-memory corrections)
+## What this demo shows
 
-**Not a lawyer. Not legal advice.** Legal research and drafting **support** only.  
-Do **not** upload confidential client or litigation files.
+- **Matter triage** — notice-type deadline flags, forum routing (RTB / JR / BCHRT / MHPTA / strata),
+  and the ASSUMPTIONS-requiring-verification discipline.
+- **Analytical tagger** — decomposes draft text into FACT / ALLEGATION / LEGAL ARGUMENT /
+  INFERENCE / ASSUMPTION / RECOMMENDATION candidates.
+- **Official legislation links** — BC Laws only for statute text; CanLII for decisions only.
+- **RTA pin self-check** — corrected section map per the repo verification log
+  (BC Laws, current to July 14, 2026, accessed 2026-07-21).
 
-Statute truth: [BC Laws](https://www.bclaws.gov.bc.ca/) only (re-check “current to” before filing).  
-Source monorepo: https://github.com/dmang69/bc-legal-ai
+## Design posture
+
+RAG-first, LoRA-second. This Space performs **no model inference** and quotes **no
+statute text from weights** — statute truth lives at BC Laws, retrieved and verified.
+See `model/BASE_MODEL_DECISION.md` in the source repository.
+
+Source: https://github.com/dmang69/bc-legal-ai
