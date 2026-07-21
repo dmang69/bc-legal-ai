@@ -24,6 +24,7 @@ from agents.supervisor_gate import require_approval
 class ExportItem:
     document_id: str
     privilege: PrivilegeMetadata
+    privilege_lock: bool = False
 
 
 @dataclass
@@ -68,9 +69,17 @@ def run_production_gate(
 
     for item in items:
         st = item.privilege.privilege_status
+        if item.privilege_lock:
+            protected_found = True
+            if item.document_id not in blocked:
+                blocked.append(item.document_id)
+            reasons.append(
+                f"{item.document_id}: privilege_lock=true — cannot export without privilege gate"
+            )
         if st in PROTECTED_FOR_EXPORT:
             protected_found = True
-            blocked.append(item.document_id)
+            if item.document_id not in blocked:
+                blocked.append(item.document_id)
             reasons.append(
                 f"{item.document_id}: {st.value} "
                 f"(basis={item.privilege.privilege_basis.value}) blocked for {destination}"
@@ -153,6 +162,31 @@ def assert_waive_privilege_action(
         approved=lawyer_approved,
         note="instructing_lawyer",
     )
+
+
+def export_items_from_evidence(rows: list) -> list[ExportItem]:
+    """Map EvidenceItem rows to ExportItem for the production gate."""
+    from architecture.privilege_schemas import PrivilegeMetadata
+    from architecture.schemas import EvidenceItem
+
+    out: list[ExportItem] = []
+    for row in rows:
+        if not isinstance(row, EvidenceItem):
+            continue
+        meta = PrivilegeMetadata(
+            privilege_owner=row.matter_id or "unknown",
+            privilege_status=row.privilege_state,
+            privilege_basis=row.privilege_basis,
+            human_confirmed=not row.privilege_lock,
+        )
+        out.append(
+            ExportItem(
+                document_id=row.evidence_id,
+                privilege=meta,
+                privilege_lock=row.privilege_lock or row.requires_privilege_gate(),
+            )
+        )
+    return out
 
 
 def clawback_letter_scaffold(

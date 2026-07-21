@@ -30,3 +30,11 @@ Three unit tests are not enough for legal reliability.
 - Court-form compliance  
 
 See `tests/` for executable unit tests of schemas and gates.
+
+## Run structural eval suite (§7)
+
+```powershell
+python evaluations\run_eval_suite.py
+```
+
+Covers RTA section-regression map consistency, court-ready UNVERIFIED block, and statute metadata shape.

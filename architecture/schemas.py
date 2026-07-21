@@ -12,6 +12,8 @@ from enum import Enum
 from typing import Any, Optional
 from uuid import uuid4
 
+from architecture.privilege_schemas import PrivilegeBasis, PrivilegeStatus
+
 
 class Classification(str, Enum):
     FACT = "FACT"
@@ -187,6 +189,9 @@ class EvidenceType(str, Enum):
     CORRESPONDENCE = "correspondence"
     OFFICIAL_ORDER = "official_order"
     FINANCIAL = "financial"
+    TRANSCRIPT = "transcript"
+    AUDIO = "audio"
+    VIDEO_FRAME = "video_frame"
     OTHER = "other"
 
 
@@ -210,11 +215,48 @@ class DocTrack(str, Enum):
 
 
 @dataclass
+class CustodyEvent:
+    """Append-only chain-of-custody entry (jsonb array element)."""
+
+    action: str
+    actor_id: str = "system"
+    timestamp: Optional[str] = None
+    detail: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "action": self.action,
+            "actor_id": self.actor_id,
+            "timestamp": self.timestamp,
+            "detail": self.detail,
+        }
+
+    @staticmethod
+    def from_dict(data: dict[str, Any]) -> "CustodyEvent":
+        return CustodyEvent(
+            action=str(data.get("action") or "unknown"),
+            actor_id=str(data.get("actor_id") or "system"),
+            timestamp=data.get("timestamp"),
+            detail=str(data.get("detail") or ""),
+        )
+
+
+@dataclass
 class EvidenceItem:
-    """Evidence matrix row — navigable unit for messy multi-file matters."""
+    """
+    Evidence matrix row — canonical field set for matter-partitioned evidence.
+
+    evidence_id is immutable; matter_id is the privilege/access partition key.
+    privilege_lock=True blocks export without the privilege production gate.
+    """
 
     source_file: str
+    matter_id: Optional[str] = None
     evidence_type: EvidenceType = EvidenceType.OTHER
+    file_hash: Optional[str] = None  # SHA-256 of original bytes
+    privilege_state: PrivilegeStatus = PrivilegeStatus.UNCLAIMED
+    privilege_basis: PrivilegeBasis = PrivilegeBasis.NONE
+    privilege_lock: bool = False
     date_captured: Optional[str] = None
     date_received: Optional[str] = None
     parties_referenced: list[str] = field(default_factory=list)
@@ -223,20 +265,84 @@ class EvidenceItem:
     contradicts: list[str] = field(default_factory=list)
     corroborates: list[str] = field(default_factory=list)
     hearing_relevance: float = 0.0
-    chain_of_custody: Optional[str] = None
+    admissibility_flag: AdmissibilityFlag = AdmissibilityFlag.NEEDS_VERIFICATION
     ocr_confidence: float = 0.0
     human_notes: str = ""
-    admissibility_flag: AdmissibilityFlag = AdmissibilityFlag.NEEDS_VERIFICATION
-    matter_id: Optional[str] = None
+    chain_of_custody: list[dict[str, Any]] = field(default_factory=list)
     page_count: Optional[int] = None
-    content_sha256: Optional[str] = None
-    id: str = field(default_factory=lambda: str(uuid4()))
+    evidence_id: str = field(default_factory=lambda: str(uuid4()))
+
+    # --- backward-compat aliases ---
+    @property
+    def id(self) -> str:
+        return self.evidence_id
+
+    @id.setter
+    def id(self, value: str) -> None:
+        self.evidence_id = value
+
+    @property
+    def content_sha256(self) -> Optional[str]:
+        return self.file_hash
+
+    @content_sha256.setter
+    def content_sha256(self, value: Optional[str]) -> None:
+        self.file_hash = value
+
+    def append_custody(
+        self,
+        action: str,
+        *,
+        actor_id: str = "system",
+        detail: str = "",
+        timestamp: Optional[str] = None,
+    ) -> None:
+        from datetime import datetime, timezone
+
+        ts = timestamp or datetime.now(timezone.utc).isoformat()
+        self.chain_of_custody.append(
+            CustodyEvent(
+                action=action, actor_id=actor_id, timestamp=ts, detail=detail
+            ).to_dict()
+        )
+
+    def requires_privilege_gate(self) -> bool:
+        """Export blocked if lock set or protected privilege state."""
+        if self.privilege_lock:
+            return True
+        return self.privilege_state in (
+            PrivilegeStatus.CLAIMED,
+            PrivilegeStatus.ASSERTED,
+            PrivilegeStatus.UPHELD,
+        )
 
     def to_dict(self) -> dict[str, Any]:
-        d = asdict(self)
-        d["evidence_type"] = self.evidence_type.value
-        d["admissibility_flag"] = self.admissibility_flag.value
-        return d
+        return {
+            "evidence_id": self.evidence_id,
+            "matter_id": self.matter_id,
+            "source_file": self.source_file,
+            "file_hash": self.file_hash,
+            "privilege_state": self.privilege_state.value,
+            "privilege_basis": self.privilege_basis.value,
+            "privilege_lock": self.privilege_lock,
+            "evidence_type": self.evidence_type.value,
+            "date_captured": self.date_captured,
+            "date_received": self.date_received,
+            "parties_referenced": list(self.parties_referenced),
+            "location_referenced": self.location_referenced,
+            "claim_tags": list(self.claim_tags),
+            "contradicts": list(self.contradicts),
+            "corroborates": list(self.corroborates),
+            "hearing_relevance": self.hearing_relevance,
+            "admissibility_flag": self.admissibility_flag.value,
+            "ocr_confidence": self.ocr_confidence,
+            "human_notes": self.human_notes,
+            "chain_of_custody": list(self.chain_of_custody),
+            "page_count": self.page_count,
+            # legacy keys for older JSONL
+            "id": self.evidence_id,
+            "content_sha256": self.file_hash,
+        }
 
 
 @dataclass

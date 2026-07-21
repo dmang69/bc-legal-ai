@@ -126,12 +126,42 @@ def test_ingest_preserves_hash():
             human_notes="back unit mold",
             location="990A",
         )
-        assert item.content_sha256 is not None
-        assert len(item.content_sha256) == 64
+        assert item.file_hash is not None
+        assert len(item.file_hash) == 64
+        assert item.file_hash == item.content_sha256  # alias
+        assert item.evidence_id == item.id
+        assert item.privilege_state.value == "UNCLAIMED"
+        assert item.privilege_lock is False
+        assert isinstance(item.chain_of_custody, list)
+        assert any(e.get("action") == "ingested" for e in item.chain_of_custody)
         originals = list(m.originals_dir.iterdir())
         assert len(originals) == 1
         assert originals[0].read_bytes() == payload
         assert "mold_hazard" in item.claim_tags or "mold" in item.human_notes.lower()
+
+
+def test_privilege_lock_blocks_export_gate():
+    from architecture.privilege_schemas import PrivilegeBasis, PrivilegeStatus
+    from backend.privilege.production_gate import export_items_from_evidence, run_production_gate
+
+    with tempfile.TemporaryDirectory() as tmp:
+        m = EvidenceMatrix("m-priv", root=Path(tmp))
+        item = ingest_bytes(
+            m,
+            filename="advice_email.eml",
+            data=b"client to lawyer advice",
+            is_client_lawyer_comm=True,
+            privilege_owner="client-1",
+        )
+        assert item.privilege_lock is True
+        assert item.privilege_state == PrivilegeStatus.CLAIMED
+        assert item.requires_privilege_gate() is True
+        decision = run_production_gate(
+            export_items_from_evidence([item]),
+            destination="opposing",
+        )
+        assert decision.allowed is False
+        assert item.evidence_id in decision.blocked_document_ids
 
 
 def test_suggest_claim_tags():
@@ -160,6 +190,7 @@ if __name__ == "__main__":
     test_chronology_filename_and_iso()
     test_temporal_conflict_heuristic()
     test_ingest_preserves_hash()
+    test_privilege_lock_blocks_export_gate()
     test_suggest_claim_tags()
     test_ingest_text_and_summary()
-    print("OK: 8 evidence matrix tests passed")
+    print("OK: 9 evidence matrix tests passed")

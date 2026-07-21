@@ -12,12 +12,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
-from architecture.privilege_schemas import (
-    PartyCommRole,
-    PrivilegeBasis,
-    PrivilegeMetadata,
-    PrivilegeStatus,
-)
+from architecture.privilege_schemas import PartyCommRole, PrivilegeBasis, PrivilegeStatus
 from architecture.schemas import AdmissibilityFlag, EvidenceItem, EvidenceType
 from backend.evidence.crossref import parse_date_hint, suggest_claim_tags
 from backend.evidence.matrix import EvidenceMatrix
@@ -36,6 +31,12 @@ def _guess_type(filename: str, text: str = "") -> EvidenceType:
     low = (filename + " " + text).lower()
     if any(low.endswith(ext) for ext in (".jpg", ".jpeg", ".png", ".heic", ".webp")):
         return EvidenceType.PHOTO
+    if any(low.endswith(ext) for ext in (".mp3", ".wav", ".m4a", ".ogg")):
+        return EvidenceType.AUDIO
+    if any(low.endswith(ext) for ext in (".mp4", ".mov", ".webm")):
+        return EvidenceType.VIDEO_FRAME
+    if "transcript" in low or low.endswith(".vtt") or low.endswith(".srt"):
+        return EvidenceType.TRANSCRIPT
     if "lease" in low or "tenancy agreement" in low:
         return EvidenceType.CONTRACT
     if "notice" in low or "rtb-" in low:
@@ -58,10 +59,11 @@ def ingest_bytes(
     human_notes: str = "",
     parties: Optional[list[str]] = None,
     location: Optional[str] = None,
-    chain_of_custody: Optional[str] = None,
+    chain_of_custody_detail: str = "user_upload",
     date_captured: Optional[str] = None,
     privilege_owner: Optional[str] = None,
     is_client_lawyer_comm: bool = False,
+    actor_id: str = "system",
 ) -> EvidenceItem:
     """
     Copy original to matters/{id}/evidence/originals/, append matrix row.
@@ -82,24 +84,10 @@ def ingest_bytes(
         if d:
             captured = d.isoformat()
 
-    item = EvidenceItem(
-        source_file=safe_name,
-        evidence_type=_guess_type(safe_name, human_notes),
-        date_captured=captured,
-        date_received=_utcnow(),
-        parties_referenced=list(parties or []),
-        location_referenced=location,
-        claim_tags=tags,
-        chain_of_custody=chain_of_custody or "user_upload",
-        ocr_confidence=0.0,  # no OCR yet
-        human_notes=human_notes,
-        admissibility_flag=AdmissibilityFlag.NEEDS_VERIFICATION,
-        matter_id=matrix.matter_id,
-        content_sha256=digest,
-    )
-    matrix.add(item)
+    p_state = PrivilegeStatus.UNCLAIMED
+    p_basis = PrivilegeBasis.NONE
+    p_lock = False
 
-    # Optional privilege proposal (not finalized)
     if privilege_owner and is_client_lawyer_comm:
         proposal = propose_privilege_tag(
             sender_role=PartyCommRole.CLIENT,
@@ -109,21 +97,47 @@ def ingest_bytes(
             litigation_context=True,
             confidence=0.5,
         )
-        # Stored only as human_notes annotation in Phase 1 (full privilege store Phase 2)
-        item.human_notes = (
-            (item.human_notes + " " if item.human_notes else "")
-            + f"[privilege_proposal basis={proposal.proposed_basis.value} "
-            f"conf={proposal.confidence:.2f} review={proposal.requires_human_review}]"
-        )
-        matrix.add(item)  # re-save notes
-        _ = PrivilegeMetadata(
-            privilege_owner=privilege_owner,
-            privilege_status=PrivilegeStatus.UNCLAIMED,
-            privilege_basis=proposal.proposed_basis,
-            classification_confidence=proposal.confidence,
-            human_confirmed=False,
-        )
+        p_basis = proposal.proposed_basis
+        if p_basis != PrivilegeBasis.NONE:
+            p_state = PrivilegeStatus.CLAIMED
+            p_lock = True  # cannot export without privilege gate
+            human_notes = (
+                (human_notes + " " if human_notes else "")
+                + f"[privilege_proposal conf={proposal.confidence:.2f} "
+                f"review={proposal.requires_human_review} owner={privilege_owner}]"
+            )
 
+    item = EvidenceItem(
+        source_file=safe_name,
+        matter_id=matrix.matter_id,
+        evidence_type=_guess_type(safe_name, human_notes),
+        file_hash=digest,
+        privilege_state=p_state,
+        privilege_basis=p_basis,
+        privilege_lock=p_lock,
+        date_captured=captured,
+        date_received=_utcnow(),
+        parties_referenced=list(parties or []),
+        location_referenced=location,
+        claim_tags=tags,
+        ocr_confidence=0.0,
+        human_notes=human_notes,
+        admissibility_flag=AdmissibilityFlag.NEEDS_VERIFICATION,
+        chain_of_custody=[],
+    )
+    item.append_custody(
+        "ingested",
+        actor_id=actor_id,
+        detail=chain_of_custody_detail,
+        timestamp=item.date_received,
+    )
+    item.append_custody(
+        "hash_recorded",
+        actor_id=actor_id,
+        detail=f"sha256={digest}",
+        timestamp=item.date_received,
+    )
+    matrix.add(item)
     return item
 
 
@@ -136,11 +150,14 @@ def ingest_text_record(
 ) -> EvidenceItem:
     """Ingest a text-only derived record; also writes derived/*.txt (not as original)."""
     data = text.encode("utf-8")
-    item = ingest_bytes(matrix, filename=filename, data=data, human_notes=text[:500], **kwargs)
+    notes = kwargs.pop("human_notes", text[:500])
+    item = ingest_bytes(matrix, filename=filename, data=data, human_notes=notes, **kwargs)
     matrix.ensure_dirs()
-    derived = matrix.derived_dir / f"{item.content_sha256[:16]}_{Path(filename).name}.txt"
+    prefix = (item.file_hash or "unknown")[:16]
+    derived = matrix.derived_dir / f"{prefix}_{Path(filename).name}.txt"
     derived.write_text(text, encoding="utf-8")
+    item.append_custody("derived_text_written", detail=str(derived.name))
     if not item.claim_tags:
         item.claim_tags = suggest_claim_tags(text)
-        matrix.add(item)
+    matrix.add(item)
     return item

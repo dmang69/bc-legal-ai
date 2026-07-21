@@ -1,0 +1,40 @@
+{
+  "suite": "rta_section_regression",
+  "source": "legislation/court-ready verification log",
+  "currency_note": "BC Laws RTA current to July 14, 2026; accessed 2026-07-21 — re-verify before filing",
+  "tests": [
+    {
+      "id": "contract_out",
+      "topic": "Cannot contract out of RTA",
+      "correct_section": "5",
+      "wrong_sections": ["6"],
+      "wrong_note": "s. 6 is enforce rights between landlord and tenant"
+    },
+    {
+      "id": "quiet_enjoyment",
+      "topic": "Quiet enjoyment",
+      "correct_section": "28",
+      "wrong_sections": ["22"],
+      "wrong_note": "s. 22 is acceleration term prohibited"
+    },
+    {
+      "id": "entry",
+      "topic": "Landlord entry notice",
+      "correct_section": "29",
+      "wrong_sections": ["25", "26"],
+      "hours": "8 a.m. to 9 p.m."
+    },
+    {
+      "id": "deposit_return",
+      "topic": "Deposit return / double amount",
+      "correct_section": "38",
+      "wrong_sections": []
+    },
+    {
+      "id": "repair",
+      "topic": "Repair and maintain",
+      "correct_section": "32",
+      "wrong_sections": []
+    }
+  ]
+}

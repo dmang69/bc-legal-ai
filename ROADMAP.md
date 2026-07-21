@@ -174,8 +174,9 @@ V1 is complete only when the system can reliably:
 | 1 | Commit existing package to GitHub | Done (workbench); keep pushing |
 | 2 | Default branch `main` | In progress |
 | 3 | Deploy a **private** Hugging Face Space | Blocked on HF write token / privacy choice |
-| 4 | Authentication + isolated matters | Not started |
-| 5 | OCR + page-level document citations | Partial: Evidence Matrix store + chronology (no OCR yet) |
+| 4 | Authentication + isolated matters | Partial: `MatterSession` + matter-partitioned matrix (no multi-user auth yet) |
+| 5 | OCR + page-level document citations | Partial: Evidence Matrix full row schema + chronology (no OCR yet) |
+| 5b | §7 structural eval suite | Partial: `evaluations/run_eval_suite.py` (no model inference) |
 | 6 | Official-source legal retrieval | Partial (BC Laws discipline + local extracts) |
 | 7 | Authority verification gate | Schema only |
 | 8 | Structured legal workflows / agents | Scaffold |
