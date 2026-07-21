@@ -19,8 +19,9 @@ description: >
 | Need | Skill |
 |------|--------|
 | Substantive RTA (evictions, illegal charges, repairs) | `bc-tenancy-substantive` |
-| RTB procedure, hearings, evidence, filing | `bc-tenancy-procedure` |
-| JR petitions, stays, Court of Appeal | `bc-judicial-review-guide` + Module 1 |
+| RTB procedure, evidence packaging, hearings, negotiation, enforcement | `bc-tenancy-procedure` (full runtime Modules 1–7) |
+| JR petitions, stays, Court of Appeal | `bc-judicial-review-guide` + Module 1 here |
+| This skill under alternate name | `bc-tenancy-advanced` (alias) |
 | Court-ready drafting standard | `supreme-court-civil-counsel` |
 | CanLII / BOA | `canlii-boa-builder` |
 

@@ -11,10 +11,11 @@ Research and drafting workbench for **British Columbia civil / administrative li
 | Skill | Path | Use |
 |-------|------|-----|
 | **supreme-court-civil-counsel** | [`skills/supreme-court-civil-counsel/`](skills/supreme-court-civil-counsel/) | Primary mandate: analysis, drafting, quality control |
-| **bc-tenancy-advocacy** | [`skills/bc-tenancy-advocacy/`](skills/bc-tenancy-advocacy/) | Modules 1–7: JR, human rights, strata, MHPTA, trauma-informed, ethics, Level 99 |
+| **bc-tenancy-procedure** | [`skills/bc-tenancy-procedure/`](skills/bc-tenancy-procedure/) | **RTB runtime:** evidence, witnesses, apps, negotiation, hearing, drafting, enforcement |
+| **bc-tenancy-advocacy** | [`skills/bc-tenancy-advocacy/`](skills/bc-tenancy-advocacy/) | Advanced: JR, human rights, strata, MHPTA, trauma-informed, ethics, Level 99 |
+| **bc-tenancy-advanced** | [`skills/bc-tenancy-advanced/`](skills/bc-tenancy-advanced/) | Alias → `bc-tenancy-advocacy` |
 | **bc-judicial-review-guide** | [`skills/bc-judicial-review-guide/`](skills/bc-judicial-review-guide/) | JR petitions, stays, Vavilov, BCSC |
 | **bc-tenancy-substantive** | [`skills/bc-tenancy-substantive/`](skills/bc-tenancy-substantive/) | RTA doctrine scaffold |
-| **bc-tenancy-procedure** | [`skills/bc-tenancy-procedure/`](skills/bc-tenancy-procedure/) | RTB process scaffold |
 | **canlii-boa-builder** | [`skills/canlii-boa-builder/`](skills/canlii-boa-builder/) | Verified authorities / BOA |
 
 Full professional framework: [`skills/supreme-court-civil-counsel/counsel-framework.md`](skills/supreme-court-civil-counsel/counsel-framework.md)
