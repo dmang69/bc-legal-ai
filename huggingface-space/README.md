@@ -6,17 +6,23 @@ colorTo: gray
 sdk: gradio
 sdk_version: 6.20.0
 app_file: app.py
-short_description: BC legal research & drafting support index (not a lawyer)
+short_description: CPU demo — triage, tags, BC Laws routing (no model weights)
 python_version: "3.12"
 ---
 
-# BC Legal AI Associate (index Space)
+# BC Legal AI Associate — Public Demo
 
-Public-facing index of BC tenancy / counsel **skills** and **official BC Laws** links.
+CPU-only Gradio Space. **No model weights. No LLM inference.**
+
+Demonstrates:
+
+- Matter triage (notice windows + forum routing)
+- Analytical tag decomposition (FACT / ALLEGATION / …)
+- Official BC Laws links + verified RTA section map
+- RTA pin self-check (common wrong-memory corrections)
 
 **Not a lawyer. Not legal advice.** Legal research and drafting **support** only.  
-Do not upload confidential client or litigation files to a public Space.
+Do **not** upload confidential client or litigation files.
 
-Always verify statutes on [bclaws.gov.bc.ca](https://www.bclaws.gov.bc.ca/).
-
+Statute truth: [BC Laws](https://www.bclaws.gov.bc.ca/) only (re-check “current to” before filing).  
 Source monorepo: https://github.com/dmang69/bc-legal-ai
