@@ -19,6 +19,7 @@ Research and drafting workbench for **British Columbia civil / administrative li
 | **canlii-boa-builder** | [`skills/canlii-boa-builder/`](skills/canlii-boa-builder/) | Verified authorities / BOA |
 | **self-improvement** | [`skills/self-improvement/`](skills/self-improvement/) | Meta-learning: gaps, corrections, audits, skill patches |
 | **learning-mode** | [`skills/learning-mode/`](skills/learning-mode/) | Tutor mode: diagnose, scaffold, integrity — teach how, not dump |
+| **doc-coauthoring** | [`skills/doc-coauthoring/`](skills/doc-coauthoring/) | Co-author workflow: context → sections → reader testing |
 
 Full professional framework: [`skills/supreme-court-civil-counsel/counsel-framework.md`](skills/supreme-court-civil-counsel/counsel-framework.md)
 

@@ -11,6 +11,8 @@
 | bc-judicial-review-guide | 1.0 | JR handoff + stay framing |
 | canlii-boa-builder | 0.1 scaffold | BOA discipline |
 | self-improvement | 1.0 | Meta-learning framework |
+| learning-mode | 1.0 | Tutoring pedagogy |
+| doc-coauthoring | 1.0 | Collaborative doc workflow |
 
 ## Log
 
