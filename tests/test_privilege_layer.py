@@ -194,9 +194,9 @@ def test_production_gate_waiver_path():
 
 def test_storage_prefix_segregation():
     p = storage_key_prefix("firm-A", "matter-B", privileged=True)
-    assert p == "tenant/firm-A/matter-B/privileged"
+    assert p == "tenant/firm-A/matter/matter-B/privileged"
     n = storage_key_prefix("firm-A", "matter-B", privileged=False)
-    assert "non_privileged" in n
+    assert n == "tenant/firm-A/matter/matter-B/non_privileged"
 
 
 if __name__ == "__main__":
