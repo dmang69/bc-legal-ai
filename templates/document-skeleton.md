@@ -4,7 +4,7 @@
 **Forum:**  
 **Style of Cause:**  
 **Court File No.:** *[if assigned]*  
-**Prepared for:** Licensed counsel review — not for filing without verification  
+**Prepared for:** Self-represented litigant and/or licensed counsel review — not for filing without verification  
 
 ---
 
@@ -63,4 +63,4 @@ Missing evidence: …
 
 ---
 
-> **Disclaimer:** AI-assisted legal research and drafting for licensed counsel review only. Not legal advice. Verify all facts, law, citations, and procedure before filing.
+> **Disclaimer:** AI-assisted legal information and drafting support. **Not legal advice.** Does not create a solicitor–client relationship. Self-represented litigants must verify all facts, statutes, Rules of Court, limitation periods, service requirements, and CanLII authorities before filing. Seek licensed counsel where marked `[INDEPENDENT COUNSEL RECOMMENDED]`.

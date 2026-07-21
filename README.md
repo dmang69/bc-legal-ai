@@ -2,7 +2,9 @@
 
 Research and drafting workbench for **British Columbia civil / administrative litigation**, with a focus on superior court practice and Residential Tenancy Branch (RTB) judicial review pathways.
 
-> **Not legal advice.** All outputs require licensed counsel review before filing or reliance.
+> **Not legal advice.** Legal information and drafting support only.  
+> **Self-represented litigants:** verify Rules, deadlines, service, and CanLII authorities before filing.  
+> Framework will flag **`[INDEPENDENT COUNSEL RECOMMENDED]`** when complexity or risk warrants a lawyer.
 
 ## Skills
 
