@@ -31,7 +31,25 @@ Every claim in system output must carry:
 | factual basis | `REFUSE_OUTPUT` — No evidence supports this claim. Add evidence or revise query. |
 | legal basis | `REFUSE_OUTPUT` — No legal authority found. Search knowledge base or flag for human. |
 | inference chain | `REFUSE_OUTPUT` — Logical gap between evidence and conclusion. Review inference steps. |
-| unverified cite | `REFUSE_OUTPUT` — Legal authority is UNVERIFIED… |
+| unverified cite | `REFUSE_OUTPUT` + **UNVERIFIED CITATION FLAG** (options below) |
+
+## UNVERIFIED CITATION FLAG
+
+When the engine wants a case/section missing from or not VERIFIED in the DB:
+
+```
+UNVERIFIED CITATION FLAG:
+The reasoning engine wants to reference [case/section] but it
+does not exist in the verified citation database.
+
+Options:
+1. Add to database (requires source verification)
+2. Use as illustrative only (flagged in output as UNVERIFIED)
+3. Find equivalent verified citation
+```
+
+- Option 1 / 3 → can become court-ready after verification or substitute.  
+- Option 2 → illustrative notes only (`illustrative_allowed=True`); never court-ready.
 
 ```python
 from architecture.grounding import Citation, GroundedClaim, InferenceStep

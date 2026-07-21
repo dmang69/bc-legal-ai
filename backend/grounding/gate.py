@@ -18,9 +18,87 @@ from architecture.grounding import (
     GroundingRefusalReason,
     GroundingResult,
     InferenceStep,
+    UnverifiedCitationFlag,
+    build_unverified_citation_flag,
 )
 from architecture.schemas import AuthorityStatus
 from backend.grounding.citation_db import CitationDB
+
+
+def _requested_label(cite: Citation) -> str:
+    return (
+        cite.display_cite()
+        or cite.short_cite
+        or cite.citation_id
+        or cite.case_name
+        or cite.citation
+        or "unknown authority"
+    )
+
+
+def flag_unverified_reference(
+    citation_db: CitationDB,
+    reference: Citation | str,
+    *,
+    applies_to_hint: Optional[list[str]] = None,
+) -> UnverifiedCitationFlag:
+    """
+    Build UNVERIFIED CITATION FLAG for a requested case/section.
+
+    Used by the reasoning engine when a cite is not verified (or not in DB).
+    """
+    if isinstance(reference, str):
+        probe = Citation(short_cite=reference)
+    else:
+        probe = reference
+
+    resolved = citation_db.resolve(probe)
+    requested = _requested_label(probe if not resolved else resolved)
+
+    equivalents: list[dict] = []
+    tags = list(applies_to_hint or [])
+    if resolved and resolved.applies_to:
+        tags = list(dict.fromkeys(tags + list(resolved.applies_to)))
+    # pull from short_cite heuristics
+    low = requested.lower()
+    if "retaliat" in low or "s. 56" in low or "s.56" in low:
+        tags.append("retaliatory_eviction")
+    if "mold" in low or "repair" in low or "s. 32" in low:
+        tags.append("mold_hazard")
+    if "privilege" in low or "descoteaux" in low:
+        tags.append("privilege")
+
+    seen_ids: set[str] = set()
+    for tag in tags:
+        for c in citation_db.by_applies_to(tag):
+            if c.citation_id and c.citation_id not in seen_ids:
+                if resolved and c.citation_id == resolved.citation_id:
+                    continue
+                seen_ids.add(c.citation_id)
+                equivalents.append(
+                    {
+                        "citation_id": c.citation_id,
+                        "short_cite": c.short_cite or c.display_cite(),
+                        "applies_to": list(c.applies_to),
+                        "status": c.status.value,
+                    }
+                )
+
+    if resolved is None:
+        return build_unverified_citation_flag(
+            requested,
+            in_database=False,
+            database_status=None,
+            citation_id=None,
+            equivalents=equivalents,
+        )
+    return build_unverified_citation_flag(
+        requested,
+        in_database=True,
+        database_status=resolved.status.value,
+        citation_id=resolved.citation_id,
+        equivalents=equivalents,
+    )
 
 
 class GroundingGate:
@@ -44,6 +122,7 @@ class GroundingGate:
     def evaluate(self, claim: GroundedClaim) -> GroundingResult:
         reasons: list[GroundingRefusalReason] = []
         messages: list[str] = []
+        uv_flag: Optional[UnverifiedCitationFlag] = None
 
         text = (claim.claim or "").strip()
         if not text:
@@ -74,9 +153,14 @@ class GroundingGate:
             resolved = self.citation_db.resolve(claim.legal_basis)
             if resolved is None:
                 reasons.append(GroundingRefusalReason.MISSING_LEGAL_BASIS)
+                reasons.append(GroundingRefusalReason.UNVERIFIED_CITATION)
                 messages.append(
                     REFUSAL_MESSAGES[GroundingRefusalReason.MISSING_LEGAL_BASIS]
                 )
+                uv_flag = flag_unverified_reference(
+                    self.citation_db, claim.legal_basis
+                )
+                messages.append(uv_flag.message)
             elif resolved.superseded_by:
                 reasons.append(GroundingRefusalReason.SUPERSEDED_CITATION)
                 messages.append(
@@ -90,9 +174,12 @@ class GroundingGate:
                 )
             elif resolved.status != AuthorityStatus.VERIFIED:
                 reasons.append(GroundingRefusalReason.UNVERIFIED_CITATION)
-                messages.append(
-                    REFUSAL_MESSAGES[GroundingRefusalReason.UNVERIFIED_CITATION]
+                uv_flag = flag_unverified_reference(
+                    self.citation_db,
+                    resolved,
+                    applies_to_hint=list(resolved.applies_to),
                 )
+                messages.append(uv_flag.message)
             else:
                 # attach resolved citation with id
                 claim.legal_basis = resolved
@@ -119,7 +206,23 @@ class GroundingGate:
             reasons=reasons,
             messages=messages,
             grounded=claim if allowed else None,
+            unverified_citation_flag=uv_flag,
+            illustrative_allowed=bool(uv_flag and uv_flag.allows_illustrative_output),
         )
+
+    def check_citation(self, reference: Citation | str) -> UnverifiedCitationFlag | None:
+        """
+        Pre-flight: if reference is not VERIFIED, return UNVERIFIED CITATION FLAG.
+        Returns None when the citation is verified and current.
+        """
+        if isinstance(reference, str):
+            probe = Citation(short_cite=reference)
+        else:
+            probe = reference
+        resolved = self.citation_db.resolve(probe)
+        if resolved and resolved.status == AuthorityStatus.VERIFIED and not resolved.superseded_by:
+            return None
+        return flag_unverified_reference(self.citation_db, probe if not resolved else resolved)
 
     def assert_grounded(self, claim: GroundedClaim) -> GroundedClaim:
         result = self.evaluate(claim)
