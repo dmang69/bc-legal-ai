@@ -43,6 +43,20 @@ def test_kam_dashboard_content():
     assert "Bias — INSUFFICIENT EVIDENCE" in text
     assert "lawyer review" in text.lower()
 
+    dl = d.format_deadlines(as_of=date(2026, 1, 20))
+    assert "UPCOMING DEADLINES:" in dl
+    assert "CRITICAL" in dl
+    assert "File judicial review petition" in dl
+    assert "March 21, 2026" in dl
+    assert "Days remaining: 60" in dl
+    assert "IMPORTANT" in dl
+    assert "Request RTB hearing audio" in dl
+    assert "ASAP" in dl
+    assert "2-4 weeks" in dl
+    assert "ROUTINE" in dl
+    assert "Organize evidence binder" in dl
+    assert "February 15, 2026" in dl
+
 
 def test_matter_install():
     with tempfile.TemporaryDirectory() as tmp:

@@ -11,6 +11,8 @@ from __future__ import annotations
 from architecture.case_status import (
     CaseDashboard,
     CaseType,
+    DeadlineItem,
+    DeadlinePriority,
     GroundStatus,
     GroundStrength,
     MissingItem,
@@ -71,6 +73,25 @@ def kam_s_s_65285_dashboard(*, matter_id: str | None = None) -> CaseDashboard:
             ),
         ],
         strength_assessment_note="[Full assessment requires lawyer review]",
+        upcoming_deadlines=[
+            DeadlineItem(
+                title="File judicial review petition",
+                priority=DeadlinePriority.CRITICAL,
+                due="2026-03-21",
+                due_note="Confirm limitation under JRPA / applicable rules",
+            ),
+            DeadlineItem(
+                title="Request RTB hearing audio recording",
+                priority=DeadlinePriority.IMPORTANT,
+                due="ASAP",
+                due_note="processing takes 2-4 weeks",
+            ),
+            DeadlineItem(
+                title="Organize evidence binder (drafts 1-3)",
+                priority=DeadlinePriority.ROUTINE,
+                due="2026-02-15",
+            ),
+        ],
         notes=(
             "Links to petition outline PET-JR-RTB-001 and examination EXAM-CROSS-SANGHERA-001. "
             "Deadline date and days remaining are planning figures — verify limitation "

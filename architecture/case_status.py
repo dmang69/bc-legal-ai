@@ -95,6 +95,100 @@ class NextAction:
         return f"NEXT ACTION: {self.description} [{self.state.value}]"
 
 
+class DeadlinePriority(str, Enum):
+    CRITICAL = "CRITICAL"
+    IMPORTANT = "IMPORTANT"
+    ROUTINE = "ROUTINE"
+
+
+@dataclass
+class DeadlineItem:
+    """
+    Tracked deadline for UPCOMING DEADLINES board.
+
+    due may be ISO date or relative text (e.g. ASAP).
+    """
+
+    title: str
+    priority: DeadlinePriority
+    due: str  # YYYY-MM-DD or "ASAP"
+    due_note: str = ""  # e.g. processing takes 2-4 weeks
+    days_remaining: Optional[int] = None  # set by refresh if due is ISO
+    completed: bool = False
+
+    def refresh_days(self, as_of: Optional[date] = None) -> None:
+        if self.due.upper() == "ASAP" or not self.due:
+            self.days_remaining = None
+            return
+        try:
+            target = date.fromisoformat(self.due[:10])
+        except ValueError:
+            self.days_remaining = None
+            return
+        today = as_of or date.today()
+        self.days_remaining = (target - today).days
+
+    def emoji(self) -> str:
+        return {
+            DeadlinePriority.CRITICAL: "🔴",
+            DeadlinePriority.IMPORTANT: "🟡",
+            DeadlinePriority.ROUTINE: "🟢",
+        }[self.priority]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "title": self.title,
+            "priority": self.priority.value,
+            "due": self.due,
+            "due_note": self.due_note,
+            "days_remaining": self.days_remaining,
+            "completed": self.completed,
+        }
+
+    @staticmethod
+    def from_dict(data: dict[str, Any]) -> "DeadlineItem":
+        p = data.get("priority", DeadlinePriority.ROUTINE.value)
+        item = DeadlineItem(
+            title=str(data.get("title") or ""),
+            priority=DeadlinePriority(p) if not isinstance(p, DeadlinePriority) else p,
+            due=str(data.get("due") or ""),
+            due_note=str(data.get("due_note") or ""),
+            days_remaining=data.get("days_remaining"),
+            completed=bool(data.get("completed", False)),
+        )
+        return item
+
+    def format_block(self, as_of: Optional[date] = None) -> str:
+        self.refresh_days(as_of)
+        lines = [
+            f"{self.emoji()} {self.priority.value}:",
+            f"   {self.title}",
+        ]
+        if self.due.upper() == "ASAP":
+            due_line = "   Due: ASAP"
+            if self.due_note:
+                due_line += f" ({self.due_note})"
+            lines.append(due_line)
+        else:
+            try:
+                pretty = date.fromisoformat(self.due[:10]).strftime("%B %d, %Y")
+            except ValueError:
+                pretty = self.due
+            lines.append(f"   Due: {pretty}")
+            if self.due_note:
+                lines.append(f"   Note: {self.due_note}")
+            if self.days_remaining is not None:
+                if self.days_remaining > 0:
+                    lines.append(f"   Days remaining: {self.days_remaining}")
+                elif self.days_remaining == 0:
+                    lines.append("   Days remaining: DUE TODAY")
+                else:
+                    lines.append(f"   Days remaining: {abs(self.days_remaining)} OVERDUE")
+        if self.completed:
+            lines.append("   Status: DONE")
+        return "\n".join(lines)
+
+
 @dataclass
 class CaseDashboard:
     """
@@ -117,6 +211,7 @@ class CaseDashboard:
     strength_assessment_note: str = (
         "[Full assessment requires lawyer review]"
     )
+    upcoming_deadlines: list[DeadlineItem] = field(default_factory=list)
     as_of: Optional[str] = None  # YYYY-MM-DD for days-remaining snapshot
     notes: str = ""
     disclaimer: str = (
@@ -125,6 +220,16 @@ class CaseDashboard:
         "and primary sources before relying."
     )
 
+    def _as_of_date(self, as_of: Optional[date] = None) -> date:
+        if as_of is not None:
+            return as_of
+        if self.as_of:
+            try:
+                return date.fromisoformat(self.as_of[:10])
+            except ValueError:
+                pass
+        return date.today()
+
     def days_remaining(self, as_of: Optional[date] = None) -> Optional[int]:
         if not self.deadline:
             return None
@@ -132,15 +237,12 @@ class CaseDashboard:
             target = date.fromisoformat(self.deadline[:10])
         except ValueError:
             return None
-        if as_of is None:
-            if self.as_of:
-                try:
-                    as_of = date.fromisoformat(self.as_of[:10])
-                except ValueError:
-                    as_of = date.today()
-            else:
-                as_of = date.today()
-        return (target - as_of).days
+        return (target - self._as_of_date(as_of)).days
+
+    def refresh_all_deadlines(self, as_of: Optional[date] = None) -> None:
+        d = self._as_of_date(as_of)
+        for item in self.upcoming_deadlines:
+            item.refresh_days(d)
 
     def deadline_banner(self, as_of: Optional[date] = None) -> str:
         if not self.deadline:
@@ -182,6 +284,7 @@ class CaseDashboard:
             "missing_items": [m.to_dict() for m in self.missing_items],
             "legal_grounds": [g.to_dict() for g in self.legal_grounds],
             "strength_assessment_note": self.strength_assessment_note,
+            "upcoming_deadlines": [u.to_dict() for u in self.upcoming_deadlines],
             "as_of": self.as_of,
             "notes": self.notes,
             "disclaimer": self.disclaimer,
@@ -210,7 +313,13 @@ class CaseDashboard:
             else None,
             evidence_complete_pct=int(data.get("evidence_complete_pct") or 0),
             missing_items=[
-                MissingItem(**m) if isinstance(m, dict) else MissingItem(label=str(m))
+                MissingItem(
+                    label=str(m.get("label") or ""),
+                    status_note=str(m.get("status_note") or ""),
+                    blocking=bool(m.get("blocking", False)),
+                )
+                if isinstance(m, dict)
+                else MissingItem(label=str(m))
                 for m in (data.get("missing_items") or [])
             ],
             legal_grounds=[
@@ -228,6 +337,9 @@ class CaseDashboard:
                 data.get("strength_assessment_note")
                 or "[Full assessment requires lawyer review]"
             ),
+            upcoming_deadlines=[
+                DeadlineItem.from_dict(u) for u in (data.get("upcoming_deadlines") or [])
+            ],
             as_of=data.get("as_of"),
             notes=str(data.get("notes") or ""),
             disclaimer=str(
@@ -235,6 +347,33 @@ class CaseDashboard:
                 or CaseDashboard().disclaimer
             ),
         )
+
+    def format_deadlines(self, as_of: Optional[date] = None) -> str:
+        """UPCOMING DEADLINES board (CRITICAL / IMPORTANT / ROUTINE)."""
+        self.refresh_all_deadlines(as_of)
+        order = (
+            DeadlinePriority.CRITICAL,
+            DeadlinePriority.IMPORTANT,
+            DeadlinePriority.ROUTINE,
+        )
+        lines = ["UPCOMING DEADLINES:", ""]
+        any_item = False
+        for pri in order:
+            group = [d for d in self.upcoming_deadlines if d.priority == pri and not d.completed]
+            if not group:
+                continue
+            any_item = True
+            for item in group:
+                lines.append(item.format_block(self._as_of_date(as_of)))
+                lines.append("")
+        if not any_item:
+            lines.append("(no upcoming deadlines listed)")
+            lines.append("")
+        lines.append(
+            "> Deadlines are planning tools. Confirm JR limitation periods and RTB "
+            "processing times with primary sources / counsel before relying."
+        )
+        return "\n".join(lines).rstrip() + "\n"
 
     def format_dashboard(self, as_of: Optional[date] = None) -> str:
         """ASCII status board matching workbench case view."""
@@ -280,6 +419,14 @@ class CaseDashboard:
         lines.append("")
         lines.append("STRENGTH ASSESSMENT:")
         lines.append(f" {self.strength_assessment_note}")
+        if self.upcoming_deadlines:
+            lines.append("")
+            # strip trailing disclaimer from nested format for embed
+            dl = self.format_deadlines(as_of).rstrip().split("\n")
+            # drop final > line if present
+            if dl and dl[-1].startswith(">"):
+                dl = dl[:-1]
+            lines.extend(dl)
         if self.notes:
             lines.append("")
             lines.append(f"Notes: {self.notes}")

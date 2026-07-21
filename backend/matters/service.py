@@ -433,6 +433,9 @@ class MatterSession:
     def format_case_board(self) -> str:
         return self.load_dashboard().format_dashboard()
 
+    def format_upcoming_deadlines(self) -> str:
+        return self.load_dashboard().format_deadlines()
+
     def save_document_explainer(self, exp) -> "Path":
         from backend.explainers.service import save_explainer
 
