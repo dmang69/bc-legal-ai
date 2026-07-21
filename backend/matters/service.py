@@ -392,6 +392,27 @@ class MatterSession:
             rtb_jr_petition_outline(matter_id=self.matter_id)
         )
 
+    def save_tenancy_intake(self, intake) -> "Path":
+        """Persist TenancyIntake and sync meta."""
+        from backend.intake.service import apply_intake_to_matter_meta, save_intake
+
+        intake.matter_id = self.matter_id
+        apply_intake_to_matter_meta(self, intake)
+        return save_intake(intake, root=self.root)
+
+    def load_tenancy_intake(self):
+        from backend.intake.service import load_intake
+
+        return load_intake(self.matter_id, root=self.root)
+
+    def intake_from_answers(self, answers: dict) -> "object":
+        """Build + save intake from flat form/chat answers."""
+        from backend.intake.service import intake_from_flat_answers
+
+        intake = intake_from_flat_answers(answers, matter_id=self.matter_id)
+        self.save_tenancy_intake(intake)
+        return intake
+
     def production_check(
         self,
         *,
