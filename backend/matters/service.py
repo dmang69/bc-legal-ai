@@ -24,6 +24,10 @@ from backend.evidence.crossref import (
 from backend.evidence.ingest import ingest_bytes, ingest_text_record
 from backend.evidence.matrix import EvidenceMatrix
 from backend.evidence.nodes import EvidenceNodeStore, sync_items_to_nodes
+from backend.evidence.gap_detection import (
+    build_gap_detection_report,
+    format_gap_detection_report,
+)
 from backend.evidence.timeline_engine import (
     build_timeline_from_nodes,
     format_timeline_markdown,
@@ -179,6 +183,7 @@ class MatterSession:
         nodes = self.nodes.all()
         contra = self.nodes.run_contradiction_scan(persist=True)
         timeline = build_timeline_from_nodes(self.nodes.all())
+        gap_report = build_gap_detection_report(timeline, matter_id=self.matter_id)
         return {
             "matter_id": self.matter_id,
             "title": self.meta.title,
@@ -191,6 +196,8 @@ class MatterSession:
             "key_fact_contradictions": contra.to_dict(),
             "timeline": [e.to_dict() for e in timeline],
             "timeline_markdown": format_timeline_markdown(timeline),
+            "gap_detection": gap_report.to_dict(),
+            "gap_detection_report": format_gap_detection_report(gap_report),
             "privilege_gated_ids": locked,
             "protected_nodes": [n.node_id for n in self.nodes.protected_nodes()],
             "chronology_markdown": format_chronology_markdown(items),
@@ -253,6 +260,8 @@ class MatterSession:
         chrono.write_text(report["chronology_markdown"] + "\n", encoding="utf-8")
         tl = self.matter_dir / "timeline.md"
         tl.write_text(report.get("timeline_markdown", "") + "\n", encoding="utf-8")
+        gap_path = self.matter_dir / "gap_detection_report.md"
+        gap_path.write_text(report.get("gap_detection_report", "") + "\n", encoding="utf-8")
         return path
 
 

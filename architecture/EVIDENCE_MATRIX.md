@@ -121,6 +121,25 @@ TimelineEvent {
 Implementation: `architecture/timeline.py` · `backend/evidence/timeline_engine.py`  
 Emitted in `analysis_report()["timeline"]` and `timeline.md`.
 
+### GAP DETECTION REPORT
+
+Narrative inter-event gaps with system prompts and opposing-counsel risk notes:
+
+```
+GAP DETECTION REPORT:
+- Nov 12, 2025: Eviction notice served
+- Nov 17, 2025: Tenant files dispute (5 days)
+    → Normal response window
+- …
+    → NOTABLE GAP: …
+    → System prompt: "Upload any communications…"
+- …
+    → SUSPICIOUS GAP: System flags: "Document any habitability…"
+```
+
+Implementation: `backend/evidence/gap_detection.py`  
+Also: `gap_detection_report.md` via `write_report()`.
+
 OCR, EXIF, and full NER remain Layer 1 Phase 2.
 
 ## Option B (deferred)
