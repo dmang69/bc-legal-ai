@@ -413,6 +413,26 @@ class MatterSession:
         self.save_tenancy_intake(intake)
         return intake
 
+    def save_dashboard(self, dash) -> "Path":
+        from backend.dashboard.service import save_dashboard
+
+        dash.matter_id = self.matter_id
+        return save_dashboard(dash, root=self.root)
+
+    def load_dashboard(self):
+        from backend.dashboard.service import load_dashboard
+
+        return load_dashboard(self.matter_id, root=self.root)
+
+    def install_kam_jr_case_board(self) -> "Path":
+        """Install KAM-S-S-65285 JR case status dashboard snapshot."""
+        from templates.case.kam_s_s_65285_dashboard import kam_s_s_65285_dashboard
+
+        return self.save_dashboard(kam_s_s_65285_dashboard(matter_id=self.matter_id))
+
+    def format_case_board(self) -> str:
+        return self.load_dashboard().format_dashboard()
+
     def production_check(
         self,
         *,
