@@ -9,6 +9,9 @@ from backend.evidence.crossref import (
 )
 from backend.evidence.ingest import ingest_bytes, ingest_text_record
 from backend.evidence.matrix import EvidenceMatrix
+from backend.evidence.contradiction_engine import (
+    detect_key_fact_contradictions,
+)
 from backend.evidence.nodes import EvidenceNodeStore, sync_items_to_nodes
 
 __all__ = [
@@ -16,6 +19,7 @@ __all__ = [
     "EvidenceNodeStore",
     "build_chronology",
     "detect_corroboration_candidates",
+    "detect_key_fact_contradictions",
     "detect_temporal_conflicts",
     "format_chronology_markdown",
     "ingest_bytes",

@@ -173,6 +173,7 @@ class MatterSession:
         ]
         locked = [e.evidence_id for e in self.matrix.locked_for_export()]
         nodes = self.nodes.all()
+        contra = self.nodes.run_contradiction_scan(persist=True)
         return {
             "matter_id": self.matter_id,
             "title": self.meta.title,
@@ -182,6 +183,7 @@ class MatterSession:
             "gaps": gaps,
             "temporal_conflicts": conflicts,
             "corroboration_candidates": corr,
+            "key_fact_contradictions": contra.to_dict(),
             "privilege_gated_ids": locked,
             "protected_nodes": [n.node_id for n in self.nodes.protected_nodes()],
             "chronology_markdown": format_chronology_markdown(items),

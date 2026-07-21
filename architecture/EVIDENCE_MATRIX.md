@@ -85,6 +85,26 @@ All queries take `matter_id`. No ambient cross-matter load.
 | Corroboration | Shared claim_tag + same location (manual or keyword) |
 | Contradiction | Explicit link, or temporal conflict on same claim_tag |
 | Temporal conflict | Same claim_tag; dates disagree with "fixed by X" narrative (heuristic) |
+| **Key-fact contradiction** | Shared `fact_key` with conflicting `value` → CONTRADICTS + warning + report |
+
+### Key-fact contradiction algorithm
+
+```
+FOR each pair of EvidenceNodes (A, B):
+    IF A.key_facts ∩ B.key_facts ≠ ∅:        // shared fact_key
+        FOR each shared fact f:
+            IF A.value(f) conflicts with B.value(f):
+                CREATE edge(A → B, type=CONTRADICTS)
+                FLAG both nodes with contradiction_warning
+                GENERATE ContradictionReport {
+                    fact, node_a_claim, node_b_claim,
+                    resolution_strategy: A_PRIORITY | B_PRIORITY | NEEDS_HUMAN | BOTH_RELEVANT,
+                    weight_difference: |A.confidence - B.confidence|
+                }
+```
+
+Implementation: `backend/evidence/contradiction_engine.py`  
+Run: `EvidenceNodeStore.run_contradiction_scan()` (also via `MatterSession.analysis_report()`).
 
 OCR, EXIF, and full NER remain Layer 1 Phase 2.
 

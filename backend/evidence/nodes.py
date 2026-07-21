@@ -19,6 +19,10 @@ from architecture.evidence_node import (
     evidence_item_to_node,
 )
 from architecture.schemas import EvidenceItem
+from backend.evidence.contradiction_engine import (
+    ContradictionRunResult,
+    detect_key_fact_contradictions,
+)
 
 
 class NodeIdError(ValueError):
@@ -181,6 +185,13 @@ class EvidenceNodeStore:
 
     def protected_nodes(self) -> list[EvidenceNode]:
         return [n for n in self._nodes.values() if n.requires_privilege_gate()]
+
+    def run_contradiction_scan(self, *, persist: bool = True) -> ContradictionRunResult:
+        """Pairwise key-fact contradiction pass; mutates nodes in place."""
+        result = detect_key_fact_contradictions(self.all(), apply_edges=True)
+        if persist:
+            self.save()
+        return result
 
     def rebuild_temporal_from_dates(self, *, persist: bool = True) -> int:
         """Order nodes by date_created/date_received and set before/after chains."""

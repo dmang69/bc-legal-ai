@@ -62,15 +62,37 @@ class BestEvidenceRule(str, Enum):
 
 @dataclass
 class KeyFact:
+    """
+    Discrete factual claim extractable from a node.
+
+    fact_key: normalized claim identifier for pairwise intersection
+    value: asserted value for that key (used to detect conflicts)
+    fact: human-readable statement
+    """
+
     fact: str
     confidence: float = 0.0
     source_span: Optional[str] = None
+    fact_key: Optional[str] = None
+    value: Optional[str] = None
+
+    def resolved_key(self) -> str:
+        if self.fact_key:
+            return _norm_key(self.fact_key)
+        return _norm_key(self.fact)
+
+    def resolved_value(self) -> str:
+        if self.value is not None and str(self.value).strip():
+            return _norm_value(str(self.value))
+        return _norm_value(self.fact)
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "fact": self.fact,
             "confidence": self.confidence,
             "source_span": self.source_span,
+            "fact_key": self.fact_key or self.resolved_key(),
+            "value": self.value if self.value is not None else self.fact,
         }
 
     @staticmethod
@@ -79,7 +101,57 @@ class KeyFact:
             fact=str(data.get("fact") or ""),
             confidence=float(data.get("confidence") or 0.0),
             source_span=data.get("source_span"),
+            fact_key=data.get("fact_key"),
+            value=data.get("value"),
         )
+
+
+def _norm_key(text: str) -> str:
+    import re
+
+    t = (text or "").lower().strip()
+    t = re.sub(r"[^a-z0-9\s_\-]", " ", t)
+    t = re.sub(r"\s+", " ", t).strip()
+    return t
+
+
+def _norm_value(text: str) -> str:
+    return _norm_key(text)
+
+
+class ResolutionStrategy(str, Enum):
+    A_PRIORITY = "A_PRIORITY"  # A has stronger authentication
+    B_PRIORITY = "B_PRIORITY"
+    NEEDS_HUMAN = "NEEDS_HUMAN"  # Can't auto-resolve
+    BOTH_RELEVANT = "BOTH_RELEVANT"  # Different contexts/times
+
+
+@dataclass
+class ContradictionReport:
+    fact: str  # fact_key
+    node_a: str
+    node_b: str
+    node_a_claim: str
+    node_b_claim: str
+    resolution_strategy: ResolutionStrategy
+    weight_difference: float
+    node_a_confidence: float = 0.0
+    node_b_confidence: float = 0.0
+    note: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "fact": self.fact,
+            "node_a": self.node_a,
+            "node_b": self.node_b,
+            "node_a_claim": self.node_a_claim,
+            "node_b_claim": self.node_b_claim,
+            "resolution_strategy": self.resolution_strategy.value,
+            "weight_difference": self.weight_difference,
+            "node_a_confidence": self.node_a_confidence,
+            "node_b_confidence": self.node_b_confidence,
+            "note": self.note,
+        }
 
 
 @dataclass
@@ -238,6 +310,8 @@ class EvidenceNode:
     source_file: Optional[str] = None
     matrix_evidence_id: Optional[str] = None
     claim_tags: list[str] = field(default_factory=list)
+    contradiction_warning: bool = False
+    contradiction_fact_keys: list[str] = field(default_factory=list)
 
     def bare_hash(self) -> str:
         h = self.doc_hash
@@ -282,6 +356,8 @@ class EvidenceNode:
             "source_file": self.source_file,
             "matrix_evidence_id": self.matrix_evidence_id,
             "claim_tags": list(self.claim_tags),
+            "contradiction_warning": self.contradiction_warning,
+            "contradiction_fact_keys": list(self.contradiction_fact_keys),
         }
 
     @staticmethod
@@ -328,6 +404,8 @@ class EvidenceNode:
             source_file=data.get("source_file"),
             matrix_evidence_id=data.get("matrix_evidence_id"),
             claim_tags=list(data.get("claim_tags") or []),
+            contradiction_warning=bool(data.get("contradiction_warning", False)),
+            contradiction_fact_keys=list(data.get("contradiction_fact_keys") or []),
         )
 
 
