@@ -318,6 +318,25 @@ class MatterSession:
         """Evaluate a GroundedClaim; returns GroundingResult (may refuse)."""
         return self.grounding_gate().evaluate(claim)
 
+    def evaluate_legal_test(self, test_id: str = "TEST-RETALIATORY-EVICTION-S56"):
+        """Run a LegalTest against this matter's evidence graph."""
+        from backend.legal_tests import default_legal_tests, evaluate_legal_test
+        from backend.grounding.citation_db import CitationDB, seed_bc_workbench_citations
+
+        tests = default_legal_tests()
+        if test_id not in tests:
+            raise KeyError(f"Unknown legal test: {test_id}")
+        self.sync_nodes()
+        self.nodes.score_strength(persist=True)
+        db_path = self.matter_dir / "citations.json"
+        db = CitationDB(path=db_path)
+        if db_path.is_file():
+            db.load()
+        else:
+            seed_bc_workbench_citations(db)
+            db.save()
+        return evaluate_legal_test(tests[test_id], self.nodes.all(), citation_db=db)
+
     def production_check(
         self,
         *,
