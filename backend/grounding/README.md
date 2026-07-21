@@ -1,5 +1,21 @@
 # GroundingGate
 
+## Citation record
+
+```
+Citation {
+  citation_id, type: STATUTE|REGULATION|CASE_LAW|RULE|POLICY
+  // statutes: jurisdiction, act, section, subsection, exact_text (from BC Laws only)
+  // cases: case_name, citation, principle_established, parenthetical
+  // verification: source_url, last_verified, verifying_hash, superseded_by
+  // usage: applies_to[], jurisdiction_scope
+  status: VERIFIED|…   // VERIFIED required for grounding
+}
+```
+
+`exact_text` must be pasted from official BC Laws (or equivalent) at verification — never invented.
+`CIT-RTA-S56` is seeded as **PARTIALLY_VERIFIED** (structure only) until section wording is re-checked on BC Laws.
+
 Every claim in system output must carry:
 
 | Element | Requirement |

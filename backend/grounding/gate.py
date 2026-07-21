@@ -77,6 +77,12 @@ class GroundingGate:
                 messages.append(
                     REFUSAL_MESSAGES[GroundingRefusalReason.MISSING_LEGAL_BASIS]
                 )
+            elif resolved.superseded_by:
+                reasons.append(GroundingRefusalReason.SUPERSEDED_CITATION)
+                messages.append(
+                    REFUSAL_MESSAGES[GroundingRefusalReason.SUPERSEDED_CITATION]
+                    + f" (use {resolved.superseded_by})."
+                )
             elif resolved.status == AuthorityStatus.REJECTED:
                 reasons.append(GroundingRefusalReason.REJECTED_CITATION)
                 messages.append(
