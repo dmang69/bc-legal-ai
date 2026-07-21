@@ -436,6 +436,15 @@ class MatterSession:
     def format_upcoming_deadlines(self) -> str:
         return self.load_dashboard().format_deadlines()
 
+    def check_privilege_message(self, text: str, *, block_send: bool = False) -> dict:
+        """
+        Scan a user note/chat message for third-party disclosure risk.
+        Returns guard_user_message dict (alert_text ready for UI).
+        """
+        from backend.privilege.chat_guard import guard_user_message
+
+        return guard_user_message(text, block_send=block_send)
+
     def save_document_explainer(self, exp) -> "Path":
         from backend.explainers.service import save_explainer
 
