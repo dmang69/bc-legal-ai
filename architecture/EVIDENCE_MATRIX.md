@@ -154,6 +154,19 @@ corroboration, contradiction/hearsay penalties.
 Implementation: `architecture/strength.py` · `backend/evidence/strength.py`  
 Report: `strength_tiers.md` / `analysis_report()["strength"]`.
 
+### Query API
+
+```
+query_evidence(fact, min_strength, include_contradictions)
+query_timeline(start, end, event_types)
+query_gaps(claim, required_continuity)
+query_argument_support(legal_test, strategy=MAXIMIZE_STRENGTH|MAXIMIZE_BREADTH)
+  → EvidenceChain { primary, supporting, gaps, vulnerabilities, opposing_anticipation }
+```
+
+Implementation: `backend/evidence/query.py` · `architecture/query_api.py`  
+On session: `MatterSession.query_evidence` / `query_timeline` / `query_gaps` / `query_argument_support`.
+
 OCR, EXIF, and full NER remain Layer 1 Phase 2.
 
 ## Option B (deferred)

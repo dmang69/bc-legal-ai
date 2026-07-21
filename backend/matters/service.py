@@ -249,6 +249,53 @@ class MatterSession:
             out.append(arg.to_dict())
         return out
 
+    def query_api(self):
+        """Evidence query facade over current graph nodes."""
+        from backend.evidence.query import MatterQueryAPI
+
+        self.sync_nodes()
+        self.nodes.score_strength(persist=True)
+        return MatterQueryAPI(self.nodes.all())
+
+    def query_evidence(
+        self,
+        fact: str,
+        *,
+        min_strength: float = 0.5,
+        include_contradictions: bool = True,
+    ):
+        return self.query_api().query_evidence(
+            fact,
+            min_strength=min_strength,
+            include_contradictions=include_contradictions,
+        )
+
+    def query_timeline(
+        self,
+        *,
+        start: Optional[str] = None,
+        end: Optional[str] = None,
+        event_types: Optional[list[str]] = None,
+    ):
+        return self.query_api().query_timeline(
+            start=start, end=end, event_types=event_types
+        )
+
+    def query_gaps(self, claim: str, *, required_continuity: bool = True):
+        return self.query_api().query_gaps(
+            claim, required_continuity=required_continuity
+        )
+
+    def query_argument_support(
+        self,
+        legal_test: str,
+        *,
+        strategy: str = "MAXIMIZE_STRENGTH",
+    ):
+        return self.query_api().query_argument_support(
+            legal_test, strategy=strategy
+        )
+
     def production_check(
         self,
         *,

@@ -17,6 +17,13 @@ from backend.evidence.gap_detection import (
     build_gap_detection_report,
     format_gap_detection_report,
 )
+from backend.evidence.query import (
+    MatterQueryAPI,
+    query_argument_support,
+    query_evidence,
+    query_gaps,
+    query_timeline,
+)
 from backend.evidence.strength import (
     compute_node_strength,
     format_strength_report,
@@ -43,6 +50,11 @@ __all__ = [
     "format_timeline_markdown",
     "ingest_bytes",
     "ingest_text_record",
+    "MatterQueryAPI",
+    "query_argument_support",
+    "query_evidence",
+    "query_gaps",
+    "query_timeline",
     "score_to_tier",
     "suggest_claim_tags",
     "sync_items_to_nodes",
