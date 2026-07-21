@@ -368,6 +368,30 @@ class MatterSession:
             sanghera_cross_outline(matter_id=self.matter_id)
         )
 
+    def add_petition_outline(self, outline) -> "Path":
+        from backend.petition.service import save_petition
+
+        outline.matter_id = self.matter_id
+        return save_petition(outline, root=self.root)
+
+    def load_petition_outline(self, outline_id: str):
+        from backend.petition.service import load_petition
+
+        return load_petition(self.matter_id, outline_id, root=self.root)
+
+    def list_petition_outlines(self) -> list:
+        from backend.petition.service import list_petitions
+
+        return list_petitions(self.matter_id, root=self.root)
+
+    def install_jr_petition_template(self) -> "Path":
+        """Install JR petition outline (patent unreasonableness + procedural fairness)."""
+        from templates.petition.rtb_jr_petition_outline import rtb_jr_petition_outline
+
+        return self.add_petition_outline(
+            rtb_jr_petition_outline(matter_id=self.matter_id)
+        )
+
     def production_check(
         self,
         *,
