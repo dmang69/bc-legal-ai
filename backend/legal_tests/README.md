@@ -1,18 +1,27 @@
 # Legal tests
 
-Multi-element tests (e.g. retaliatory eviction scaffold) mapped to evidence.
+## RTA s.56 retaliatory eviction
 
-```python
-from backend.legal_tests import retaliatory_eviction_s56_test, evaluate_legal_test
-from backend.grounding.citation_db import CitationDB, seed_bc_workbench_citations
-
-test = retaliatory_eviction_s56_test()
-# test.test_id == "TEST-RETALIATORY-EVICTION-S56"
-# test.elements[0].protected_activities ...
-
-ev = evaluate_legal_test(test, nodes, citation_db=seed_bc_workbench_citations(CitationDB()))
-print(ev.overall, ev.recommended_uploads)
+```yaml
+id: RTA-s56-retaliatory-eviction
+source: Residential Tenancy Act, SBC 2002, c. 78, s. 56
+elements:
+  E1-timely-dispute     # procedural, required — 15 days
+  E2-prior-complaint    # substantive, required — protected activity
+  E3-temporal-nexus     # inferential, required, weight 0.30
+  E4-absence-legitimate-cause  # inferential, optional, weight 0.40
+burden_shift: E1+E2+E3 → landlord must show non-retaliatory cause
 ```
 
-**Verification:** Citation pin and element wording must be confirmed on BC Laws.  
-`CIT-RTA-S56` is PARTIALLY_VERIFIED until exact text is registered.
+```python
+from backend.legal_tests import rta_s56_retaliatory_eviction_test, evaluate_legal_test
+
+test = rta_s56_retaliatory_eviction_test()
+ev = session.evaluate_legal_test("RTA-s56-retaliatory-eviction")
+if ev.burden_shift_triggered:
+    print(ev.reasoning_chain_flags)  # BURDEN_SHIFT_TO_LANDLORD
+```
+
+**Verify** s. 56 and adverse cases on BC Laws / CanLII before filing.  
+`CIT-RTA-S56` is PARTIALLY_VERIFIED until official exact text is registered.  
+Adverse authorities (Preston / Yu labels) are **UNVERIFIED** illustrative notes only.
