@@ -140,6 +140,20 @@ GAP DETECTION REPORT:
 Implementation: `backend/evidence/gap_detection.py`  
 Also: `gap_detection_report.md` via `write_report()`.
 
+### Strength tiers
+
+```
+0.80–1.00 → TIER A (Primary evidence — build case around these)
+0.60–0.79 → TIER B (Supporting evidence — reinforces Tier A)
+0.40–0.59 → TIER C (Corroborating — adds texture but not load-bearing)
+0.00–0.39 → TIER D (Weak — use only if no alternative, flag risks)
+```
+
+Composite score from authenticity, best-evidence form, key-fact confidence,
+corroboration, contradiction/hearsay penalties.  
+Implementation: `architecture/strength.py` · `backend/evidence/strength.py`  
+Report: `strength_tiers.md` / `analysis_report()["strength"]`.
+
 OCR, EXIF, and full NER remain Layer 1 Phase 2.
 
 ## Option B (deferred)

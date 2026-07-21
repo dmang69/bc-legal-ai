@@ -312,6 +312,8 @@ class EvidenceNode:
     claim_tags: list[str] = field(default_factory=list)
     contradiction_warning: bool = False
     contradiction_fact_keys: list[str] = field(default_factory=list)
+    strength_score: Optional[float] = None  # 0.0–1.0 composite
+    strength_tier: Optional[str] = None  # A | B | C | D
 
     def bare_hash(self) -> str:
         h = self.doc_hash
@@ -358,6 +360,8 @@ class EvidenceNode:
             "claim_tags": list(self.claim_tags),
             "contradiction_warning": self.contradiction_warning,
             "contradiction_fact_keys": list(self.contradiction_fact_keys),
+            "strength_score": self.strength_score,
+            "strength_tier": self.strength_tier,
         }
 
     @staticmethod
@@ -406,6 +410,8 @@ class EvidenceNode:
             claim_tags=list(data.get("claim_tags") or []),
             contradiction_warning=bool(data.get("contradiction_warning", False)),
             contradiction_fact_keys=list(data.get("contradiction_fact_keys") or []),
+            strength_score=data.get("strength_score"),
+            strength_tier=data.get("strength_tier"),
         )
 
 

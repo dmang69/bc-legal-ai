@@ -184,6 +184,20 @@ class MatterSession:
         contra = self.nodes.run_contradiction_scan(persist=True)
         timeline = build_timeline_from_nodes(self.nodes.all())
         gap_report = build_gap_detection_report(timeline, matter_id=self.matter_id)
+        strength = self.nodes.score_strength(persist=True)
+        # Mirror scores onto matrix hearing_relevance
+        from backend.evidence.strength import apply_strength_to_item
+
+        node_by_matrix = {
+            n.matrix_evidence_id: n for n in self.nodes.all() if n.matrix_evidence_id
+        }
+        for item in items:
+            n = node_by_matrix.get(item.evidence_id)
+            if n and n.strength_score is not None:
+                from architecture.strength import assess_score
+
+                apply_strength_to_item(item, assess_score(n.strength_score))
+        self.matrix.save()
         return {
             "matter_id": self.matter_id,
             "title": self.meta.title,
@@ -198,6 +212,11 @@ class MatterSession:
             "timeline_markdown": format_timeline_markdown(timeline),
             "gap_detection": gap_report.to_dict(),
             "gap_detection_report": format_gap_detection_report(gap_report),
+            "strength": {
+                "buckets": strength["buckets"],
+                "assessments": strength["assessments"],
+            },
+            "strength_report": strength["report"],
             "privilege_gated_ids": locked,
             "protected_nodes": [n.node_id for n in self.nodes.protected_nodes()],
             "chronology_markdown": format_chronology_markdown(items),
@@ -262,6 +281,8 @@ class MatterSession:
         tl.write_text(report.get("timeline_markdown", "") + "\n", encoding="utf-8")
         gap_path = self.matter_dir / "gap_detection_report.md"
         gap_path.write_text(report.get("gap_detection_report", "") + "\n", encoding="utf-8")
+        strength_path = self.matter_dir / "strength_tiers.md"
+        strength_path.write_text(report.get("strength_report", "") + "\n", encoding="utf-8")
         return path
 
 

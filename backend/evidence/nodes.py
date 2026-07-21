@@ -193,6 +193,26 @@ class EvidenceNodeStore:
             self.save()
         return result
 
+    def score_strength(self, *, persist: bool = True) -> dict:
+        """Assign strength_score / strength_tier to every node."""
+        from backend.evidence.strength import (
+            apply_strength_to_node,
+            format_strength_report,
+            tier_buckets,
+        )
+
+        assessments = []
+        for n in self.all():
+            a = apply_strength_to_node(n)
+            assessments.append({"node_id": n.node_id, **a.to_dict()})
+        if persist:
+            self.save()
+        return {
+            "assessments": assessments,
+            "buckets": tier_buckets(self.all()),
+            "report": format_strength_report(self.all()),
+        }
+
     def rebuild_temporal_from_dates(self, *, persist: bool = True) -> int:
         """Order nodes by date_created/date_received and set before/after chains."""
         dated: list[tuple[str, EvidenceNode]] = []
