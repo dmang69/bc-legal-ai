@@ -21,6 +21,12 @@ Research and drafting workbench for **British Columbia civil / administrative li
 | **learning-mode** | [`skills/learning-mode/`](skills/learning-mode/) | Tutor mode: diagnose, scaffold, integrity — teach how, not dump |
 | **doc-coauthoring** | [`skills/doc-coauthoring/`](skills/doc-coauthoring/) | Co-author workflow: context → sections → reader testing |
 | **cognitive-awareness** | [`skills/cognitive-awareness/`](skills/cognitive-awareness/) | Proactive metacognition: calibration, assumptions, pre-send quality |
+| **bc-legislation-admin** | [`skills/bc-legislation-admin/`](skills/bc-legislation-admin/) | **BC Laws only** statutory retrieval, currency, court-ready extracts |
+
+## Official legislation (BC Laws)
+
+Local verified downloads and extracts: [`legislation/`](legislation/)  
+**Never** use CanLII as the source of BC statutory text for printing.
 
 Full professional framework: [`skills/supreme-court-civil-counsel/counsel-framework.md`](skills/supreme-court-civil-counsel/counsel-framework.md)
 

@@ -39,27 +39,30 @@ description: >
 
 Quotes sections carefully; spots end-runs dressed as legitimate.
 
-### Critical sections (working map — verify)
+### Critical sections — **OFFICIAL BC Laws map** (current to 14 July 2026; re-verify before filing)
 
-| Section | Rule (plain) | Technical note |
-|---------|--------------|----------------|
-| **s. 6** | Cannot contract out of the RTA | Agreement terms that waive RTA protections are void |
-| **s. 8** | Only permitted charges | Often used to void illegal fees — confirm exact text |
-| **s. 19** | Max deposits: ½ month’s rent each (security / pet) | Confirm current caps |
-| **s. 20** | Sometimes cited for permitted payments | **Confirm relationship to s. 8** — do not conflate without checking consolidation |
-| **s. 22** | Quiet enjoyment | Peaceful possession / landlord interference |
-| **s. 25–26** | Entry: 24-hour written notice, 9am–9pm | Exceptions exist — confirm |
-| **s. 27** | Emergency entry without notice | Narrow — emergency required |
-| **s. 32–33** | Landlord repair + health/safety | Core habitability duties |
-| **s. 35** | Tenant obligations | Damage beyond reasonable wear, etc. |
-| **s. 36** | Tenant may end tenancy — uninhabitable | High bar — evidence heavy |
-| **s. 38–39** | Deposit return timelines; withhold only with consent or RTB order | Timing + double-return risk (often s. 38(6) — verify) |
-| **s. 42–44** | Rent increases: guideline, notice, frequency | Forms and % change yearly |
-| **s. 47.1** | Retaliatory action prohibited | Complaint → eviction timing is key evidence |
-| **s. 50–57** | Landlord eviction grounds + notice periods | Match form to ground |
-| **s. 51.3** | Renovation notice + right of first refusal | Compensatory exposure if bad faith |
-| **s. 79** | RTB internal review | Gateway before / alongside JR strategy |
-| **s. 88–89** | Service methods + deemed receipt | Adds days to mailed deadlines |
+> Retrieved from https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/02078_01  
+> See `references/OFFICIAL-SECTION-MAP-CORRECTION.md` and `legislation/court-ready/`.  
+> **Earlier maps that used s. 6 for “cannot contract out”, s. 22 for quiet enjoyment, or ss. 25–26 for entry were incorrect.**
+
+| Section | Rule (plain) | Technical note (official) |
+|---------|--------------|---------------------------|
+| **s. 5** | Cannot avoid/contract out of Act or regulations | Attempts of no effect |
+| **s. 6** | Rights/obligations enforceable between L&T | Dispute resolution if unresolved |
+| **s. 15** | No application/processing/investigation/accept fees | Intake fee ban |
+| **s. 19** | Max security or pet deposit = ½ month’s rent each | Overpayment recoverable |
+| **s. 20** | Landlord deposit prohibitions | Timing, one deposit, no auto-keep clause |
+| **s. 22** | Acceleration term prohibited | **Not** quiet enjoyment |
+| **s. 28** | Quiet enjoyment | Privacy, disturbance, exclusive possession, common areas |
+| **s. 29** | Entry restricted | 24h written notice; **8 a.m.–9 p.m.**; emergencies etc. |
+| **s. 32–33** | Repair/maintain + emergency repairs | Health/safety + suitability; emergency list in s. 33 |
+| **s. 35–36** | End-of-tenancy condition inspection consequences | Deposit rights may extinguish |
+| **s. 38–39** | Deposit return / double / forwarding address | 15 days; double if s. 38(1) not met |
+| **s. 41–43** | Rent increases | 12-month spacing; 3 months’ notice; guideline/order/consent |
+| **Part 4** | How tenancy ends | Notice sections 45–50+ — verify each ground’s section before filing |
+| **Part 5** | Dispute resolution / review | Confirm review section numbers on BC Laws for the proceeding date |
+
+Court-ready extracts: `../../legislation/court-ready/RTA-key-sections-OFFICIAL.md`
 
 ### RTB Policy Guidelines (layer above the Act)
 
