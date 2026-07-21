@@ -341,6 +341,33 @@ class MatterSession:
         """Narrative ELEMENT blocks for lawyer review."""
         return self.evaluate_legal_test(test_id).format_element_report()
 
+    def add_examination_outline(self, outline) -> "Path":
+        """Save an ExaminationOutline under this matter."""
+        from pathlib import Path
+
+        from backend.examination.service import save_outline
+
+        outline.matter_id = self.matter_id
+        return save_outline(outline, root=self.root)
+
+    def load_examination_outline(self, outline_id: str):
+        from backend.examination.service import load_outline
+
+        return load_outline(self.matter_id, outline_id, root=self.root)
+
+    def list_examination_outlines(self) -> list:
+        from backend.examination.service import list_outlines
+
+        return list_outlines(self.matter_id, root=self.root)
+
+    def install_sanghera_cross_template(self) -> "Path":
+        """Install the sample Sanghera cross outline (planning template)."""
+        from templates.examination.sanghera_cross_outline import sanghera_cross_outline
+
+        return self.add_examination_outline(
+            sanghera_cross_outline(matter_id=self.matter_id)
+        )
+
     def production_check(
         self,
         *,
