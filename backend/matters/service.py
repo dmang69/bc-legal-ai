@@ -296,6 +296,28 @@ class MatterSession:
             legal_test, strategy=strategy
         )
 
+    def grounding_gate(self):
+        """Fail-closed gate: claims need evidence node + verified citation + inference chain."""
+        from backend.grounding import build_gate_for_nodes
+        from backend.grounding.citation_db import CitationDB, seed_bc_workbench_citations
+
+        self.sync_nodes()
+        db_path = self.matter_dir / "citations.json"
+        db = CitationDB(path=db_path)
+        if not db_path.is_file():
+            seed_bc_workbench_citations(db)
+            db.save()
+        else:
+            db.load()
+        return build_gate_for_nodes(
+            [n.node_id for n in self.nodes.all()],
+            citation_db=db,
+        )
+
+    def ground_claim(self, claim) -> "object":
+        """Evaluate a GroundedClaim; returns GroundingResult (may refuse)."""
+        return self.grounding_gate().evaluate(claim)
+
     def production_check(
         self,
         *,

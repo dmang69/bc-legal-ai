@@ -21,6 +21,7 @@
 | Privilege / confidentiality layer | [`architecture/PRIVILEGE.md`](architecture/PRIVILEGE.md) |
 | Evidence Matrix (Layer 2) | [`architecture/EVIDENCE_MATRIX.md`](architecture/EVIDENCE_MATRIX.md) |
 | EvidenceNode graph model | [`architecture/evidence_node.py`](architecture/evidence_node.py) |
+| GroundingGate (fail-closed claims) | [`backend/grounding/`](backend/grounding/) · [`architecture/grounding.py`](architecture/grounding.py) |
 
 ```
 AI Legal Associate
