@@ -14,6 +14,7 @@
 | learning-mode | 1.0 | Tutoring pedagogy |
 | doc-coauthoring | 1.0 | Collaborative doc workflow |
 | cognitive-awareness | 1.0 | Proactive metacognition companion |
+| cognitive-awareness | 1.0.1 | Module 6 case studies + synthesis library + quality gate |
 
 ## Log
 

@@ -27,3 +27,12 @@ Read that file in full.
 ## Silent default
 
 User should see sharper answers, not meta monologue — unless high-stakes requires surfacing assumptions or hedges.
+
+## Module 6 — Synthesis library
+
+Validated cross-domain case studies (capability↔standing, signatures↔evidence, federated RL↔litigation):
+
+- `references/synthesis-examples.md`  
+- `references/synthesis-library.md`  
+
+**Gate:** formal structure + non-obvious prediction + survives counterexample.
