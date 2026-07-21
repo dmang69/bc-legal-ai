@@ -19,6 +19,7 @@
 | cognitive-awareness | 1.0.3 | Expanded failure-mode catalog (10 modes + antidotes + meta) |
 | cognitive-awareness | 1.0.4 | Expanded situational signals vocabulary (Module 1) |
 | critical-reading | 1.0 | Document decomposition for legal/academic/technical sources |
+| legal-lexicon-cultivation | 1.0 | Black's/Oxford discipline + multi-domain skill growth + glossary |
 
 ## Log
 
