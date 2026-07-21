@@ -316,12 +316,13 @@ Other provinces: swap statute layer + re-index case law.
 - Flag low-confidence extractions  
 - Never assume text not clearly present  
 
-### Security
+### Security & privilege
 
 - Matter-level isolation; no cross-matter ambient access  
 - Private deploy for real files (not public HF Space)  
 - Redact before external model transmission where required  
 - Audit log every gate and export  
+- **Solicitor–client privilege layer:** client-owned privilege, production gate, AI task scope — see [`PRIVILEGE.md`](PRIVILEGE.md)
 
 ---
 

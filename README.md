@@ -18,6 +18,7 @@
 | Build plan & V1 definition | [`ROADMAP.md`](ROADMAP.md) |
 | Schemas / citation gate | [`architecture/`](architecture/) |
 | Full ALA system architecture | [`architecture/ALA_SYSTEM.md`](architecture/ALA_SYSTEM.md) |
+| Privilege / confidentiality layer | [`architecture/PRIVILEGE.md`](architecture/PRIVILEGE.md) |
 
 ```
 AI Legal Associate
