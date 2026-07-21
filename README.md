@@ -29,6 +29,18 @@ Research and drafting workbench for **British Columbia civil / administrative li
 
 Living terms and doctrines: [`lexicon/`](lexicon/)
 
+## Base model (designated)
+
+See [`model/BASE_MODEL_DECISION.md`](model/BASE_MODEL_DECISION.md).
+
+| Role | Model |
+|------|--------|
+| Primary base | `Qwen/Qwen2.5-14B-Instruct` |
+| Deploy default | `Qwen/Qwen2.5-7B-Instruct` |
+| Statute source | **BC Laws only** (not CanLII) |
+| RTB / JR corpus | CanLII + official courts |
+| Pattern | RAG-first · optional LoRA · currency metadata required |
+
 ## Official legislation (BC Laws)
 
 Local verified downloads and extracts: [`legislation/`](legislation/)  
