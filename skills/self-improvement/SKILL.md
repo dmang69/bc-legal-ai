@@ -251,6 +251,10 @@ bc-notary-public            [if installed]
 
 self-improvement
   → ALL skills              (audit, patch, synthesis)
+
+cognitive-awareness
+  → ALL skills              (silent pre-send quality / calibration)
+  → self-improvement        (handoff when gaps/failure modes repeat)
 ```
 
 ---

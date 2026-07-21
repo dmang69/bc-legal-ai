@@ -13,6 +13,7 @@
 | self-improvement | 1.0 | Meta-learning framework |
 | learning-mode | 1.0 | Tutoring pedagogy |
 | doc-coauthoring | 1.0 | Collaborative doc workflow |
+| cognitive-awareness | 1.0 | Proactive metacognition companion |
 
 ## Log
 
