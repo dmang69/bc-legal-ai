@@ -433,6 +433,35 @@ class MatterSession:
     def format_case_board(self) -> str:
         return self.load_dashboard().format_dashboard()
 
+    def save_document_explainer(self, exp) -> "Path":
+        from backend.explainers.service import save_explainer
+
+        exp.matter_id = self.matter_id
+        return save_explainer(exp, root=self.root)
+
+    def load_document_explainer(self, explainer_id: str):
+        from backend.explainers.service import load_explainer
+
+        return load_explainer(self.matter_id, explainer_id, root=self.root)
+
+    def install_rtb_decision_explainer(
+        self,
+        *,
+        effective_eviction_date: str | None = None,
+        vacate_by_date: str | None = None,
+    ) -> "Path":
+        """Install plain-language RTB decision explainer (Jan 15/20 2026 template)."""
+        from templates.explainers.rtb_decision_jan2026 import (
+            rtb_decision_jan2026_explainer,
+        )
+
+        exp = rtb_decision_jan2026_explainer(
+            matter_id=self.matter_id,
+            effective_eviction_date=effective_eviction_date,
+            vacate_by_date=vacate_by_date,
+        )
+        return self.save_document_explainer(exp)
+
     def production_check(
         self,
         *,
