@@ -11,15 +11,22 @@ if str(ROOT) not in sys.path:
 
 from agents.supervisor_gate import finalize_package, require_approval
 from agents.verifier import assert_court_ready, gate_summary
+from agents.evidence import detect_gap_claims, link_contradiction, link_corroboration
 from architecture.schemas import (
     ApprovalAction,
     AuthorityRecord,
     AuthorityStatus,
     Classification,
+    EvidenceItem,
+    EvidenceRef,
+    EvidenceType,
+    LegalArgument,
     Proposition,
     ReviewReport,
+    StatuteRef,
     VerificationStatus,
     court_ready_allowed,
+    INSUFFICIENT_EVIDENCE,
 )
 
 
@@ -114,10 +121,51 @@ def test_finalize_requires_human_and_clean_cites():
     assert "Human approval:" in out.format()
 
 
+def test_evidence_matrix_gaps_and_links():
+    e1 = EvidenceItem(
+        source_file="mold1.jpg",
+        evidence_type=EvidenceType.PHOTO,
+        claim_tags=["mold_hazard"],
+    )
+    e2 = EvidenceItem(
+        source_file="city_fine.jpg",
+        evidence_type=EvidenceType.NOTICE,
+        claim_tags=["mold_hazard", "non_repair"],
+    )
+    link_corroboration(e1, e2)
+    assert e2.id in e1.corroborates
+    assert e1.id in e2.corroborates
+    link_contradiction(e1, e2)
+    assert e2.id in e1.contradicts
+    gaps = detect_gap_claims(
+        ["mold_hazard", "retaliatory_eviction"],
+        [e1, e2],
+    )
+    assert gaps == ["retaliatory_eviction"]
+
+
+def test_legal_argument_requires_grounding():
+    bare = LegalArgument(claim="Something happened")
+    assert bare.ungrounded() is True
+    assert bare.to_dict()["insufficient_evidence"] is True
+    grounded = LegalArgument(
+        claim="Landlord failed to maintain premises",
+        legal_basis=[
+            StatuteRef(short_cite="RTA", section="32", status=AuthorityStatus.UNVERIFIED)
+        ],
+        factual_predicate=[EvidenceRef(evidence_id="ev-1", note="photo of mold")],
+        evidence_gaps=["proof of notice date unclear"],
+    )
+    assert grounded.ungrounded() is False
+    assert INSUFFICIENT_EVIDENCE == "INSUFFICIENT_EVIDENCE"
+
+
 if __name__ == "__main__":
     test_proposition_provenance_shape()
     test_court_ready_blocks_unverified()
     test_court_ready_allows_verified_only()
     test_supervisor_requires_approval()
     test_finalize_requires_human_and_clean_cites()
-    print("OK: 5 foundation tests passed")
+    test_evidence_matrix_gaps_and_links()
+    test_legal_argument_requires_grounding()
+    print("OK: 7 foundation tests passed")

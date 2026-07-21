@@ -17,6 +17,7 @@
 | Honest assessment | [`PRODUCT_STATUS.md`](PRODUCT_STATUS.md) |
 | Build plan & V1 definition | [`ROADMAP.md`](ROADMAP.md) |
 | Schemas / citation gate | [`architecture/`](architecture/) |
+| Full ALA system architecture | [`architecture/ALA_SYSTEM.md`](architecture/ALA_SYSTEM.md) |
 
 ```
 AI Legal Associate

@@ -1,5 +1,7 @@
 # Roadmap — BC Legal AI Associate
 
+**Full system architecture (layers 1–6, stack, pipeline):** [`architecture/ALA_SYSTEM.md`](architecture/ALA_SYSTEM.md)
+
 ## Recommended production layout
 
 ```

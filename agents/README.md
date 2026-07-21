@@ -5,7 +5,7 @@ Limited-responsibility stages. **Not** autonomous filers or senders.
 | Module | Agent |
 |--------|--------|
 | `intake.py` | Intake Associate |
-| `evidence.py` | Evidence Analyst |
+| `evidence.py` | Evidence Analyst (matrix gap/link helpers) |
 | `research.py` | Research Counsel |
 | `verifier.py` | Citation Clerk |
 | `drafter.py` | Drafting Counsel |
