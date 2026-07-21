@@ -23,6 +23,12 @@ RTB process integrity: filing, service, disclosure, hearing procedure, decision,
 - [ ] Internal review / reconsideration availability  
 - [ ] Deadlines for superior court JR  
 
+## Related advanced modules
+
+For stays, dual-file BCHRT strategy, accessibility, and TRAC/CLAS routing:
+
+→ **`bc-tenancy-advocacy`** (Modules 1–2, 5–7)
+
 ## Status
 
 Scaffold — confirm current RTB Rules of Procedure and practice directives for each matter.

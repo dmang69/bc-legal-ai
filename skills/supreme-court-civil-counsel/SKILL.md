@@ -136,7 +136,8 @@ Combine with:
 
 | Skill | Role |
 |-------|------|
-| `bc-judicial-review-guide` | JR procedure, standards, remedies |
+| `bc-tenancy-advocacy` | JR escalation, human rights, strata, MHPTA, trauma-informed advocacy, ethics, Level 99 |
+| `bc-judicial-review-guide` | JR procedure, stays, Vavilov, BCSC filing |
 | `bc-tenancy-substantive` | RTA / RTB substantive law |
 | `bc-tenancy-procedure` | RTB process, timelines, service |
 | `canlii-boa-builder` | Verified CanLII citations + BOA |

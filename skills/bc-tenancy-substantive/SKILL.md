@@ -25,6 +25,12 @@ description: >
 
 Label outputs: `[FACT]` · `[LAW]` · `[ARGUMENT]` · `[ASSUMPTION]`
 
+## Related advanced modules
+
+For JR escalation, human rights, strata, MHPTA, trauma-informed advocacy, and ethics:
+
+→ **`bc-tenancy-advocacy`** (Modules 1–7)
+
 ## Status
 
 Scaffold — populate with verified CanLII authorities and statutory pinpoints per matter.
