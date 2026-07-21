@@ -1,7 +1,7 @@
 """
-BC Legal AI — public index Space
+BC Legal AI Associate — public index Space
 Official legislation links point only to BC Laws (not CanLII for statutes).
-Not legal advice.
+Not a lawyer. Not legal advice.
 """
 
 from __future__ import annotations
@@ -9,9 +9,11 @@ from __future__ import annotations
 import gradio as gr
 
 DISCLAIMER = """
-**Disclaimer:** This Space provides **legal information and skill navigation only**.  
-It is **not legal advice** and does not create a solicitor–client relationship.  
-Verify all legislation on the official **BC Laws** portal before filing or reliance.
+**Disclaimer:** **BC Legal AI Associate** — legal research and drafting **support** only.  
+This is **not** a licensed lawyer, **not legal advice**, and does not create a solicitor–client relationship.  
+Do **not** upload confidential client or litigation files to this public Space.  
+Verify all legislation on the official **BC Laws** portal before filing or reliance.  
+Court-ready work requires a licensed supervising lawyer and human approval.
 """
 
 OFFICIAL_LAWS = [

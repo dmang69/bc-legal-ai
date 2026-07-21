@@ -4,7 +4,7 @@
 #   .\scripts\publish-huggingface.ps1 [-Username YOUR_HF_USER] [-Private]
 
 param(
-    [string]$Username = "",
+    [string]$Username = "Dmang69",
     [string]$DatasetName = "bc-legal-ai",
     [string]$SpaceName = "bc-legal-ai",
     [switch]$Private,

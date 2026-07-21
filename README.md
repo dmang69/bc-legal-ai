@@ -1,72 +1,96 @@
-# BC Legal AI — Counsel Workbench
+# BC Legal AI Associate
 
-Research and drafting workbench for **British Columbia civil / administrative litigation**, with a focus on superior court practice and Residential Tenancy Branch (RTB) judicial review pathways.
+**Legal research, evidence analysis, and drafting support** for British Columbia civil and administrative work (superior court practice, RTB pathways, judicial review).
 
-> **Not legal advice.** Legal information and drafting support only.  
-> **Self-represented litigants:** verify Rules, deadlines, service, and CanLII authorities before filing.  
-> Framework will flag **`[INDEPENDENT COUNSEL RECOMMENDED]`** when complexity or risk warrants a lawyer.
+> **Not a lawyer. Not legal advice.**  
+> This product is an **AI Legal Associate** — tools for research, record analysis, and drafting **support**.  
+> It does **not** create a solicitor–client relationship and must not be held out as licensed to practise law in BC.  
+> Court or client-facing use requires a **licensed supervising lawyer**, human verification, and approval.  
+> Self-represented users: verify Rules, deadlines, service, and authorities before filing.  
+> Complexity or risk → **`[INDEPENDENT COUNSEL RECOMMENDED]`**.
+
+**Internal nickname only:** “AI Lawyer.” Do not use that label publicly.
+
+| Status | Detail |
+|--------|--------|
+| Maturity | **Strong prototype / counsel workbench** — not a completed associate |
+| Honest assessment | [`PRODUCT_STATUS.md`](PRODUCT_STATUS.md) |
+| Build plan & V1 definition | [`ROADMAP.md`](ROADMAP.md) |
+| Schemas / citation gate | [`architecture/`](architecture/) |
+
+```
+AI Legal Associate
+        ↓
+Licensed supervising lawyer
+        ↓
+Human verification and approval
+        ↓
+Client or court document
+```
+
+---
+
+## What is real today
+
+| Component | Location |
+|-----------|----------|
+| Skill modules (tenancy, JR, counsel, BC Laws discipline) | [`skills/`](skills/) |
+| Official RTA extracts + verification log | [`legislation/`](legislation/) |
+| Living lexicon | [`lexicon/`](lexicon/) |
+| Base model + RAG-first decision | [`model/`](model/) |
+| Public Gradio **index** Space | [`huggingface-space/`](huggingface-space/) |
+| Citation / approval **foundation** (schemas + tests) | [`architecture/`](architecture/), [`agents/`](agents/), [`tests/`](tests/) |
+
+## What is not real yet (see PRODUCT_STATUS)
+
+Auth, matter isolation, OCR, page-level citations, live research + treatment, deadline engine, court-form export, GraphRAG store, audit encryption, human finalize gates in a running app, production evaluation suite, cross-matter isolation in multi-user deploy.
+
+**Without a verified research engine and a record-linked evidence engine, this remains a sophisticated skill/prompt interface.**
+
+---
 
 ## Skills
 
-| Skill | Path | Use |
-|-------|------|-----|
-| **supreme-court-civil-counsel** | [`skills/supreme-court-civil-counsel/`](skills/supreme-court-civil-counsel/) | Primary mandate: analysis, drafting, quality control |
-| **bc-tenancy-procedure** | [`skills/bc-tenancy-procedure/`](skills/bc-tenancy-procedure/) | **RTB runtime:** evidence, witnesses, apps, negotiation, hearing, drafting, enforcement |
-| **bc-tenancy-advocacy** | [`skills/bc-tenancy-advocacy/`](skills/bc-tenancy-advocacy/) | Advanced: JR, human rights, strata, MHPTA, trauma-informed, ethics, Level 99 |
-| **bc-tenancy-advanced** | [`skills/bc-tenancy-advanced/`](skills/bc-tenancy-advanced/) | Alias → `bc-tenancy-advocacy` |
-| **bc-judicial-review-guide** | [`skills/bc-judicial-review-guide/`](skills/bc-judicial-review-guide/) | JR petitions, stays, Vavilov, BCSC |
-| **bc-tenancy-substantive** | [`skills/bc-tenancy-substantive/`](skills/bc-tenancy-substantive/) | **Deep RTA:** sections, bad-faith, eviction defence, repairs, s.8, rent, deposits |
-| **canlii-boa-builder** | [`skills/canlii-boa-builder/`](skills/canlii-boa-builder/) | Verified authorities / BOA |
-| **self-improvement** | [`skills/self-improvement/`](skills/self-improvement/) | Meta-learning: gaps, corrections, audits, skill patches |
-| **learning-mode** | [`skills/learning-mode/`](skills/learning-mode/) | Tutor mode: diagnose, scaffold, integrity — teach how, not dump |
-| **doc-coauthoring** | [`skills/doc-coauthoring/`](skills/doc-coauthoring/) | Co-author workflow: context → sections → reader testing |
-| **cognitive-awareness** | [`skills/cognitive-awareness/`](skills/cognitive-awareness/) | Proactive metacognition: calibration, assumptions, pre-send quality |
-| **bc-legislation-admin** | [`skills/bc-legislation-admin/`](skills/bc-legislation-admin/) | **BC Laws only** statutory retrieval, currency, court-ready extracts |
-| **critical-reading** | [`skills/critical-reading/`](skills/critical-reading/) | Decompose decisions, affidavits, papers, contracts, specs |
-| **legal-lexicon-cultivation** | [`skills/legal-lexicon-cultivation/`](skills/legal-lexicon-cultivation/) | Dictionary discipline + living glossary / doctrine cards |
+| Skill | Path |
+|-------|------|
+| supreme-court-civil-counsel | [`skills/supreme-court-civil-counsel/`](skills/supreme-court-civil-counsel/) |
+| bc-tenancy-procedure | [`skills/bc-tenancy-procedure/`](skills/bc-tenancy-procedure/) |
+| bc-tenancy-advocacy | [`skills/bc-tenancy-advocacy/`](skills/bc-tenancy-advocacy/) |
+| bc-judicial-review-guide | [`skills/bc-judicial-review-guide/`](skills/bc-judicial-review-guide/) |
+| bc-tenancy-substantive | [`skills/bc-tenancy-substantive/`](skills/bc-tenancy-substantive/) |
+| canlii-boa-builder | [`skills/canlii-boa-builder/`](skills/canlii-boa-builder/) |
+| bc-legislation-admin | [`skills/bc-legislation-admin/`](skills/bc-legislation-admin/) |
+| critical-reading | [`skills/critical-reading/`](skills/critical-reading/) |
+| cognitive-awareness | [`skills/cognitive-awareness/`](skills/cognitive-awareness/) |
+| + self-improvement, learning-mode, doc-coauthoring, legal-lexicon-cultivation | under [`skills/`](skills/) |
 
-## Lexicon
-
-Living terms and doctrines: [`lexicon/`](lexicon/)
-
-## Base model (designated)
-
-See [`model/BASE_MODEL_DECISION.md`](model/BASE_MODEL_DECISION.md).
-
-| Role | Model |
-|------|--------|
-| Primary base | `Qwen/Qwen2.5-14B-Instruct` |
-| Deploy default | `Qwen/Qwen2.5-7B-Instruct` |
-| Statute source | **BC Laws only** (not CanLII) |
-| RTB / JR corpus | CanLII + official courts |
-| Pattern | RAG-first · optional LoRA · currency metadata required |
-
-## Official legislation (BC Laws)
-
-Local verified downloads and extracts: [`legislation/`](legislation/)  
-**Never** use CanLII as the source of BC statutory text for printing.
-
-Full professional framework: [`skills/supreme-court-civil-counsel/counsel-framework.md`](skills/supreme-court-civil-counsel/counsel-framework.md)
-
-## Always separate
+## Analytical tags (always)
 
 **FACT · ALLEGATION · LEGAL ARGUMENT · INFERENCE · ASSUMPTION · PROCEDURAL HISTORY · RECOMMENDATION**
 
-And in documents: **FACT / LAW / ARGUMENT / ANALYSIS / REMEDY**
+## Base model
 
-## Quick start for agents
+See [`model/BASE_MODEL_DECISION.md`](model/BASE_MODEL_DECISION.md). Primary: `Qwen/Qwen2.5-14B-Instruct`. Statute truth from **BC Laws**, not weights.
 
-1. Read `supreme-court-civil-counsel/SKILL.md` + `counsel-framework.md`.  
-2. For RTB/JR, load the companion skills.  
-3. Extract facts only from the record; label categories.  
-4. Verify every citation (CanLII) before treating as filing-ready.  
-5. Use [`templates/document-skeleton.md`](templates/document-skeleton.md).  
-6. Run [`checklists/decision-review.md`](checklists/decision-review.md) on target decisions.  
+## Security
 
-## Matters
+- Do **not** put unredacted client or litigation files on a **public** Hugging Face Space.  
+- Production: private host, auth, matter ACL, encryption, audit, redaction before external model calls.  
+- Secrets only in environment / HF Secrets — never in git.
 
-Place case-specific materials under `matters/<style-or-short-name>/`.
+## Quick start
 
-## GitHub
+```powershell
+cd C:\Users\Dizzle\projects\bc-legal-ai
+python tests\test_schemas_and_gates.py
+```
 
-Target remote (create if missing): `https://github.com/dmang69/bc-legal-ai`
+1. Read `PRODUCT_STATUS.md` and `ROADMAP.md`.  
+2. Load skills via your agent runtime as needed.  
+3. Verify legislation on BC Laws before filing.  
+4. Never finalize court drafts with `UNVERIFIED` authorities (`architecture.schemas.AuthorityStatus`).
+
+## Repository
+
+- GitHub: https://github.com/dmang69/bc-legal-ai  
+- Default branch: `main`  
