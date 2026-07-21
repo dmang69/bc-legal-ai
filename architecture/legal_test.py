@@ -28,9 +28,23 @@ class ElementEvidenceType(str, Enum):
 
 
 class ElementStatus(str, Enum):
-    SATISFIED = "SATISFIED"
+    """Internal + report-facing statuses."""
+
+    SATISFIED = "SATISFIED"  # maps to SUPPORTED
     PARTIAL = "PARTIAL"
     NOT_SATISFIED = "NOT_SATISFIED"
+    UNKNOWN = "UNKNOWN"
+    # Report labels (also valid status values)
+    SUPPORTED = "SUPPORTED"
+    SUPPORTED_WEIGHTED = "SUPPORTED_WEIGHTED"
+    CONFLICTED = "CONFLICTED"
+    REQUIRES_HUMAN_JUDGMENT = "REQUIRES_HUMAN_JUDGMENT"
+
+
+class InferenceStrength(str, Enum):
+    HIGH = "HIGH"
+    MEDIUM = "MEDIUM"
+    LOW = "LOW"
     UNKNOWN = "UNKNOWN"
 
 
@@ -260,6 +274,15 @@ class LegalTest:
 
 @dataclass
 class ElementEvaluation:
+    """
+    Per-element evaluation with narrative report fields.
+
+    Example:
+      ELEMENT E2-prior-complaint: SUPPORTED
+        - Evidence nodes: EM-041, EM-044, EM-047
+        - Summary: Three emails to landlord complaining about mold/habitability
+    """
+
     element_id: str
     status: ElementStatus
     required: bool = True
@@ -268,18 +291,76 @@ class ElementEvaluation:
     matching_node_ids: list[str] = field(default_factory=list)
     missing_evidence: list[str] = field(default_factory=list)
     notes: str = ""
+    # Report enrichment
+    report_label: str = ""  # SUPPORTED | SUPPORTED (WEIGHTED) | CONFLICTED | ...
+    summary: str = ""
+    adverse_evidence: list[str] = field(default_factory=list)
+    counter_evidence: list[str] = field(default_factory=list)
+    temporal_gap_days: Optional[int] = None
+    temporal_gap_label: str = ""  # e.g. "Gap between last complaint (Oct 28) and notice (Nov 12): 15 days"
+    inference_strength: Optional[str] = None  # HIGH | MEDIUM | LOW
+    human_judgment_required: bool = False
+    display_node_ids: list[str] = field(default_factory=list)  # EM-041 style or node_id
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "element_id": self.element_id,
             "status": self.status.value,
+            "report_label": self.report_label or self.status.value,
             "required": self.required,
             "evidence_type": self.evidence_type,
             "weight": self.weight,
             "matching_node_ids": list(self.matching_node_ids),
+            "display_node_ids": list(self.display_node_ids or self.matching_node_ids),
             "missing_evidence": list(self.missing_evidence),
             "notes": self.notes,
+            "summary": self.summary,
+            "adverse_evidence": list(self.adverse_evidence),
+            "counter_evidence": list(self.counter_evidence),
+            "temporal_gap_days": self.temporal_gap_days,
+            "temporal_gap_label": self.temporal_gap_label,
+            "inference_strength": self.inference_strength,
+            "human_judgment_required": self.human_judgment_required,
         }
+
+    def format_block(self) -> str:
+        label = self.report_label or self.status.value
+        lines = [f"ELEMENT {self.element_id}: {label}"]
+        nodes = self.display_node_ids or self.matching_node_ids
+        if nodes:
+            lines.append(f"  - Evidence nodes: {', '.join(nodes)}")
+        if self.summary:
+            lines.append(f"  - Summary: {self.summary}")
+        if self.temporal_gap_label:
+            lines.append(f"  - {self.temporal_gap_label}")
+        if self.inference_strength:
+            lines.append(
+                f"  - Inference strength: {self.inference_strength}"
+                + (
+                    " (within range of cases where courts found nexus)"
+                    if self.inference_strength == "HIGH"
+                    and "temporal" in self.element_id
+                    else ""
+                )
+            )
+        if self.adverse_evidence:
+            lines.append(
+                f"  - Adverse evidence: {'; '.join(self.adverse_evidence)}"
+            )
+        if self.counter_evidence:
+            lines.append(
+                f"  - Counter-evidence: {'; '.join(self.counter_evidence)}"
+            )
+        if self.human_judgment_required or self.status in (
+            ElementStatus.CONFLICTED,
+            ElementStatus.REQUIRES_HUMAN_JUDGMENT,
+        ):
+            lines.append("  - Engine cannot resolve — flags for lawyer review")
+            lines.append("  - STATUS: REQUIRES HUMAN JUDGMENT")
+        if self.missing_evidence and not nodes:
+            for m in self.missing_evidence[:3]:
+                lines.append(f"  - Missing: {m}")
+        return "\n".join(lines)
 
 
 @dataclass
@@ -298,6 +379,7 @@ class LegalTestEvaluation:
     reasoning_chain_flags: list[str] = field(default_factory=list)
     adverse_authority: list[dict[str, Any]] = field(default_factory=list)
     opposing_anticipation: list[str] = field(default_factory=list)
+    element_report: str = ""  # full narrative ELEMENT blocks
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -315,7 +397,20 @@ class LegalTestEvaluation:
             "reasoning_chain_flags": list(self.reasoning_chain_flags),
             "adverse_authority": list(self.adverse_authority),
             "opposing_anticipation": list(self.opposing_anticipation),
+            "element_report": self.element_report,
         }
+
+    def format_element_report(self) -> str:
+        if self.element_report:
+            return self.element_report
+        blocks = [e.format_block() for e in self.elements]
+        if self.burden_shift_triggered:
+            blocks.append(
+                "\nBURDEN SHIFT: Tenant has made out required elements for shift analysis.\n"
+                "FLAG: BURDEN_SHIFT_TO_LANDLORD — landlord put to legitimate non-retaliatory cause.\n"
+                "(Confirm on current RTA s. 56 and case law before filing.)"
+            )
+        return "\n\n".join(blocks)
 
 
 # ---------------------------------------------------------------------------

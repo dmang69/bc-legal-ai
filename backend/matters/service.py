@@ -337,6 +337,10 @@ class MatterSession:
             db.save()
         return evaluate_legal_test(tests[test_id], self.nodes.all(), citation_db=db)
 
+    def legal_test_report(self, test_id: str = "RTA-s56-retaliatory-eviction") -> str:
+        """Narrative ELEMENT blocks for lawyer review."""
+        return self.evaluate_legal_test(test_id).format_element_report()
+
     def production_check(
         self,
         *,
