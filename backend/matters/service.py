@@ -24,6 +24,10 @@ from backend.evidence.crossref import (
 from backend.evidence.ingest import ingest_bytes, ingest_text_record
 from backend.evidence.matrix import EvidenceMatrix
 from backend.evidence.nodes import EvidenceNodeStore, sync_items_to_nodes
+from backend.evidence.timeline_engine import (
+    build_timeline_from_nodes,
+    format_timeline_markdown,
+)
 from backend.privilege.production_gate import (
     ProductionDecision,
     export_items_from_evidence,
@@ -174,6 +178,7 @@ class MatterSession:
         locked = [e.evidence_id for e in self.matrix.locked_for_export()]
         nodes = self.nodes.all()
         contra = self.nodes.run_contradiction_scan(persist=True)
+        timeline = build_timeline_from_nodes(self.nodes.all())
         return {
             "matter_id": self.matter_id,
             "title": self.meta.title,
@@ -184,6 +189,8 @@ class MatterSession:
             "temporal_conflicts": conflicts,
             "corroboration_candidates": corr,
             "key_fact_contradictions": contra.to_dict(),
+            "timeline": [e.to_dict() for e in timeline],
+            "timeline_markdown": format_timeline_markdown(timeline),
             "privilege_gated_ids": locked,
             "protected_nodes": [n.node_id for n in self.nodes.protected_nodes()],
             "chronology_markdown": format_chronology_markdown(items),
@@ -244,6 +251,8 @@ class MatterSession:
         path.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
         chrono = self.matter_dir / "chronology.md"
         chrono.write_text(report["chronology_markdown"] + "\n", encoding="utf-8")
+        tl = self.matter_dir / "timeline.md"
+        tl.write_text(report.get("timeline_markdown", "") + "\n", encoding="utf-8")
         return path
 
 

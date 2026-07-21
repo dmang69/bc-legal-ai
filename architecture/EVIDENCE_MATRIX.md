@@ -106,6 +106,21 @@ FOR each pair of EvidenceNodes (A, B):
 Implementation: `backend/evidence/contradiction_engine.py`  
 Run: `EvidenceNodeStore.run_contradiction_scan()` (also via `MatterSession.analysis_report()`).
 
+## TimelineEvent (procedural chronology)
+
+```
+TimelineEvent {
+    timestamp, timestamp_confidence: EXACT|RANGE|APPROXIMATE|UNKNOWN
+    timestamp_source: node_id
+    event_description, legal_significance  // significance = candidate only
+    supporting_nodes[], contradicting_nodes[]
+    gap_before, gap_significance: NORMAL|NOTABLE_GAP|SUSPICIOUS_GAP
+}
+```
+
+Implementation: `architecture/timeline.py` · `backend/evidence/timeline_engine.py`  
+Emitted in `analysis_report()["timeline"]` and `timeline.md`.
+
 OCR, EXIF, and full NER remain Layer 1 Phase 2.
 
 ## Option B (deferred)
