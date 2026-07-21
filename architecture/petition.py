@@ -163,6 +163,68 @@ class PetitionGround:
         return "\n".join(lines)
 
 
+class RiskLevel(str, Enum):
+    LOW = "LOW"
+    MODERATE = "MODERATE"
+    MODERATE_HIGH = "MODERATE-HIGH"
+    HIGH = "HIGH"
+    CRITICAL = "CRITICAL"
+
+
+@dataclass
+class PredictedOpposition:
+    """
+    Devil's Advocate block against a petition ground.
+
+    Planning tool for reply strategy — not a prediction of judicial outcome.
+    """
+
+    against_ground_id: str  # e.g. "1"
+    against_title: str  # e.g. "Patent Unreasonableness"
+    arguments: list[str] = field(default_factory=list)
+    risk_level: RiskLevel = RiskLevel.MODERATE
+    risk_note: str = ""
+    reply_hooks: list[str] = field(default_factory=list)  # optional counter-prep
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "against_ground_id": self.against_ground_id,
+            "against_title": self.against_title,
+            "arguments": list(self.arguments),
+            "risk_level": self.risk_level.value,
+            "risk_note": self.risk_note,
+            "reply_hooks": list(self.reply_hooks),
+        }
+
+    @staticmethod
+    def from_dict(data: dict[str, Any]) -> "PredictedOpposition":
+        rl = data.get("risk_level", RiskLevel.MODERATE.value)
+        return PredictedOpposition(
+            against_ground_id=str(data.get("against_ground_id") or ""),
+            against_title=str(data.get("against_title") or ""),
+            arguments=list(data.get("arguments") or []),
+            risk_level=RiskLevel(rl) if not isinstance(rl, RiskLevel) else rl,
+            risk_note=str(data.get("risk_note") or ""),
+            reply_hooks=list(data.get("reply_hooks") or []),
+        )
+
+    def format_block(self) -> str:
+        lines = [
+            f"  AGAINST GROUND {self.against_ground_id} ({self.against_title}):",
+        ]
+        for a in self.arguments:
+            lines.append(f"  - {a}")
+        risk_line = f"  RISK LEVEL: {self.risk_level.value}"
+        if self.risk_note:
+            risk_line += f" — {self.risk_note}"
+        lines.append(risk_line)
+        if self.reply_hooks:
+            lines.append("  Reply prep:")
+            for h in self.reply_hooks:
+                lines.append(f"    • {h}")
+        return "\n".join(lines)
+
+
 @dataclass
 class PetitionOutline:
     """Judicial review / petition structure for drafting."""
@@ -173,13 +235,15 @@ class PetitionOutline:
     court: str = "BC Supreme Court"
     statute_route: str = "Judicial Review Procedure Act"
     grounds: list[PetitionGround] = field(default_factory=list)
+    predicted_opposition: list[PredictedOpposition] = field(default_factory=list)
     related_legal_tests: list[str] = field(default_factory=list)
     notes: str = ""
     disclaimer: str = (
         "Petition outline for drafting support only. Not legal advice. "
         "Confirm standard of review (Vavilov / statutory language), all transcript "
         "pins, and every authority on BC Laws / CanLII before filing. "
-        "UNVERIFIED authorities must not appear in court-ready drafts without GroundingGate clearance."
+        "UNVERIFIED authorities must not appear in court-ready drafts without GroundingGate clearance. "
+        "Predicted opposition is adversarial planning, not a forecast of court outcome."
     )
 
     def to_dict(self) -> dict[str, Any]:
@@ -190,6 +254,7 @@ class PetitionOutline:
             "court": self.court,
             "statute_route": self.statute_route,
             "grounds": [g.to_dict() for g in self.grounds],
+            "predicted_opposition": [p.to_dict() for p in self.predicted_opposition],
             "related_legal_tests": list(self.related_legal_tests),
             "notes": self.notes,
             "disclaimer": self.disclaimer,
@@ -208,6 +273,10 @@ class PetitionOutline:
             grounds=[
                 PetitionGround.from_dict(g) for g in (data.get("grounds") or [])
             ],
+            predicted_opposition=[
+                PredictedOpposition.from_dict(p)
+                for p in (data.get("predicted_opposition") or [])
+            ],
             related_legal_tests=list(data.get("related_legal_tests") or []),
             notes=str(data.get("notes") or ""),
             disclaimer=str(
@@ -221,11 +290,27 @@ class PetitionOutline:
         for g in self.grounds:
             lines.append(g.format_block())
             lines.append("")
+        if self.predicted_opposition:
+            lines.append("PREDICTED OPPOSITION ARGUMENTS:")
+            lines.append("")
+            for p in self.predicted_opposition:
+                lines.append(p.format_block())
+                lines.append("")
         if self.notes:
             lines.append("Notes:")
             lines.append(self.notes)
             lines.append("")
         lines.append(f"> {self.disclaimer}")
+        return "\n".join(lines).rstrip() + "\n"
+
+    def format_opposition_only(self) -> str:
+        lines = ["PREDICTED OPPOSITION ARGUMENTS:", ""]
+        for p in self.predicted_opposition:
+            lines.append(p.format_block())
+            lines.append("")
+        lines.append(
+            "> Adversarial planning only — not a prediction of judicial outcome. Not legal advice."
+        )
         return "\n".join(lines).rstrip() + "\n"
 
     def all_authority_cites(self) -> list[PetitionCite]:

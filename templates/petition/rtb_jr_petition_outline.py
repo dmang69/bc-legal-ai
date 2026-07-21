@@ -13,6 +13,8 @@ from architecture.petition import (
     PetitionGround,
     PetitionOutline,
     PetitionSubGround,
+    PredictedOpposition,
+    RiskLevel,
 )
 
 
@@ -169,10 +171,53 @@ def rtb_jr_petition_outline(*, matter_id: str | None = None) -> PetitionOutline:
                 ],
             ),
         ],
+        predicted_opposition=[
+            PredictedOpposition(
+                against_ground_id="1",
+                against_title="Patent Unreasonableness",
+                arguments=[
+                    "Standard of review is reasonableness, not correctness",
+                    "Arbitrator entitled to draw reasonable inferences from volume of calls",
+                    "400+ calls over 7 years is objectively unusual regardless of outcome",
+                    (
+                        "Landlord's duty under s. 28 RTA to provide safe premises creates "
+                        "reasonable concern (VERIFY quiet enjoyment / safety framing on BC Laws; "
+                        "s. 28 is quiet enjoyment in the workbench pin map — confirm fit to argument)"
+                    ),
+                ],
+                risk_level=RiskLevel.MODERATE,
+                risk_note="court may defer to arbitrator's inference",
+                reply_hooks=[
+                    "Distinguish volume of calls from proof of illegal activity under applicable RTA section",
+                    "Emphasize absence of outcome breakdown (EM-031) and lack of documentary 'nuisance' designation",
+                    "Address standard of review label carefully (Vavilov / patent unreasonableness / statute)",
+                ],
+            ),
+            PredictedOpposition(
+                against_ground_id="2",
+                against_title="Procedural Fairness",
+                arguments=[
+                    "Tenant was warned about service issues at 14:14",
+                    "Tenant had opportunity to address gaps during testimony",
+                    "Content of fairness duty to SRLs is contextual, not absolute",
+                    "Tenant did not specifically request procedural assistance",
+                ],
+                risk_level=RiskLevel.MODERATE_HIGH,
+                risk_note=(
+                    "courts reluctant to find fairness violations when SRL was given some guidance"
+                ),
+                reply_hooks=[
+                    "Show warning without meaningful assistance or cure opportunity was inadequate",
+                    "Map exclusion of mayor/bylaw emails (57:18-59:38) to lack of explanation/remedy",
+                    "Use Grewal principles only after CanLII verification of holding and fit",
+                ],
+            ),
+        ],
         notes=(
             "Standard of review: plead as structured; confirm whether patent unreasonableness "
             "or reasonableness (Vavilov / RTA / JRPA) is the correct label for this decision. "
             "Link EM-031 to sequential EvidenceNode before hearing package. "
-            "All authorities listed as UNVERIFIED until CitationDB verification."
+            "All authorities listed as UNVERIFIED until CitationDB verification. "
+            "Predicted opposition is for reply / oral argument prep only."
         ),
     )

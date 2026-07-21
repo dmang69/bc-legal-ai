@@ -51,6 +51,18 @@ def test_petition_structure():
     assert "nuisance property" in text
     assert "Grewal" in text
 
+    # Predicted opposition
+    assert len(p.predicted_opposition) == 2
+    opp = p.format_opposition_only()
+    assert "PREDICTED OPPOSITION ARGUMENTS" in opp
+    assert "AGAINST GROUND 1" in opp
+    assert "AGAINST GROUND 2" in opp
+    assert "reasonableness, not correctness" in opp
+    assert "14:14" in opp
+    assert "MODERATE" in opp
+    assert "MODERATE-HIGH" in opp
+    assert "defer to arbitrator" in opp.lower() or "defer" in opp
+
 
 def test_matter_persist():
     with tempfile.TemporaryDirectory() as tmp:
