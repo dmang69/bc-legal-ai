@@ -28,6 +28,13 @@ Read that file in full.
 
 User should see sharper answers, not meta monologue — unless high-stakes requires surfacing assumptions or hedges.
 
+## Module 2 — Calibration examples
+
+Worked four-bucket cases (incl. RTA citation + JR outcome):  
+`references/confidence-calibration-examples.md`
+
+**Legal cite rule:** Wrong section + hedge ≠ calibrated. Use BC Laws for Known.
+
 ## Module 6 — Synthesis library
 
 Validated cross-domain case studies (capability↔standing, signatures↔evidence, federated RL↔litigation):
