@@ -28,6 +28,13 @@ Read that file in full.
 
 User should see sharper answers, not meta monologue — unless high-stakes requires surfacing assumptions or hedges.
 
+## Module 1 — Situational signals
+
+Expanded signal vocabulary + ambiguity×stakes matrix:  
+`references/situational-signals.md`
+
+**Legal overlay:** hearing / possession / dispute window = urgent + high stakes.
+
 ## Module 2 — Calibration examples
 
 Worked four-bucket cases (incl. RTA citation + JR outcome):  
