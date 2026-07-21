@@ -96,19 +96,97 @@ class EvidenceNodeStore:
         extracted_text: str = "",
         custodian: str = "unknown",
         persist: bool = True,
+        audit: bool = True,
+        source_location: str = "",
+        confidence_score: Optional[float] = None,
+        human_verified: bool = False,
+        upload_timestamp: Optional[str] = None,
+        original_filename: Optional[str] = None,
     ) -> EvidenceNode:
         """Create sequential node from matrix row (idempotent on matrix_evidence_id)."""
         for n in self._nodes.values():
             if n.matrix_evidence_id == item.evidence_id:
                 return n
         node_id = self.next_node_id()
+        text = extracted_text or item.human_notes or ""
         node = evidence_item_to_node(
             item,
             node_id=node_id,
-            extracted_text=extracted_text,
+            extracted_text=text,
             custodian=custodian,
         )
-        return self.add(node, persist=persist)
+        node = self.add(node, persist=persist)
+        if audit:
+            self._emit_node_created(
+                node,
+                item=item,
+                extracted_text=text,
+                source_location=source_location,
+                confidence_score=confidence_score,
+                human_verified=human_verified,
+                upload_timestamp=upload_timestamp,
+                original_filename=original_filename or item.source_file,
+            )
+        return node
+
+    def _emit_node_created(
+        self,
+        node: EvidenceNode,
+        *,
+        item: EvidenceItem,
+        extracted_text: str = "",
+        source_location: str = "",
+        confidence_score: Optional[float] = None,
+        human_verified: bool = False,
+        upload_timestamp: Optional[str] = None,
+        original_filename: Optional[str] = None,
+    ) -> None:
+        from architecture.audit_event import AuditEvent
+        from backend.audit.log import AuditLog
+
+        facts: list[str] = []
+        for kf in node.key_facts:
+            if kf.fact:
+                facts.append(kf.fact)
+        if not facts and extracted_text:
+            # first non-empty lines as extracted facts (max 5)
+            for line in extracted_text.splitlines():
+                line = line.strip()
+                if line:
+                    facts.append(line[:200])
+                if len(facts) >= 5:
+                    break
+        if not facts and item.human_notes:
+            facts.append(item.human_notes[:200])
+
+        conf = (
+            confidence_score
+            if confidence_score is not None
+            else (node.strength_score if node.strength_score is not None else 0.5)
+        )
+        # display alias EM-### from sequence
+        seq = int(node.node_id.rsplit("-", 1)[-1])
+        em_alias = f"EM-{seq:03d}"
+
+        event = AuditEvent.evidence_node_created(
+            node_id=em_alias,  # workbench short id; full EV id in details too
+            source_document=item.source_file,
+            source_location=source_location
+            or (f"pages={item.page_count}" if item.page_count else ""),
+            extracted_facts=facts,
+            auto_tagged_categories=list(item.claim_tags) or list(node.claim_tags),
+            confidence_score=float(conf),
+            human_verified=human_verified,
+            document_hash=node.doc_hash or (f"sha256:{item.file_hash}" if item.file_hash else ""),
+            ingestion_method="client_upload",
+            upload_timestamp=upload_timestamp or item.date_received,
+            original_filename=original_filename or item.source_file,
+            matter_id=self.matter_id,
+        )
+        # enrich details with full sequential id
+        event.details["ev_node_id"] = node.node_id
+        event.details["matrix_evidence_id"] = item.evidence_id
+        AuditLog(self.matter_id, root=self.root).append(event)
 
     def get(self, node_id: str) -> Optional[EvidenceNode]:
         return self._nodes.get(node_id)

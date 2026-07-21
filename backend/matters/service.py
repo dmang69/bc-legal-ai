@@ -445,6 +445,18 @@ class MatterSession:
 
         return guard_user_message(text, block_send=block_send)
 
+    def audit_log(self):
+        from backend.audit.log import AuditLog
+
+        return AuditLog(self.matter_id, root=self.root)
+
+    def list_audit_events(self, *, action: str | None = None, limit: int = 100):
+        from architecture.audit_event import AuditAction
+
+        log = self.audit_log()
+        act = AuditAction(action) if action else None
+        return log.list_events(action=act, limit=limit)
+
     def save_document_explainer(self, exp) -> "Path":
         from backend.explainers.service import save_explainer
 
