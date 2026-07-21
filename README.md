@@ -70,9 +70,14 @@ Auth, matter isolation, OCR, page-level citations, live research + treatment, de
 
 **FACT · ALLEGATION · LEGAL ARGUMENT · INFERENCE · ASSUMPTION · PROCEDURAL HISTORY · RECOMMENDATION**
 
-## Base model
+## Base model and fine-tuning
 
-See [`model/BASE_MODEL_DECISION.md`](model/BASE_MODEL_DECISION.md). Primary: `Qwen/Qwen2.5-14B-Instruct`. Statute truth from **BC Laws**, not weights.
+| Doc | Content |
+|-----|---------|
+| [`model/BASE_MODEL_DECISION.md`](model/BASE_MODEL_DECISION.md) | Qwen2.5 base + RAG-first |
+| [`model/FINE_TUNING_DESIGNATION.md`](model/FINE_TUNING_DESIGNATION.md) | **QLoRA** selected; full FT rejected |
+
+Primary: `Qwen/Qwen2.5-14B-Instruct`. Statute truth from **BC Laws**, not weights.
 
 ## Security
 

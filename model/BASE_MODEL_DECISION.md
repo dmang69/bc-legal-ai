@@ -4,6 +4,8 @@
 **Date:** 2026-07-21  
 **Status:** Binding design choice for this workbench (revisit only if hardware or license constraints force a change)
 
+**Extended by:** [`FINE_TUNING_DESIGNATION.md`](FINE_TUNING_DESIGNATION.md) (same date) — ratifies **QLoRA / instruction tuning** as the selected adaptation method; **rejects full fine-tune** as primary. That document is binding for training methodology and data composition.
+
 ---
 
 ## 1. Decision (chosen base model)
