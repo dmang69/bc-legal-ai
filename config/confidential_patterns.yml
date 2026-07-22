@@ -1,0 +1,78 @@
+# Patterns for scripts/scan_confidential.py
+# Fictional fixtures may appear only under allowlisted paths.
+
+patterns:
+  - id: bc_court_file
+    regex: '\b[A-Z]{3}-S-S-\d{5,6}\b'
+    note: BC Supreme Court style file numbers (e.g. VAN-S-S-999999 ok only if synthetic allowlisted)
+
+  - id: kam_live_file
+    regex: 'KAM-S-S-\d{5}'
+    note: Known live-matter series — blocked
+
+  - id: rtb_file
+    regex: '\bRTB[-\s]?\d{6,}\b'
+    note: RTB file-like numbers
+
+  - id: party_sanghera
+    regex: '\bSanghera\b'
+
+  - id: party_gurmail
+    regex: '\bGurmail\b'
+
+  - id: party_owings_live
+    regex: '\bDaniel\s+Kirk\s+Owings\b'
+
+  - id: email
+    regex: '\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b'
+
+  - id: phone_na
+    # Require separators; exclude all-zero PDF object IDs
+    regex: '(?:\+1[-.\s]|\(\d{3}\)[-.\s]?)\d{3}[-.\s]?\d{4}|\b(?!000)(?!111)\d{3}[-.\s]\d{3}[-.\s]\d{4}\b'
+
+  - id: postal_ca
+    # Require space or hyphen between halves (avoids hex colour false positives)
+    regex: '\b[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z][ -]\d[ABCEGHJ-NPRSTV-Z]\d\b'
+
+  - id: hf_token
+    regex: '\bhf_[A-Za-z0-9]{20,}\b'
+
+  - id: aws_key
+    regex: '\bAKIA[0-9A-Z]{16}\b'
+
+# Paths always allowed to mention patterns for documentation/tests
+allowlist_paths:
+  - scripts/scan_confidential.py
+  - scripts/create_github_labels.py
+  - config/confidential_patterns.yml
+  - SECURITY.md
+  - PRODUCT_STATUS.md
+  - architecture/AUDIT_P0_2026-07-21.md
+  - docs/M0_RELEASE_GATE.md
+  - docs/PHASE_4_MASTER_ENGINEERING_PROGRAM.md
+  - docs/M0_001_inventory.md
+  - docs/github/LABELS.md
+  - legal_knowledge/invalidated_tests.json
+  - fixtures/synthetic/
+  - tests/security/test_confidential_scanner.py
+  - tests/test_m0_remediation.py
+  - tests/test_examination.py
+  - templates/examination/sanghera_cross_outline.py
+  - templates/examination/demo_landlord_rep_cross.py
+  - backend/examination/__init__.py
+  - backend/matters/service.py
+
+allowlist_prefixes:
+  - tests/
+  - fixtures/synthetic/
+  - docs/
+  - skills/
+  - apps/platform-ui/
+  - apps/desktop-mobile/package-lock.json
+
+# Filename suffixes / names always skipped
+ignore_filenames:
+  - package-lock.json
+  - yarn.lock
+  - pnpm-lock.yaml
+  - Cargo.lock

@@ -1,38 +1,70 @@
 """
-BC Legal AI Associate — Phase 3–4 API gateway (HITL + Layer 6 post-resolution).
+BC Legal AI Associate — modular monolith API gateway.
 
 Run (dev):
   pip install fastapi uvicorn
   uvicorn backend.api.main:app --reload --port 8000
 
-Not legal advice. In-memory stores; no multi-tenant auth yet.
-Do not expose to the public internet with client data.
+M1 platform (auth, matters, audit, evidence) uses SQLite by default
+or Postgres when ALA_POSTGRES_URL is set. HITL/post-resolution remain
+process-local until migrated.
+
+Not legal advice. Do not expose to the public internet with client data.
 """
 
 from __future__ import annotations
 
+import sys
+from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Any, Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from architecture.legal_test import LegalTestDisabledError
+from backend.api.platform_routes import router as platform_router
+from backend.api.public_demo import enforce_public_text, is_public_demo, reject_if_public_demo
 from backend.api.state import hitl, post_resolution
+from backend.db import get_db_backend, init_db
 from services.deadlines.jr_clock import JrClockRequest, calculate_jr_clock
+from services.deadlines.states import calculate_deadline
 from services.post_resolution.enforcement.packages import PackageType
-from services.reasoning.hitl.consent.scopes import ConsentScope
 from services.reasoning.hitl.exceptions.kinds import ExceptionKind, Severity
 from services.reasoning.hitl.privilege_check.production import OutputClass
-from services.reasoning.hitl.schemas.common import ConsentGateBlocked, ModelDestination
+from services.reasoning.hitl.schemas.common import ModelDestination
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    init_db()
+    yield
+
+
+
+
+
+def _client_dir() -> Path:
+    if getattr(sys, "frozen", False):
+        # PyInstaller bundle
+        base = Path(sys._MEIPASS)  # type: ignore[attr-defined]
+        cand = base / "frontend" / "client"
+        if cand.is_dir():
+            return cand
+        return Path(sys.executable).resolve().parent / "frontend" / "client"
+    return Path(__file__).resolve().parents[2] / "frontend" / "client"
+
 
 app = FastAPI(
-    title="BC Legal AI Associate — Phase 3–4 / 4-4 API",
-    version="0.2.0",
+    title="BC Legal AI Associate — Platform API",
+    version="0.4.0",
     description=(
-        "HITL control plane + post-resolution lifecycle. "
-        "Not a lawyer. Not legal advice. In-memory prototype."
+        "Modular monolith: identity, matters, audit, evidence, HITL, post-resolution. "
+        "Not a lawyer. Not legal advice."
     ),
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -42,10 +74,71 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(platform_router)
+
+_CLIENT = _client_dir()
+if _CLIENT.is_dir():
+    app.mount("/assets", StaticFiles(directory=str(_CLIENT)), name="assets")
+
+
+@app.get("/")
+def root_ui():
+    index = _CLIENT / "index.html"
+    if index.is_file():
+        return FileResponse(index)
+    return RedirectResponse(url="/docs")
+
+
+@app.get("/index.html")
+def index_html():
+    return FileResponse(_CLIENT / "index.html")
+
+
+@app.get("/styles.css")
+def styles_css():
+    return FileResponse(_CLIENT / "styles.css")
+
+
+@app.get("/app.js")
+def app_js():
+    return FileResponse(_CLIENT / "app.js")
+
+
+@app.get("/sw.js")
+def service_worker():
+    return FileResponse(_CLIENT / "sw.js")
+
+
+@app.get("/manifest.webmanifest")
+def web_manifest():
+    return FileResponse(
+        _CLIENT / "manifest.webmanifest",
+        media_type="application/manifest+json",
+    )
+
+
+@app.get("/icons/{name}")
+def icons(name: str):
+    path = _CLIENT / "icons" / name
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="icon not found")
+    return FileResponse(path)
+
 
 @app.get("/health")
 def health() -> dict[str, str]:
-    return {"status": "ok", "phase": "3-4+4-4", "mode": "in-memory"}
+    try:
+        db = get_db_backend()
+    except Exception:
+        db = "unknown"
+    return {
+        "status": "ok",
+        "phase": "m1-platform",
+        "mode": "public_demo" if is_public_demo() else "platform",
+        "platform": "api+static-client",
+        "app_mode": "public_demo" if is_public_demo() else "development",
+        "db_backend": db,
+    }
 
 
 @app.get("/v1/design-locks")
@@ -203,6 +296,13 @@ class FreezeBody(BaseModel):
 @app.post("/v1/matters/{matter_id}/productions/freeze")
 def freeze_production(matter_id: str, body: FreezeBody) -> dict[str, Any]:
     try:
+        reject_if_public_demo("court-ready production freeze")
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+    check = enforce_public_text(body.body)
+    if not check.get("ok", True):
+        raise HTTPException(status_code=400, detail=check.get("error", "blocked"))
+    try:
         oc = OutputClass(body.output_class)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -258,6 +358,10 @@ def approve_production(production_id: str, body: ApproveBody) -> dict[str, Any]:
 @app.post("/v1/productions/{production_id}/release")
 def release_production(production_id: str) -> dict[str, Any]:
     try:
+        reject_if_public_demo("court-ready document export/release")
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+    try:
         pkg = hitl.productions.release(production_id)
     except (KeyError, PermissionError, ValueError) as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -290,6 +394,32 @@ def jr_clock(body: JrClockBody) -> dict[str, Any]:
     ).to_dict()
 
 
+class DeadlineBody(BaseModel):
+    matter_id: str
+    label: str
+    start_date: Optional[str] = None
+    service_method: Optional[str] = None
+    window_days: Optional[int] = None
+    human_confirmed: bool = False
+    synthetic: bool = False
+    statutory_basis: str = ""
+
+
+@app.post("/v1/deadlines/calculate")
+def deadline_calculate(body: DeadlineBody) -> dict[str, Any]:
+    """Fail-closed provisional deadline (only HUMAN_CONFIRMED is definitive)."""
+    return calculate_deadline(
+        matter_id=body.matter_id,
+        label=body.label,
+        start_date=body.start_date,
+        service_method=body.service_method,
+        window_days=body.window_days,
+        human_confirmed=body.human_confirmed,
+        synthetic=body.synthetic,
+        statutory_basis=body.statutory_basis,
+    ).to_dict()
+
+
 # ----- Phase 4-4 post-resolution -----
 
 
@@ -306,6 +436,13 @@ class DecisionIngestBody(BaseModel):
 @app.post("/v1/matters/{matter_id}/post-resolution/ingest")
 def ingest_decision(matter_id: str, body: DecisionIngestBody) -> dict[str, Any]:
     """Full 4-4 entry: parse decision → clocks → compliance seed → optional JR."""
+    try:
+        reject_if_public_demo("persistent post-resolution ingest")
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+    check = enforce_public_text(body.text)
+    if not check.get("ok", True):
+        raise HTTPException(status_code=400, detail=check.get("error"))
     out = post_resolution.ingest_decision(
         matter_id=matter_id,
         text=body.text,

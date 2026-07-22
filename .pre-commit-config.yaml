@@ -1,0 +1,11 @@
+# pre-commit install
+# pre-commit run --all-files
+repos:
+  - repo: local
+    hooks:
+      - id: confidential-scan
+        name: confidential-data scan
+        entry: python scripts/precommit_confidential_scan.py
+        language: system
+        pass_filenames: false
+        always_run: true

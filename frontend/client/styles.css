@@ -72,6 +72,29 @@ button:focus, a:focus, select:focus, input:focus {
   outline-offset: 2px;
 }
 footer { color: var(--muted); font-size: 0.85rem; margin-top: 2rem; }
+.api-status { font-size: 0.9rem; color: var(--muted); }
+.out {
+  background: #0d1218;
+  padding: 0.75rem;
+  border-radius: 6px;
+  overflow: auto;
+  font-size: 0.8rem;
+  max-height: 16rem;
+  white-space: pre-wrap;
+}
+pre {
+  background: var(--card);
+  padding: 0.75rem;
+  border-radius: 8px;
+  overflow: auto;
+  font-size: 0.85rem;
+}
 @media (min-width: 640px) {
   body { padding-top: 1.5rem; }
+}
+/* iOS safe areas */
+@supports (padding: env(safe-area-inset-bottom)) {
+  body {
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+  }
 }

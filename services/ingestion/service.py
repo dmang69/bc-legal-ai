@@ -1,5 +1,5 @@
 """
-Layer 1 ingestion microservice (skeleton).
+Layer 1 ingestion domain module (skeleton; modular monolith worker-friendly).
 
 Pipeline:
   classify → metadata extract → hash dedup / near-dup →

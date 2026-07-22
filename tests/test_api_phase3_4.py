@@ -18,7 +18,7 @@ def client():
 def test_health(client):
     r = client.get("/health")
     assert r.status_code == 200
-    assert r.json()["phase"] == "3-4+4-4"
+    assert r.json()["phase"] == "m1-platform"
 
 
 def test_design_locks(client):

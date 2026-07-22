@@ -1,0 +1,21 @@
+{
+  "productName": "BC Legal AI Workbench",
+  "identifier": "ca.bclegalai.workbench",
+  "bundle": {
+    "targets": ["nsis", "msi"],
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "displayLanguageSelector": false
+      }
+    }
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "BC Legal AI Workbench"
+      }
+    ]
+  }
+}

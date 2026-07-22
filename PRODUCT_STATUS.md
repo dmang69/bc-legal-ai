@@ -5,9 +5,11 @@
 **Public positioning:** legal research, evidence analysis, and drafting **support**  
 **Not:** a licensed lawyer, legal advice service, or representation
 
-**Assessment date:** 2026-07-21  
-**Verdict:** strong **prototype / counsel workbench** — **not** a completed AI Legal Associate  
-**Full audit:** `architecture/AUDIT_P0_2026-07-21.md` — estimated supervised V1 **~25%** complete; **P0** scrub of live matter + disable incorrect RTA s.56 retaliation test **applied in working tree** (git history rewrite still required if ever pushed).
+**Assessment date:** 2026-07-22  
+**Verdict:** strong **prototype / counsel workbench** with **M1 platform core landed** (SQLite/Postgres-ready) — still **not** a completed Associate  
+**Release level:** **Prototype → Internal Alpha foundation** (~**30–35%**).  
+**Controlling roadmap:** `docs/PHASE_4_MASTER_ENGINEERING_PROGRAM.md`  
+**Full audit:** `architecture/AUDIT_P0_2026-07-21.md` — history rewrite + branch protection still human ops.
 
 ---
 
@@ -24,11 +26,18 @@
 | Matter-isolated client files | Local-only via `matters/` gitignore |
 | Evidence Matrix + EvidenceNode (architecture/) | Present (prototype) |
 | Phase 2–4 service skeletons (`services/`, `infra/`, `middleware/`) | **Scaffold only** |
-| Production auth / multi-tenant security | **Absent** |
+| Production auth / multi-tenant security | **Partial** — org/user/session + matter ACL (SQLite default; Postgres SQL ready) |
+| Hash-chained audit ledger | **Partial** — append-only + verify_chain |
+| Document quarantine + page extract | **Partial** — text files; no OCR yet |
 | OCR, page-level citations, live STT | **Absent** (ingestion classifier/dedup rules only) |
 | Live statutory/case research + treatment | **Absent** (fail-closed gate scaffold) |
 | Deadline engine, court-form export | **Absent** |
-| GraphRAG knowledge graph (live Neo4j) | **Absent** (compose skeleton) |
+| Graph relationships (Postgres tables; Neo4j deferred) | **Absent** (V1 uses relational edges when built) |
+| Modular monolith + workers (V1 architecture) | **Partial** (FastAPI + module packages; not multi-tenant) |
+| Section G platform architecture | **Documented** (`docs/SECTION_G_PLATFORM_AND_DISTRIBUTION.md`) |
+| React/Vite shared UI | **Scaffold** (`apps/platform-ui`) — Workbench/Client/Portal modes |
+| Tauri 2 multi-platform shell | **Scaffold** (`apps/desktop-mobile`) — primary install path; not store-signed yet |
+| Browser PWA | **Partial** (VitePWA in platform-ui + interim `frontend/client`) |
 | Human approval gates + audit trail | **Partial** (schemas + HITL stubs) |
 | Meaningful legal evaluation suite | **Absent** |
 

@@ -1,0 +1,36 @@
+# Unsigned development Windows build (requires Windows runner + Rust + WebView2).
+# Signing secrets are intentionally not configured until Internal Alpha.
+name: Build Windows (Tauri)
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "platform-windows-*"
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Install frontend deps
+        run: |
+          cd apps/platform-ui
+          npm install
+          cd ../desktop-mobile
+          npm install
+      - name: Tauri build (unsigned)
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VITE_API_BASE_URL: http://127.0.0.1:8000
+          VITE_APP_MODE: workbench
+        with:
+          projectPath: apps/desktop-mobile
+          tauriScript: npm run tauri
+          args: -- --config src-tauri/tauri.windows.conf.json
