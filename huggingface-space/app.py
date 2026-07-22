@@ -280,6 +280,110 @@ def laws_markdown() -> str:
     return "\n".join(lines)
 
 
+def demo_jr_clock(issuance: str, finality: bool, extension: bool) -> str:
+    """Phase 3–4: JR limitation clock (demo — not a live filing calculator)."""
+    try:
+        from services.deadlines.jr_clock import JrClockRequest, calculate_jr_clock
+    except ImportError:
+        return "JR clock module not available in this environment."
+    r = calculate_jr_clock(
+        JrClockRequest(
+            matter_id="DEMO",
+            issuance_date=issuance.strip() or None,
+            finality_known=finality,
+            enabling_act_known=True,
+            extension_sought=extension,
+            human_confirmed=False,
+        )
+    )
+    lines = [
+        "## JR clock result (demonstration — confirm with counsel)",
+        f"- **Mode:** `{r.clock_mode.value}`",
+        f"- **Primary deadline:** {r.primary_deadline or 'n/a'}",
+        f"- **HITL required:** {r.hitl_required}",
+        f"- **Client display:** {r.client_display}",
+        "",
+        "### Alternatives",
+    ]
+    for a in r.alternatives:
+        lines.append(f"- {a}")
+    lines.append("")
+    lines.append(FAIL_CLOSED)
+    lines.append(
+        "\n**Forms:** petition = **Form 66**; response = Form 67; interlocutory ≈ Form 32."
+    )
+    return "\n".join(lines)
+
+
+def demo_post_resolution(decision_text: str, decision_date: str) -> str:
+    """Phase 4-4: decision ingest → obligations → clocks (demo only)."""
+    try:
+        from services.post_resolution.service import PostResolutionEngine
+    except ImportError:
+        return "Post-resolution module not available in this environment."
+    if not (decision_text or "").strip():
+        return "Paste non-confidential decision *themes* only (no real party names)."
+    eng = PostResolutionEngine()
+    out = eng.ingest_decision(
+        matter_id="DEMO-PR",
+        text=decision_text,
+        decision_date=decision_date.strip() or None,
+        predicted_summary="demo",
+        predicted_classes=["MONETARY_AWARD"],
+    )
+    lines = [
+        "## Post-resolution result (4-4 demonstration — not legal advice)",
+        f"- **HITL required on parse:** {out.get('hitl_required')}",
+        f"- **Outcome classes:** {', '.join(out.get('outcome_classes') or [])}",
+        "",
+        "### Obligations",
+    ]
+    for o in out.get("obligations") or []:
+        lines.append(
+            f"- **{o.get('kind')}** ({o.get('party')}): {o.get('description', '')[:120]}"
+        )
+    lines.append("")
+    lines.append("### Compliance clocks")
+    for c in out.get("clocks") or []:
+        lines.append(f"- {c.get('label')} — due {c.get('due_date') or 'TBD'}")
+    jr = eng.jr.trigger(
+        matter_id="DEMO-PR",
+        decision_date=decision_date.strip() or "2026-01-15",
+        decision_or_notes_text=decision_text,
+        client_role="tenant",
+        outcome_classes=out.get("outcome_classes") or [],
+    )
+    lines.append("")
+    lines.append("### JR scaffold (if unfavorable to tenant demo role)")
+    lines.append(f"- Unfavorable trigger: {jr.get('unfavorable_trigger')}")
+    pet = jr.get("petition") or {}
+    lines.append(f"- Petition form: **{pet.get('form_code', 'Form 66')}**")
+    clock = jr.get("clock") or {}
+    lines.append(f"- JR clock mode fields: deadline={clock.get('deadline')}")
+    lines.append("")
+    lines.append(FAIL_CLOSED)
+    return "\n".join(lines)
+
+
+def demo_consent_note() -> str:
+    return """
+## Phase 3 HITL — consent (API)
+
+Local API (not this public Space process):
+
+```bash
+uvicorn backend.api.main:app --port 8000
+```
+
+- `POST /v1/matters/{id}/consents` — purpose-specific grant  
+- `POST /v1/consents/evaluate-operation` — processing basis  
+- `POST /v1/consents/{id}/withdraw` — blocks optional AI; **not** privilege waiver; **not** unconditional delete  
+
+**Consent ≠ privilege.** External model needs separate category.  
+See monorepo `architecture/contracts/PHASE_3_API_DB_CONTRACT.md`.
+"""
+
+
 with gr.Blocks(title="BC Legal AI Workbench") as demo:
     gr.Markdown("# BC Legal AI Workbench — Demo")
     gr.Markdown(DISCLAIMER)
@@ -337,9 +441,41 @@ with gr.Blocks(title="BC Legal AI Workbench") as demo:
             topic.change(quiz_section, inputs=topic, outputs=quiz_out)
             demo.load(quiz_section, inputs=topic, outputs=quiz_out)
 
+        with gr.Tab("Phase 3–4 · JR clock"):
+            gr.Markdown(
+                "Demonstration of the **60-day JR clock** from issuance of a final decision "
+                "(ATA s.57 pathway noted; extension is **not** auto-granted). "
+                "Synthetic only — counsel must confirm finality and enabling legislation."
+            )
+            iss = gr.Textbox(label="Issuance date (YYYY-MM-DD)", value="2026-01-15")
+            fin = gr.Checkbox(label="Finality known", value=True)
+            ext = gr.Checkbox(label="Extension sought (ATA s.57(2) path)", value=False)
+            jr_btn = gr.Button("Calculate JR clock", variant="primary")
+            jr_out = gr.Markdown()
+            jr_btn.click(demo_jr_clock, inputs=[iss, fin, ext], outputs=jr_out)
+
+        with gr.Tab("Phase 4-4 · Post-resolution"):
+            gr.Markdown(
+                "Paste **non-confidential** decision themes (no real names). "
+                "Demo parses obligations and compliance clocks; opens Form **66** JR scaffold if adverse."
+            )
+            pr_text = gr.Textbox(
+                lines=5,
+                label="Decision text (synthetic / themes only)",
+                placeholder="e.g. The landlord shall pay $500 within 15 days. Repair mold within 30 days...",
+            )
+            pr_date = gr.Textbox(label="Decision / issuance date", value="2026-01-15")
+            pr_btn = gr.Button("Run post-resolution demo", variant="primary")
+            pr_out = gr.Markdown()
+            pr_btn.click(demo_post_resolution, inputs=[pr_text, pr_date], outputs=pr_out)
+
+        with gr.Tab("Phase 3 · HITL API"):
+            gr.Markdown(demo_consent_note())
+
     gr.Markdown(
         "Source: [github.com/dmang69/bc-legal-ai](https://github.com/dmang69/bc-legal-ai) — "
-        "skills, verification logs, and the base-model / fine-tuning designation."
+        "Phase 3–4 API: `uvicorn backend.api.main:app --port 8000` · "
+        "skills, verification logs, base-model designation."
     )
 
 

@@ -213,6 +213,7 @@ Aligned with CURRENT STATE design, public demo Space, RAG-first / LoRA-second, f
 | **3.2 Knowledge base** | Source registry, treatment analyzer, snapshots, Form 66≠67 | `knowledgebase/*` | **Scaffold** |
 | **Arch map** | Phase 3–4 implementation map + six design locks | `architecture/PHASE_3_4.md` | **Doc** |
 | **Phase 3 API/DB contract** | consent, exceptions, approvals, knowledge-source | `architecture/contracts/` | **v0.1** |
+| **Phase 3–4 FastAPI** | HITL + JR clock + 4-4 post-resolution routes | `backend/api/main.py` | **Started (in-memory)** |
 | **JR clock** | 60-day + uncertainty + ATA s.57(2) path | `services/deadlines/jr_clock.py` | **Implemented** |
 
 ### Phase 4 — Clients + post-resolution
