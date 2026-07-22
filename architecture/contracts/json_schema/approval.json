@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/dmang69/bc-legal-ai/architecture/contracts/json_schema/approval.json",
+  "title": "ApprovalRecord",
+  "type": "object",
+  "required": [
+    "approval_id",
+    "production_id",
+    "matter_id",
+    "stage",
+    "actor_id",
+    "decision",
+    "snapshot_hash",
+    "ts"
+  ],
+  "properties": {
+    "approval_id": { "type": "string" },
+    "production_id": { "type": "string" },
+    "matter_id": { "type": "string" },
+    "stage": { "type": "string", "enum": ["REVIEW", "APPROVE"] },
+    "actor_id": { "type": "string" },
+    "decision": { "type": "string", "enum": ["APPROVED", "REJECTED"] },
+    "snapshot_hash": { "type": "string", "minLength": 16 },
+    "notes": { "type": "string" },
+    "ts": { "type": "string" }
+  },
+  "additionalProperties": false
+}

@@ -38,7 +38,8 @@ def test_flag_partially_verified_in_db():
     db = seed_bc_workbench_citations(CitationDB())
     flag = flag_unverified_reference(db, Citation(citation_id="CIT-RTA-S56"))
     assert flag.in_database is True
-    assert flag.database_status == "PARTIALLY_VERIFIED"
+    # P0: s.56 mis-use for retaliation → REJECTED (not PARTIALLY_VERIFIED)
+    assert flag.database_status == "REJECTED"
     assert flag.citation_id == "CIT-RTA-S56"
     # equivalents for retaliatory may be empty if only S56 has that tag;
     # mold path should still suggest s.32 when referencing repair

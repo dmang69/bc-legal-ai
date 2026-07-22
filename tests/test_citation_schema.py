@@ -102,7 +102,11 @@ def test_partially_verified_rta_s56_refused_by_gate():
         )
     )
     assert r.allowed is False
-    assert GroundingRefusalReason.UNVERIFIED_CITATION in r.reasons
+    # CIT-RTA-S56 is REJECTED for retaliation use (P0); either rejection path is correct
+    assert (
+        GroundingRefusalReason.UNVERIFIED_CITATION in r.reasons
+        or GroundingRefusalReason.REJECTED_CITATION in r.reasons
+    )
 
 
 def test_superseded_refused():

@@ -1,0 +1,79 @@
+# BC Legal AI Associate — local infrastructure skeleton (Phase 2.2)
+# Dev only. Do not expose to the public internet with client data.
+# Not legal advice.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ala
+      POSTGRES_PASSWORD: ala_dev_only_change_me
+      POSTGRES_DB: ala
+    ports:
+      - "5432:5432"
+    volumes:
+      - ala_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ala -d ala"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  neo4j:
+    image: neo4j:5-community
+    environment:
+      NEO4J_AUTH: neo4j/ala_dev_only_change_me
+      NEO4J_PLUGINS: '["apoc"]'
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - ala_neo4j:/data
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ala_minio
+      MINIO_ROOT_PASSWORD: ala_dev_only_change_me
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - ala_minio:/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ala
+      RABBITMQ_DEFAULT_PASS: ala_dev_only_change_me
+
+  # Vector search: FAISS is in-process (no container). Optional Milvus for scale.
+  # milvus-standalone: enable when needed — see docs.milvus.io
+
+  # Time-series / metrics scaffold (audit can also live in Postgres)
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    volumes:
+      - ./logging/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    profiles:
+      - metrics
+
+  # API gateway skeleton — run FastAPI app from monorepo separately:
+  #   uvicorn backend.api.main:app --reload
+  # Or put Kong in front in prod (see k8s/).
+
+volumes:
+  ala_pg:
+  ala_neo4j:
+  ala_minio:

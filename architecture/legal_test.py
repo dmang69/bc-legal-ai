@@ -195,6 +195,10 @@ class BurdenShiftRule:
         }
 
 
+class LegalTestDisabledError(RuntimeError):
+    """Raised when a legal test is marked disabled (incorrect pin / unapproved)."""
+
+
 @dataclass
 class LegalTest:
     test_id: str
@@ -213,6 +217,14 @@ class LegalTest:
         "Legal test scaffold for workbench analysis. Verify every statutory pin "
         "and case on BC Laws / CanLII before filing. Not legal advice."
     )
+    # P0: incorrect section mappings must not remain callable in ordinary workflows
+    disabled: bool = False
+    disabled_reason: str = ""
+    authority_status: str = "UNVERIFIED"  # UNVERIFIED | DISABLED | LAWYER_APPROVED
+    effective_from: Optional[str] = None
+    effective_to: Optional[str] = None
+    verified_by: Optional[str] = None
+    review_date: Optional[str] = None
 
     # aliases
     @property
@@ -235,6 +247,13 @@ class LegalTest:
             "burden_shift": self.burden_shift.to_dict() if self.burden_shift else None,
             "notes": self.notes,
             "verification_note": self.verification_note,
+            "disabled": self.disabled,
+            "disabled_reason": self.disabled_reason,
+            "authority_status": self.authority_status,
+            "effective_from": self.effective_from,
+            "effective_to": self.effective_to,
+            "verified_by": self.verified_by,
+            "review_date": self.review_date,
         }
 
     @staticmethod
@@ -414,188 +433,61 @@ class LegalTestEvaluation:
 
 
 # ---------------------------------------------------------------------------
-# Canonical RTA s.56 retaliatory eviction scaffold (user-specified)
+# DISABLED — incorrect RTA s.56 → retaliation mapping (Priority Zero fix 2026-07-21)
 # ---------------------------------------------------------------------------
+
+_S56_DISABLED_REASON = (
+    "DISABLED — incorrect statutory mapping. On the current Residential Tenancy Act "
+    "(re-verify on BC Laws), s. 56 concerns a landlord application for an order ending "
+    "a tenancy early — it is NOT a multi-element civil 'retaliatory eviction' test with "
+    "automatic burden shift as previously encoded. Offence-language regarding retaliation "
+    "(historically associated with provisions such as s. 95(2) — confirm current numbering "
+    "on BC Laws) does not by itself authorize this workbench test. "
+    "All prior outputs from RTA-s56-retaliatory-eviction / TEST-RETALIATORY-EVICTION-S56 "
+    "are INVALID pending review. A replacement must be lawyer-approved with effective "
+    "dates, source snapshot, verifier, and authority status = LAWYER_APPROVED. "
+    "Separate: statutory offence vs RTB remedy vs improper-purpose vs human-rights vs JR grounds."
+)
 
 
 def rta_s56_retaliatory_eviction_test() -> LegalTest:
     """
-    LEGAL_TEST id: RTA-s56-retaliatory-eviction
+    DISABLED shell retained only so callers fail closed with a clear reason.
 
-    Verify s. 56 text and case authorities on BC Laws / CanLII before filing.
-    CIT-RTA-S56 is PARTIALLY_VERIFIED until exact_text is registered.
+    Do not use for matter analysis or filing.
     """
     return LegalTest(
         test_id="RTA-s56-retaliatory-eviction",
-        citation="RTA s.56(1)",
-        citation_id="CIT-RTA-S56",
+        citation="RTA s.56 — NOT a retaliation test (see disabled_reason)",
+        citation_id="CIT-RTA-S56-DISABLED",
         jurisdiction="BC",
-        source="Residential Tenancy Act, SBC 2002, c. 78, s. 56",
-        short_name="Retaliatory eviction (RTA s.56)",
+        source="Residential Tenancy Act, SBC 2002, c. 78 — verify s. 56 subject on BC Laws",
+        short_name="DISABLED: mis-pinned retaliation (was labelled s.56)",
         applies_to=["retaliatory_eviction"],
-        notes=(
-            "s. 56 creates a presumption. If tenant proves E1 + E2 + E3, "
-            "burden shifts to landlord to rebut by showing legitimate "
-            "non-retaliatory cause. Engine should flag this burden shift "
-            "in its reasoning chain."
-        ),
-        burden_shift=BurdenShiftRule(
-            triggers_when_elements=[
-                "E1-timely-dispute",
-                "E2-prior-complaint",
-                "E3-temporal-nexus",
-            ],
-            shifts_to="landlord",
-            description=(
-                "If tenant establishes timely dispute (E1), protected activity (E2), "
-                "and temporal nexus (E3), a presumption / burden shift may arise: "
-                "landlord must show legitimate non-retaliatory cause. "
-                "Confirm current s. 56 wording and case law before relying."
-            ),
-            reasoning_flag="BURDEN_SHIFT_TO_LANDLORD",
-        ),
-        adverse_authority=[
-            AdverseAuthorityNote(
-                label="Preston v. May",
-                parenthetical=(
-                    "landlord can evict for legitimate cause even after tenant complaints "
-                    "(illustrative label — VERIFY on CanLII; not in verified citation DB)"
-                ),
-            ),
-            AdverseAuthorityNote(
-                label="Yu v. Zhang",
-                parenthetical=(
-                    "temporal proximity alone insufficient without evidence of retaliatory intent "
-                    "(illustrative label — VERIFY on CanLII; not in verified citation DB)"
-                ),
-            ),
-        ],
-        elements=[
-            LegalTestElement(
-                element_id="E1-timely-dispute",
-                description="Tenant filed dispute within 15 days of receiving notice",
-                evidence_type=ElementEvidenceType.PROCEDURAL,
-                required=True,
-                evidence=[
-                    ElementEvidenceSpec(
-                        role=ElementEvidenceRole.REQUIRED,
-                        claim_tags=["retaliatory_eviction"],
-                        fact_keys=["dispute_filed", "notice_received", "service_date"],
-                        source_types=["GOVERNMENT_CORRESPONDENCE", "EMAIL", "OTHER"],
-                        min_strength=0.4,
-                        description=(
-                            "RTB dispute filing receipt / portal confirmation dated within "
-                            "15 days of notice service (confirm current RTB rules)."
-                        ),
-                    ),
-                ],
-            ),
-            LegalTestElement(
-                element_id="E2-prior-complaint",
-                description=(
-                    "Tenant engaged in protected activity (complained to landlord/RTB/"
-                    "government body about habitability, repairs, or rights enforcement)"
-                ),
-                evidence_type=ElementEvidenceType.SUBSTANTIVE,
-                required=True,
-                protected_activities=[
-                    "filing complaint with RTB",
-                    "requesting repairs",
-                    "asserting rights under RTA",
-                    "contacting health/safety authority",
-                    "complained to landlord about habitability, repairs, or rights",
-                ],
-                evidence=[
-                    ElementEvidenceSpec(
-                        role=ElementEvidenceRole.REQUIRED,
-                        claim_tags=[
-                            "retaliatory_eviction",
-                            "non_repair",
-                            "mold_hazard",
-                            "city_enforcement",
-                        ],
-                        fact_keys=[
-                            "protected_activity",
-                            "repair_request",
-                            "rtb_complaint",
-                        ],
-                        source_types=[
-                            "EMAIL",
-                            "TEXT_MESSAGE",
-                            "GOVERNMENT_CORRESPONDENCE",
-                        ],
-                        min_strength=0.4,
-                        description=(
-                            "Complaint, repair request, or rights enforcement before the notice."
-                        ),
-                    ),
-                ],
-            ),
-            LegalTestElement(
-                element_id="E3-temporal-nexus",
-                description=(
-                    "Reasonable connection in timing between protected activity and eviction notice"
-                ),
-                evidence_type=ElementEvidenceType.INFERENTIAL,
-                required=True,
-                weight=0.30,
-                evidence=[
-                    ElementEvidenceSpec(
-                        role=ElementEvidenceRole.REQUIRED,
-                        claim_tags=["retaliatory_eviction"],
-                        fact_keys=["sequence", "timing", "notice_to_end"],
-                        source_types=["GOVERNMENT_CORRESPONDENCE", "PHOTO"],
-                        min_strength=0.4,
-                        description=(
-                            "Timeline: protected activity then Notice to End Tenancy; "
-                            "gap analysis informs strength of nexus."
-                        ),
-                    ),
-                ],
-                notes="Inferential — temporal proximity alone may be attacked (see adverse authority).",
-            ),
-            LegalTestElement(
-                element_id="E4-absence-legitimate-cause",
-                description=(
-                    "Landlord's stated reasons are pretextual or insufficient on their own"
-                ),
-                evidence_type=ElementEvidenceType.INFERENTIAL,
-                required=False,
-                weight=0.40,
-                evidence=[
-                    ElementEvidenceSpec(
-                        role=ElementEvidenceRole.SUPPORTING,
-                        claim_tags=["retaliatory_eviction"],
-                        description="Evidence undermining landlord's stated cause.",
-                    ),
-                    ElementEvidenceSpec(
-                        role=ElementEvidenceRole.ADVERSE,
-                        claim_tags=["rent_issue"],
-                        description=(
-                            "Proven independent legitimate cause (e.g. arrears) may "
-                            "support landlord rebuttal after burden shift."
-                        ),
-                    ),
-                ],
-            ),
-        ],
-        verification_note=(
-            "Scaffold only. Verify Residential Tenancy Act s. 56 on BC Laws "
-            "(currency line) and every adverse case on CanLII before filing. "
-            "GroundingGate refuses court-ready use of CIT-RTA-S56 until VERIFIED."
-        ),
+        elements=[],  # no elements — cannot evaluate
+        notes=_S56_DISABLED_REASON,
+        verification_note=_S56_DISABLED_REASON,
+        disabled=True,
+        disabled_reason=_S56_DISABLED_REASON,
+        authority_status="DISABLED",
+        review_date="2026-07-21",
+        verified_by=None,
     )
 
 
-# Back-compat aliases
 def retaliatory_eviction_s56_test() -> LegalTest:
     return rta_s56_retaliatory_eviction_test()
 
 
 def default_legal_tests() -> dict[str, LegalTest]:
+    """Registry: disabled tests remain listed so KeyError is not silent; evaluation refuses."""
     t = rta_s56_retaliatory_eviction_test()
-    # both ids resolve to same test
     return {
         t.test_id: t,
-        "TEST-RETALIATORY-EVICTION-S56": t,  # legacy alias
+        "TEST-RETALIATORY-EVICTION-S56": t,
     }
+
+
+def default_callable_legal_tests() -> dict[str, LegalTest]:
+    """Only non-disabled tests for ordinary matter workflows."""
+    return {k: v for k, v in default_legal_tests().items() if not v.disabled}

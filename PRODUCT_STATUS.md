@@ -6,7 +6,8 @@
 **Not:** a licensed lawyer, legal advice service, or representation
 
 **Assessment date:** 2026-07-21  
-**Verdict:** strong **prototype / counsel workbench** — **not** a completed AI Legal Associate
+**Verdict:** strong **prototype / counsel workbench** — **not** a completed AI Legal Associate  
+**Full audit:** `architecture/AUDIT_P0_2026-07-21.md` — estimated supervised V1 **~25%** complete; **P0** scrub of live matter + disable incorrect RTA s.56 retaliation test **applied in working tree** (git history rewrite still required if ever pushed).
 
 ---
 
@@ -21,12 +22,14 @@
 | Gradio index Space (`huggingface-space/`) | Present (navigation + official links) |
 | Publish scripts (GitHub / HF) | Present |
 | Matter-isolated client files | Local-only via `matters/` gitignore |
+| Evidence Matrix + EvidenceNode (architecture/) | Present (prototype) |
+| Phase 2–4 service skeletons (`services/`, `infra/`, `middleware/`) | **Scaffold only** |
 | Production auth / multi-tenant security | **Absent** |
-| OCR, page-level citations, citation gate | **Absent** |
-| Live statutory/case research + treatment | **Absent** |
+| OCR, page-level citations, live STT | **Absent** (ingestion classifier/dedup rules only) |
+| Live statutory/case research + treatment | **Absent** (fail-closed gate scaffold) |
 | Deadline engine, court-form export | **Absent** |
-| GraphRAG knowledge graph | **Absent** |
-| Human approval gates + audit trail | **Absent** |
+| GraphRAG knowledge graph (live Neo4j) | **Absent** (compose skeleton) |
+| Human approval gates + audit trail | **Partial** (schemas + HITL stubs) |
 | Meaningful legal evaluation suite | **Absent** |
 
 **GitHub note (2026-07-21):** `https://github.com/dmang69/bc-legal-ai` is **not** empty. Remote holds the skills/legislation workbench (tree ~140 objects on `master`/`main`). It is **not** yet a full associate product with matter storage, OCR, verification, or court export. If a third-party “project package” described Gradio inference + five skills + three tests + 60k/140k truncation, that refers to a **demo package**, not the completed V1 system.

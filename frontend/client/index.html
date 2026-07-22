@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BC Legal AI — Client Portal</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header>
+    <h1>Client Portal</h1>
+    <p class="sub">BC Legal AI Associate — support tools only · Not legal advice</p>
+    <label for="lang">Language</label>
+    <select id="lang" aria-label="Language">
+      <option value="en">English</option>
+      <option value="zh-Hans">中文 (简体)</option>
+      <option value="pa">ਪੰਜਾਬੀ</option>
+      <option value="tl">Tagalog</option>
+    </select>
+  </header>
+
+  <main id="main">
+    <div class="warn" role="alert" id="disclaimer">
+      <strong>Scaffold only.</strong> Do not upload confidential client or litigation files
+      to a public demo. MFA, encryption, and matter ACL are required before real use.
+    </div>
+
+    <section aria-labelledby="dash-h">
+      <h2 id="dash-h">Matter dashboard</h2>
+      <div id="dashboard" class="card">
+        <p id="dash-empty">No matters loaded (API not connected).</p>
+      </div>
+    </section>
+
+    <section aria-labelledby="ev-h">
+      <h2 id="ev-h">Evidence tracker</h2>
+      <ul id="evidence-list" class="card"></ul>
+    </section>
+
+    <section aria-labelledby="tl-h">
+      <h2 id="tl-h">Timeline</h2>
+      <ol id="timeline" class="card"></ol>
+    </section>
+
+    <section aria-labelledby="up-h">
+      <h2 id="up-h">Document upload</h2>
+      <form id="upload-form" class="card" onsubmit="return false;">
+        <label for="file">File</label>
+        <input id="file" type="file" />
+        <label for="class">Guided classification</label>
+        <select id="class">
+          <option>Photo</option>
+          <option>Email</option>
+          <option>RTB decision</option>
+          <option>Audio</option>
+          <option>Court filing</option>
+          <option>Other</option>
+        </select>
+        <label for="meta-date">Photo / document date</label>
+        <input id="meta-date" type="date" />
+        <button type="button" id="preview-btn">Preview &amp; confirm</button>
+        <p id="upload-status" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section aria-labelledby="con-h">
+      <h2 id="con-h">Consent management</h2>
+      <div id="consent" class="card">
+        <p>Current consent state loads from <code>services/consent_center</code> when API is wired.</p>
+        <ul>
+          <li>View / modify / withdraw</li>
+          <li>History log</li>
+          <li>Plain-language explanations</li>
+        </ul>
+      </div>
+    </section>
+
+    <section aria-labelledby="msg-h">
+      <h2 id="msg-h">Secure messaging</h2>
+      <div class="card">
+        <p>Privilege flagging · read receipts · classification prompts · E2E (server scaffold).</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Screen-reader friendly structure · mobile-optimized layout · plain-language summaries planned per locale.</p>
+  </footer>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/dmang69/bc-legal-ai/architecture/schemas/evidence_node_v1.json",
+  "title": "EvidenceNode",
+  "description": "ALA Layer 2 EvidenceNode schema v1. Canonical Python: architecture.evidence_node.EvidenceNode. Statute text never stored from model weights — BC Laws only.",
+  "version": "1.0.0",
+  "type": "object",
+  "required": ["node_id", "doc_hash", "privilege_class", "source_type"],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "node_id": {
+      "type": "string",
+      "pattern": "^EV-\\d{4}-\\d{6}$",
+      "description": "Immutable sequential node id"
+    },
+    "doc_hash": {
+      "type": "string",
+      "description": "sha256:hex of original bytes"
+    },
+    "privilege_class": {
+      "type": "string",
+      "enum": ["OPEN", "PROTECTED", "RESTRICTED", "WAIVED"]
+    },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "PHOTO", "EMAIL", "TEXT_MESSAGE", "RTB_DECISION", "COURT_ORDER",
+        "INSPECTION_CERT", "MEDICAL_RECORD", "LEASE_AGREEMENT", "BANK_RECORD",
+        "WITNESS_STATEMENT", "AUDIO_RECORDING", "VIDEO", "GOVERNMENT_CORRESPONDENCE",
+        "NEWS_ARTICLE", "COURT_FILING", "OTHER"
+      ]
+    },
+    "date_created": { "type": ["string", "null"] },
+    "date_received": { "type": ["string", "null"] },
+    "date_entered_system": { "type": "string" },
+    "custodian": { "type": "string" },
+    "authenticity_status": {
+      "type": "string",
+      "enum": ["VERIFIED", "DISPUTED", "UNVERIFIED"]
+    },
+    "hearsay_flag": { "type": "boolean" },
+    "hearsay_exception": { "type": ["string", "null"] },
+    "best_evidence_rule": {
+      "type": "string",
+      "enum": ["ORIGINAL", "CERTIFIED_COPY", "PHOTOCOPY", "DIGITAL"]
+    },
+    "extracted_text": { "type": "string" },
+    "key_facts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["fact"],
+        "properties": {
+          "fact": { "type": "string" },
+          "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+          "source_span": { "type": ["string", "null"] },
+          "fact_key": { "type": ["string", "null"] },
+          "value": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "entities_mentioned": { "type": "array" },
+    "corroborates": { "type": "array", "items": { "type": "string" } },
+    "contradicts": { "type": "array", "items": { "type": "string" } },
+    "causally_linked_to": { "type": "array", "items": { "type": "string" } },
+    "temporal_sequence": {
+      "type": "object",
+      "properties": {
+        "before": { "type": "array", "items": { "type": "string" } },
+        "after": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "chain_of_custody": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "holder": { "type": "string" },
+          "from": { "type": ["string", "null"] },
+          "to": { "type": ["string", "null"] },
+          "method": { "type": "string" }
+        }
+      }
+    },
+    "alteration_history": { "type": "array" },
+    "exhibit_number": { "type": ["string", "null"] },
+    "admissibility_assessment": { "type": "object" },
+    "matter_id": { "type": ["string", "null"] },
+    "source_file": { "type": ["string", "null"] },
+    "matrix_evidence_id": { "type": ["string", "null"] },
+    "claim_tags": { "type": "array", "items": { "type": "string" } },
+    "contradiction_warning": { "type": "boolean" },
+    "contradiction_fact_keys": { "type": "array", "items": { "type": "string" } },
+    "strength_score": { "type": ["number", "null"] },
+    "strength_tier": { "type": ["string", "null"], "enum": ["A", "B", "C", "D", null] },
+    "ingestion": {
+      "type": "object",
+      "description": "Layer 1 pipeline metadata (schema v1 extension)",
+      "properties": {
+        "classification_label": { "type": "string" },
+        "classification_confidence": { "type": "number" },
+        "extraction_confidence": { "type": "number" },
+        "hitl_required": { "type": "boolean" },
+        "hitl_reasons": { "type": "array", "items": { "type": "string" } },
+        "duplicate_of": { "type": ["string", "null"] },
+        "near_duplicate_of": { "type": "array", "items": { "type": "string" } },
+        "object_store_uri": { "type": ["string", "null"] }
+      }
+    }
+  },
+  "additionalProperties": true
+}

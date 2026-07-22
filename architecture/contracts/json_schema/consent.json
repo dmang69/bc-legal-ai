@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/dmang69/bc-legal-ai/architecture/contracts/json_schema/consent.json",
+  "title": "ConsentRecord",
+  "description": "Processing consent only. Must not encode privilege or waiver.",
+  "type": "object",
+  "required": [
+    "consent_id",
+    "matter_id",
+    "subject_id",
+    "category",
+    "purpose",
+    "processing_scope",
+    "model_scope",
+    "status",
+    "notice_version"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "consent_id": { "type": "string" },
+    "matter_id": { "type": "string" },
+    "subject_id": { "type": "string" },
+    "category": {
+      "type": "string",
+      "enum": [
+        "GENERAL_MATTER_DATA",
+        "TENANCY_RECORDS",
+        "FINANCIAL_INFORMATION",
+        "MEDICAL_INFORMATION",
+        "DISABILITY_INFORMATION",
+        "PHOTOGRAPHS",
+        "AUDIO_RECORDINGS",
+        "VIDEO_RECORDINGS",
+        "LOCATION_METADATA",
+        "EMAIL_IMPORT",
+        "CLOUD_STORAGE_IMPORT",
+        "AI_ANALYSIS",
+        "EXTERNAL_MODEL_PROCESSING",
+        "ANONYMIZED_EVALUATION",
+        "CLIENT_COMMUNICATION_ANALYSIS",
+        "DISCLOSE_TO_COUNSEL",
+        "FILING_SUPPORT",
+        "DISCLOSE_TO_OPPOSING"
+      ]
+    },
+    "purpose": { "type": "string", "minLength": 1 },
+    "processing_scope": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "model_scope": {
+      "type": "string",
+      "enum": ["NONE", "PRIVATE_INFERENCE_ONLY", "EXTERNAL_MODEL"]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "DRAFT",
+        "PRESENTED",
+        "GRANTED",
+        "ACTIVE",
+        "MODIFIED",
+        "WITHDRAWAL_REQUESTED",
+        "RESTRICTED",
+        "WITHDRAWN",
+        "EXPIRED",
+        "DECLINED",
+        "LEGAL_BASIS_REVIEW",
+        "PROCESSING_PERMITTED_WITHOUT_CONSENT"
+      ]
+    },
+    "notice_version": { "type": "string" },
+    "granted_at": { "type": ["string", "null"] },
+    "expires_at": { "type": ["string", "null"] },
+    "withdrawn_at": { "type": ["string", "null"] },
+    "captured_by": { "type": "string" },
+    "authentication_event": { "type": ["string", "null"] },
+    "signature_hash": { "type": ["string", "null"] },
+    "plain_language": { "type": "string" }
+  },
+  "not": {
+    "anyOf": [
+      { "required": ["privilege_class"] },
+      { "required": ["waiver"] },
+      { "required": ["privilege_status"] }
+    ]
+  }
+}

@@ -186,3 +186,92 @@ V1 is complete only when the system can reliably:
 | 12 | Innovation Sandbox if serving the public | Not started |
 
 **Priority:** verified research engine + record-linked evidence engine.
+
+---
+
+## Phase 2–4 program (2026-07-21)
+
+Aligned with CURRENT STATE design, public demo Space, RAG-first / LoRA-second, fail-closed legal safety.
+
+### Phase 2 — Foundation
+
+| Track | Goal | Deliverables (repo) | Status |
+|-------|------|---------------------|--------|
+| **2.1 Ingestion** | Confidence + HITL, classify, metadata, dedup, AV | `services/ingestion/`, `services/classifier/`, `services/transcription/`, `architecture/schemas/evidence_node_v1.json` | **Scaffold** (rule-based; no OCR/STT weights) |
+| **2.2 Infrastructure** | Graph, PG, S3, vectors, queue, cache, gateway | `infra/docker-compose.yml`, `infra/k8s/`, `infra/secrets/`, `infra/logging/` | **Skeleton** (compose local; K8s not live) |
+| **2.3 Compliance** | Privilege + BC Laws fail-closed + no-weights | `services/compliance/`, `middleware/privilege_guard.py` | **Scaffold** |
+
+### Phase 3 — Legal reasoning engine (supervised)
+
+| Track | Goal | Deliverables | Status |
+|-------|------|--------------|--------|
+| **3.1 Control plane** | Policy enforcement before reasoning/output | `hitl/control_plane/`, `approvals/`, `escalation/`, `schemas/` | **Implemented (in-memory)** |
+| **3.1.A Consent** | Purpose categories, state machine, evaluate, withdrawal plan, ≠ waiver | `hitl/consent/` | **Implemented (in-memory)** |
+| **3.1.B Exceptions** | Full taxonomy, NOTICE–CRITICAL, freeze, human resolve only | `hitl/exceptions/` | **Implemented (in-memory)** |
+| **3.1.C Privilege** | Freeze snapshot, two independent pros, signed hash manifest | `hitl/privilege_check/production.py` | **Implemented (heuristic)** |
+| **3.1.D Competency** | Licence, task fit, separate RTA/Rules/forms currency, conflict | `hitl/competency_gate/` | **Implemented (rules)** |
+| **3.2 Knowledge base** | Source registry, treatment analyzer, snapshots, Form 66≠67 | `knowledgebase/*` | **Scaffold** |
+| **Arch map** | Phase 3–4 implementation map + six design locks | `architecture/PHASE_3_4.md` | **Doc** |
+| **Phase 3 API/DB contract** | consent, exceptions, approvals, knowledge-source | `architecture/contracts/` | **v0.1** |
+| **Phase 3–4 FastAPI** | HITL + JR clock + 4-4 post-resolution routes | `backend/api/main.py` | **Started (in-memory)** |
+| **JR clock** | 60-day + uncertainty + ATA s.57(2) path | `services/deadlines/jr_clock.py` | **Implemented** |
+
+### Phase 4 — Clients + post-resolution
+
+| Track | Goal | Deliverables | Status |
+|-------|------|--------------|--------|
+| **4.1 Portal** | MFA stub, dashboard, evidence, timeline, upload, a11y/i18n | `frontend/client/`, `services/client_portal/` | **UI scaffold + service stub** |
+| **4.1 Messaging** | E2E placeholder, privilege flag, receipts | `services/messaging/` | **Stub** |
+| **4.1 Consent center** | Client-facing consent UX API | `services/consent_center/` | **Implemented on ledger** |
+| **4.2 Post-resolution** | Outcomes, enforcement, JR (Form 66 petition), retention | `post_resolution/`, `enforcement/`, `jr_pipeline/`, `retention/` | **Stub** |
+| **4-4 Full Layer 6** | Outcome parse/clocks, compliance, escalation, enf/JR/stay, retention/destruction, LSBC scaffold | `services/post_resolution/*`, `services/compliance/lsbc_rules/` | **Implemented (in-memory heuristics)** |
+
+---
+
+## Critical path to production (authoritative order)
+
+**Scorecard (2026-07-21):** ~40% designed · ~10–15% scaffold-implemented · **0% production-ready** for real client matters.
+
+Do **not** start with HF Space “real associate,” LoRA, or Layer 4–6 polish. Wire foundations first.
+
+| Wave | Build | Unblocks |
+|------|--------|----------|
+| **W0** | Secrets hygiene; never put client data on public Space | All later waves |
+| **W1** | Postgres + `phase3_core.sql` + matter ACL + append-only audit | Consent, privilege, matters |
+| **W2** | FastAPI gateway binding HITL contracts (consent/exceptions/approvals) | Any safe API |
+| **W3** | Object store + **quarantine → classify → privilege → index** (Layer 1 core, no full OCR yet) | Evidence |
+| **W4** | EvidenceNode persistence + graph edges + contradiction/timeline on real nodes (Layer 2) | Reasoning |
+| **W5** | Privilege production gate on live exports + audit log (Layer 0 hard path) | Filings |
+| **W6** | BC Laws retrieval + citation verify + PIT snapshots (knowledge) | Court-ready claims |
+| **W7** | Deadline engine + JR clock human-confirm flags | Client deadlines |
+| **W8** | Private client portal MFA + messaging Model B + consent centre | Real users |
+| **W9** | Layer 4 hearing packs (DOCX) under lawyer approval | Hearing use |
+| **W10** | Layer 6 decision ingest + compliance + Form 66 JR packs | After-hearing |
+| **W11** | Eval suite (citation/privilege/leak/deadline) + pen-test + PIA | Pilot |
+| **W12** | QLoRA only after RAG+evals green; private inference | Optional assist |
+
+**Out of critical path until W6+:** full handwriting OCR, IMAP connectors, Neo4j at scale, garnishment automation, multilingual WCAG complete, public Space “full product.”
+
+#### Phase 4-4 package map
+
+| Subsystem | Path |
+|-----------|------|
+| Obligation parser | `services/post_resolution/obligation_parser/` |
+| Outcome tracker | `services/post_resolution/outcome_tracker/` |
+| Compliance monitor | `services/post_resolution/compliance_monitor/` |
+| Escalation router | `services/post_resolution/escalation_router/` |
+| Enforcement packs | `services/post_resolution/enforcement/` |
+| JR pipeline | `services/post_resolution/jr_pipeline/` |
+| Stay generator | `services/post_resolution/stay_generator/` |
+| Retention schedule | `services/post_resolution/retention/` |
+| Secure destruction | `services/post_resolution/destruction/` |
+| LSBC rules scaffold | `services/compliance/lsbc_rules/` |
+
+### One-page view
+
+```
+Phase 3  Make legally safe    →  HITL (A–D) + knowledge base + citation verifier
+Phase 4  Make usable          →  portal + messaging + consent center + post-resolution
+```
+
+**Honest constraint:** in-memory ledgers and heuristics are not production multi-tenant security. Court-ready work still requires supervising lawyer + human approval + BC Laws re-verification. Live STT/OCR/CanLII treatment and real E2E crypto are not wired.

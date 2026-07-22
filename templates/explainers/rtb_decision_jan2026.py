@@ -1,8 +1,7 @@
 """
-Plain-language explainer: RTB Decision dated January 15, 2026 (REV January 20).
+SYNTHETIC plain-language explainer template for a fictional RTB decision.
 
-Tied to JR file KAM-S-S-65285 / petition PET-JR-RTB-001 analysis themes.
-Fill placeholders when the written decision is received (dashboard: awaiting from RTB).
+No live court file numbers. Placeholders for demo training only.
 """
 
 from __future__ import annotations
@@ -12,77 +11,54 @@ from architecture.document_explainer import DocumentExplainer
 
 def rtb_decision_jan2026_explainer(
     *,
-    matter_id: str | None = "KAM-S-S-65285",
+    matter_id: str | None = "DEMO-JR-0001",
     effective_eviction_date: str | None = None,
     vacate_by_date: str | None = None,
     key_findings: list[str] | None = None,
 ) -> DocumentExplainer:
-    """
-    Template + case-linked error themes from petition outline.
-
-    effective_eviction_date / vacate_by_date: fill from written decision when available.
-    """
-    eff = effective_eviction_date or "[date — fill from written RTB decision]"
-    vacate = vacate_by_date or "[date — fill from written RTB decision]"
+    eff = effective_eviction_date or "[SYNTHETIC date — fill from decision]"
+    vacate = vacate_by_date or "[SYNTHETIC date — fill from decision]"
 
     findings = key_findings or [
-        "[Summarized in plain language once written decision is on file]",
-        "Planning theme: arbitrator treated high volume of police calls as supporting "
-        "concern about illegal activity / nuisance (confirm exact wording in decision).",
-        "Planning theme: landlord’s eviction notice treated as valid (confirm grounds cited).",
+        "[SYNTHETIC] Summarized finding placeholder",
+        "[SYNTHETIC] Planning theme: service-call volume treated as relevant (confirm decision text)",
     ]
 
     return DocumentExplainer(
-        explainer_id="EXP-RTB-DEC-2026-01-15",
-        document_title="RTB Decision",
-        document_date="January 15, 2026",
-        document_revision="REV January 20",
+        explainer_id="EXP-RTB-DEC-DEMO-001",
+        document_title="[SYNTHETIC] RTB Decision",
+        document_date="[SYNTHETIC] January 15, 2026",
+        document_revision="[SYNTHETIC] REV placeholder",
         matter_id=matter_id,
-        evidence_node_id=None,  # set when PDF uploaded to matrix
+        evidence_node_id=None,
         what_this_says=[
-            "The arbitrator decided your landlord's eviction notice is valid",
-            f"The effective date of eviction is {eff}",
-            f"You are ordered to vacate by {vacate}",
+            "[SYNTHETIC] The arbitrator decided the landlord's eviction notice is valid",
+            f"[SYNTHETIC] The effective date of eviction is {eff}",
+            f"[SYNTHETIC] You are ordered to vacate by {vacate}",
         ],
         what_this_means=[
-            f"You must leave the unit by {vacate} unless both of the following happen:",
-            "  1. You file a judicial review petition with BC Supreme Court, AND",
-            "  2. You get a stay of the order from the court",
-            "A petition alone may not stop the eviction timeline — a stay is a separate "
-            "court order (confirm procedure with counsel).",
-            "Court file reference in workbench: KAM-S-S-65285 (confirm registry details).",
+            f"[SYNTHETIC] Demo only — leave by {vacate} unless petition + stay (real matters: counsel)",
+            "A petition alone may not stop the eviction timeline — a stay is a separate court order (confirm with counsel).",
+            "Workbench file label: DEMO-JR-0001 (synthetic — not a real registry number).",
         ],
         key_findings=findings,
         possible_errors=[
-            # From petition outline Layer 3 / Ground 1–2 themes — not final legal conclusions
-            'Accepted "400 police calls" as supporting illegal activity without requiring '
-            "a breakdown of call outcomes (see EM-031 / transcript 25:40–26:40 themes)",
-            "Did not clearly distinguish calls for service from confirmed illegal activity "
-            "(petition Ground 1b — verify RTA s. 47 fit on BC Laws)",
-            'Accepted "nuisance property" designation without documentary proof '
-            "(transcript 37:00 theme)",
-            "Procedural fairness concerns: SRL service guidance and exclusion of "
-            "mayor/bylaw emails without clear explanation (Ground 2 themes — verify transcript)",
-            "Full error list requires the written reasons; update when RTB decision PDF is received",
+            '[SYNTHETIC] Example theme: accepted high volume of police calls without breakdown of outcomes',
+            "[SYNTHETIC] Example theme: procedural fairness / opportunity to respond",
         ],
         options=[
-            "File judicial review (planning deadline in dashboard: March 21, 2026 — "
-            "CONFIRM limitation under JRPA / applicable rules before relying)",
-            "Apply for a stay of eviction (separate from filing the petition)",
-            "Negotiate move-out date with landlord",
-            "Seek legal assistance (resources listed below)",
-        ],
-        resources=[
-            "Access Pro Bono / lawyer referral — https://www.accessprobono.ca/ (verify current links)",
-            "Legal Aid BC — https://legalaid.bc.ca/ (eligibility rules apply)",
-            "BC Supreme Court self-help / registry information — courts.gov.bc.ca (verify)",
-            "RTB: request written decision / recording if not yet received",
-            "Independent counsel strongly recommended for JR + stay strategy",
+            "[SYNTHETIC] Discuss judicial review (Form 66 petition) with counsel",
+            "[SYNTHETIC] Discuss stay application (typically Form 32) with counsel",
+            "[SYNTHETIC] Confirm limitation using deadline engine (60 days from issuance — ATA s.57; extension is counsel-driven)",
         ],
         placeholders_remaining=[
             "effective_eviction_date",
             "vacate_by_date",
-            "key_findings (plain-language summary of written reasons)",
-            "Upload written RTB decision + hearing audio to Evidence Matrix",
-        ],
+        ]
+        if effective_eviction_date is None
+        else [],
+        disclaimer=(
+            "This explanation is not legal advice. SYNTHETIC DEMO ONLY. "
+            "It is a plain-language summary template for discussion with a lawyer."
+        ),
     )
