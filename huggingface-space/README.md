@@ -10,14 +10,16 @@ license: mit
 
 # BC Legal AI Associate
 
-Public static landing page for the BC Legal AI Associate project.
+Human-supervised legal research, evidence, drafting, and matter-support platform for British Columbia.
 
-**Not a lawyer. Not legal advice.** Do not upload confidential client files here.
+**Not a lawyer. Not legal advice.** The system proposes, organizes, checks, and drafts. Qualified humans retain professional judgment, filing, and representation.
+
+Full product description (target platform):  
+https://github.com/dmang69/bc-legal-ai/blob/main/docs/PRODUCT_DESCRIPTION.md
 
 - **GitHub:** https://github.com/dmang69/bc-legal-ai  
 - **Dataset:** https://huggingface.co/datasets/Dmang69/bc-legal-ai  
+- **Model policy:** https://huggingface.co/Dmang69/bc-legal-ai-base  
 - **BC Laws:** https://www.bclaws.gov.bc.ca/  
 
-Gradio/Docker Spaces require Hugging Face PRO on free CPU hardware. This Space remains a free **static** portal with links to source and official law.
-
-Private product delivery: Tauri 2 Workbench / Client / Portal against a private backend (see repo `docs/SECTION_G_PLATFORM_AND_DISTRIBUTION.md`).
+This Space is a free **static** landing. Do not upload confidential client files.
