@@ -1,30 +1,37 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import {
+  ChatMessage,
+  Conversation,
+  Matter,
+  createConversation,
   createMatter,
   getApiBase,
+  getConversation,
   getToken,
   healthCheck,
+  listConversations,
   listMatters,
+  listModes,
+  listSpecialists,
   login,
   register,
+  sendMessage,
   setToken,
-  verifyCitation,
 } from "./lib/api";
 import { getAppMode, type AppMode } from "./lib/mode";
-import { ConversationalWorkspace } from "./workspace/ConversationalWorkspace";
 import "./styles.css";
 
-const MODE_LABEL: Record<AppMode, string> = {
-  workbench: "BC Legal AI Workbench",
-  client: "BC Legal AI Client",
-  self_rep: "Self-Represented Workbench",
-  portal: "BC Legal AI Portal",
+type WorkPanel = {
+  view?: string;
+  title?: string;
+  plan?: string[];
+  issues?: { label: string; strength: string }[];
+  [k: string]: unknown;
 };
 
 export function App() {
-  const mode = getAppMode();
-  const [health, setHealth] = useState("checking…");
-  const [offline, setOffline] = useState(!navigator.onLine);
+  const [token, setTok] = useState<string | null>(getToken());
+  const [health, setHealth] = useState("…");
   const [email, setEmail] = useState("demo@synthetic.invalid");
   const [password, setPassword] = useState("securepass99");
   const [orgName, setOrgName] = useState("Demo Org");
@@ -33,7 +40,6 @@ export function App() {
   const [msg, setMsg] = useState("");
   const [citeIn, setCiteIn] = useState("RTA s.56 retaliation");
   const [citeOut, setCiteOut] = useState("");
-  const [surface, setSurface] = useState<"workspace" | "platform">("workspace");
 
   useEffect(() => {
     const on = () => setOffline(false);
@@ -50,101 +56,152 @@ export function App() {
     healthCheck().then((h) => {
       setHealth(
         h.ok
-          ? `API OK · ${h.phase ?? ""} · db=${h.db_backend ?? "?"} · ${getApiBase()}`
-          : `API unreachable · ${getApiBase()}`,
+          ? `API · ${h.phase ?? "ok"} · ${h.db_backend ?? "?"} · ${getApiBase()}`
+          : `API offline · ${getApiBase()}`,
       );
     });
+    listSpecialists()
+      .then((r) => setSpecialists(r.specialists))
+      .catch(() => undefined);
+    listModes()
+      .then((r) => setModes(r.modes))
+      .catch(() => undefined);
+  }, []);
+
+  const refreshList = useCallback(async () => {
+    if (!getToken()) return;
+    const r = await listConversations();
+    setConversations(r.conversations);
   }, []);
 
   useEffect(() => {
     if (!token) return;
+    refreshList().catch((e: Error) => setErr(e.message));
     listMatters()
       .then((r) => setMatters(r.matters))
-      .catch((e: Error) => setMsg(e.message));
-  }, [token]);
+      .catch(() => undefined);
+  }, [token, refreshList]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  async function openChat(id: string) {
+    setErr("");
+    const r = await getConversation(id);
+    setActiveId(id);
+    setActiveConv(r.conversation);
+    setMessages(r.messages);
+    const last = [...r.messages].reverse().find((m) => m.role === "assistant");
+    setWork((last?.meta?.work_panel as WorkPanel) || { view: "sources", title: "Sources" });
+  }
+
+  async function onNewChat() {
+    setErr("");
+    try {
+      const c = await createConversation({
+        title: "New chat",
+        chat_type: chatType,
+        matter_id: chatType === "matter" && matterId ? matterId : null,
+        model_mode: mode,
+        specialist,
+      });
+      await refreshList();
+      await openChat(c.conversation_id);
+    } catch (e) {
+      setErr(String(e));
+    }
+  }
+
+  async function onSend(e?: FormEvent) {
+    e?.preventDefault();
+    if (!activeId || !draft.trim() || sending) return;
+    setSending(true);
+    setErr("");
+    const text = draft.trim();
+    setDraft("");
+    setMessages((m) => [...m, { role: "user", content: text }]);
+    try {
+      const r = await sendMessage(activeId, text);
+      setMessages((m) => [
+        ...m,
+        {
+          role: "assistant",
+          content: r.assistant.content,
+          meta: r.assistant.meta,
+        },
+      ]);
+      if (r.assistant.meta?.work_panel) {
+        setWork(r.assistant.meta.work_panel as WorkPanel);
+        setShowRight(true);
+      }
+      await refreshList();
+    } catch (ex) {
+      setErr(String(ex));
+    } finally {
+      setSending(false);
+    }
+  }
 
   async function onRegister(e: FormEvent) {
     e.preventDefault();
-    setMsg("");
+    setAuthMsg("");
     try {
-      const s = await register({ org_name: orgName, email, password, display_name: "Demo" });
+      const s = await register({
+        org_name: orgName,
+        email,
+        password,
+        display_name: "Demo",
+      });
       setToken(s.token);
       setTok(s.token);
-      setMsg(`Registered as ${s.user.email}`);
-    } catch (err) {
-      setMsg(String(err));
+    } catch (ex) {
+      setAuthMsg(String(ex));
     }
   }
 
   async function onLogin(e: FormEvent) {
     e.preventDefault();
-    setMsg("");
+    setAuthMsg("");
     try {
       const s = await login(email, password);
       setToken(s.token);
       setTok(s.token);
-      setMsg(`Logged in as ${s.user.email}`);
-    } catch (err) {
-      setMsg(String(err));
-    }
-  }
-
-  async function onNewMatter() {
-    setMsg("");
-    try {
-      const m = await createMatter("Synthetic demo matter");
-      setMatters((prev) => [{ matter_id: m.matter_id, title: m.title }, ...prev]);
-      setMsg(`Created ${m.matter_id}`);
-    } catch (err) {
-      setMsg(String(err));
-    }
-  }
-
-  async function onCite() {
-    setCiteOut("…");
-    try {
-      const r = await verifyCitation(citeIn, "retaliatory_eviction");
-      setCiteOut(`${r.status} · court_ready=${r.court_ready}\n${r.reasons.join("\n")}`);
-    } catch (err) {
-      setCiteOut(String(err));
+    } catch (ex) {
+      setAuthMsg(String(ex));
     }
   }
 
   function logout() {
     setToken(null);
     setTok(null);
-    setMatters([]);
+    setConversations([]);
+    setMessages([]);
+    setActiveId(null);
+  }
+
+  async function ensureMatter() {
+    try {
+      const m = await createMatter("Synthetic demo matter");
+      setMatters((prev) => [m, ...prev]);
+      setMatterId(m.matter_id);
+      setChatType("matter");
+    } catch (e) {
+      setErr(String(e));
+    }
   }
 
   return (
     <div className="shell">
       <header className="header">
-        <div>
-          <h1>{MODE_LABEL[mode]}</h1>
-          <p className="sub">
-            Family: BC Legal AI Associate · Not a lawyer · Not legal advice · Human supervision
-            required
-          </p>
-          <p className="api-status" aria-live="polite">
-            {health}
-          </p>
-        </div>
-        <div className="surface-switch" aria-label="Application surface">
-          <button
-            className={surface === "workspace" ? "active" : ""}
-            onClick={() => setSurface("workspace")}
-            type="button"
-          >
-            AI Workspace
-          </button>
-          <button
-            className={surface === "platform" ? "active" : ""}
-            onClick={() => setSurface("platform")}
-            type="button"
-          >
-            Platform Admin
-          </button>
-        </div>
+        <h1>{MODE_LABEL[mode]}</h1>
+        <p className="sub">
+          Family: BC Legal AI Associate · Not a lawyer · Not legal advice · Human supervision
+          required
+        </p>
+        <p className="api-status" aria-live="polite">
+          {health}
+        </p>
       </header>
 
       {offline && (
@@ -154,82 +211,78 @@ export function App() {
         </div>
       )}
 
-      {surface === "workspace" ? (
-        <ConversationalWorkspace />
-      ) : (
-        <main>
-          <section className="card warn" role="note">
-            <strong>M1 platform build.</strong> Auth, org/matter isolation, hash-chained audit,
-            document quarantine, and fail-closed citations. Synthetic data only for demos. No
-            court-ready export without privilege gates.
-          </section>
+      <main>
+        <section className="card warn" role="note">
+          <strong>M1 platform build.</strong> Auth, org/matter isolation, hash-chained audit,
+          document quarantine, and fail-closed citations. Synthetic data only for demos. No
+          court-ready export without privilege gates.
+        </section>
 
-          {!token ? (
-            <section className="card">
-              <h2>Sign in (private API)</h2>
-              <form className="form" onSubmit={onLogin}>
-                <label>
-                  Org (register only)
-                  <input value={orgName} onChange={(e) => setOrgName(e.target.value)} />
-                </label>
-                <label>
-                  Email
-                  <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" />
-                </label>
-                <label>
-                  Password
-                  <input
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    type="password"
-                  />
-                </label>
-                <div className="row">
-                  <button type="submit">Log in</button>
-                  <button type="button" onClick={onRegister}>
-                    Register org
-                  </button>
-                </div>
-              </form>
-            </section>
-          ) : (
-            <section className="card">
-              <h2>Matters</h2>
+        {!token ? (
+          <section className="card">
+            <h2>Sign in (private API)</h2>
+            <form className="form" onSubmit={onLogin}>
+              <label>
+                Org (register only)
+                <input value={orgName} onChange={(e) => setOrgName(e.target.value)} />
+              </label>
+              <label>
+                Email
+                <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" />
+              </label>
+              <label>
+                Password
+                <input
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  type="password"
+                />
+              </label>
               <div className="row">
-                <button type="button" onClick={onNewMatter}>
-                  New synthetic matter
-                </button>
-                <button type="button" onClick={logout}>
-                  Log out
+                <button type="submit">Log in</button>
+                <button type="button" onClick={onRegister}>
+                  Register org
                 </button>
               </div>
-              <ul>
-                {matters.map((m) => (
-                  <li key={m.matter_id}>
-                    <code>{m.matter_id}</code> — {m.title}
-                  </li>
-                ))}
-                {matters.length === 0 && <li>No matters yet.</li>}
-              </ul>
-            </section>
-          )}
-
-          <section className="card">
-            <h2>Citation check (fail-closed)</h2>
-            <input value={citeIn} onChange={(e) => setCiteIn(e.target.value)} className="wide" />
-            <button type="button" onClick={onCite}>
-              Verify
-            </button>
-            <pre className="out">{citeOut}</pre>
+            </form>
           </section>
+        ) : (
+          <section className="card">
+            <h2>Matters</h2>
+            <div className="row">
+              <button type="button" onClick={onNewMatter}>
+                New synthetic matter
+              </button>
+              <button type="button" onClick={logout}>
+                Log out
+              </button>
+            </div>
+            <ul>
+              {matters.map((m) => (
+                <li key={m.matter_id}>
+                  <code>{m.matter_id}</code> — {m.title}
+                </li>
+              ))}
+              {matters.length === 0 && <li>No matters yet.</li>}
+            </ul>
+          </section>
+        )}
 
-          {msg && (
-            <section className="card">
-              <pre className="out">{msg}</pre>
-            </section>
-          )}
-        </main>
-      )}
+        <section className="card">
+          <h2>Citation check (fail-closed)</h2>
+          <input value={citeIn} onChange={(e) => setCiteIn(e.target.value)} className="wide" />
+          <button type="button" onClick={onCite}>
+            Verify
+          </button>
+          <pre className="out">{citeOut}</pre>
+        </section>
+
+        {msg && (
+          <section className="card">
+            <pre className="out">{msg}</pre>
+          </section>
+        )}
+      </main>
     </div>
   );
 }

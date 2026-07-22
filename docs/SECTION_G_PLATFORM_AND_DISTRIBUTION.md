@@ -3,6 +3,7 @@
 **Status:** Controlling program section (2026-07-22)  
 **Product family:** BC Legal AI Associate  
 **Parent program:** [`PHASE_4_MASTER_ENGINEERING_PROGRAM.md`](PHASE_4_MASTER_ENGINEERING_PROGRAM.md)  
+**Project plan / WBS:** [`SECTION_G_PROJECT_PLAN.md`](SECTION_G_PROJECT_PLAN.md)  
 **Install quickstart:** [`../INSTALL.md`](../INSTALL.md)
 
 | Product surface | Application name |

@@ -22,15 +22,22 @@
 | SQL migrations | `architecture/contracts/sql/m1_platform.sql` | docker-compose init |
 | UI shell against API | `apps/platform-ui` | register/login/matters/citations |
 
+## Production schema target
+
+Controlling model: **`docs/DATA_MODEL_AND_EVIDENCE_SCHEMA.md`**  
+SQL: **`architecture/contracts/sql/v1_data_model.sql`** (Postgres 16 + pgvector)
+
+SQLite M1 remains the default for unit tests and local quickstart until the dual-backend adapter maps UUID v1 tables.
+
 ## Not yet (continue M1–M2)
 
+- Dual-backend adapter (SQLite M1 ↔ Postgres v1)  
 - MFA / OIDC / passwordless  
-- Postgres RLS policies  
+- Postgres RLS policies enabled in app session  
 - Malware scanner engine  
-- OCR / PDF page pipeline  
+- Full OCR pipeline  
 - Full conflict fuzzy + corporate graph  
-- Consent ledger persistence on all HITL paths  
-- Vector embeddings  
+- Vector embeddings at scale  
 - Redis job workers  
 - Court-ready export  
 

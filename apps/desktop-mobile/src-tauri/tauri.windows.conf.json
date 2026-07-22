@@ -1,5 +1,5 @@
 {
-  "productName": "BC Legal AI Workbench",
+  "productName": "BC Legal AI Associate",
   "identifier": "ca.bclegalai.workbench",
   "bundle": {
     "targets": ["nsis", "msi"],
@@ -7,6 +7,9 @@
       "nsis": {
         "installMode": "currentUser",
         "displayLanguageSelector": false
+      },
+      "wix": {
+        "language": "en-US"
       }
     }
   },

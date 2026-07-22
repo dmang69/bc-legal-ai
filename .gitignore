@@ -58,6 +58,16 @@ data/
 /uploads/
 /cache/
 tests/_tmp*.sqlite3
+# Keep release notes pattern but ignore large binaries by default
+releases/**/*.exe
+releases/**/*.msi
+releases/**/*.dmg
+releases/**/*.apk
+releases/**/*.aab
+releases/**/*.ipa
+# Allow checksums and notes
+!releases/**/checksums.txt
+!releases/**/release-notes.md
 
 # Logs
 *.log

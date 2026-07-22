@@ -1,35 +1,9 @@
-/** Private backend origin — never bake production secrets into the bundle. */
+/** Private backend API client for conversational workspace. */
 
 export function getApiBase(): string {
   const fromEnv = import.meta.env.VITE_API_BASE_URL as string | undefined;
   if (fromEnv && fromEnv.length > 0) return fromEnv.replace(/\/$/, "");
   return "http://127.0.0.1:8000";
-}
-
-export type HealthResult = {
-  ok: boolean;
-  status?: string;
-  app_mode?: string;
-  phase?: string;
-  db_backend?: string;
-};
-
-export async function healthCheck(): Promise<HealthResult> {
-  const base = getApiBase();
-  try {
-    const res = await fetch(`${base}/health`, { credentials: "omit" });
-    if (!res.ok) return { ok: false };
-    const data = (await res.json()) as Record<string, string>;
-    return {
-      ok: true,
-      status: data.status,
-      app_mode: data.app_mode ?? data.mode,
-      phase: data.phase,
-      db_backend: data.db_backend,
-    };
-  } catch {
-    return { ok: false };
-  }
 }
 
 const TOKEN_KEY = "ala_token";
@@ -73,9 +47,31 @@ async function api<T>(
 
 export type Session = {
   token: string;
-  expires_at: string;
   user: { user_id: string; org_id: string; email: string; display_name: string; role: string };
 };
+
+export type HealthResult = {
+  ok: boolean;
+  phase?: string;
+  db_backend?: string;
+  app_mode?: string;
+};
+
+export async function healthCheck(): Promise<HealthResult> {
+  try {
+    const res = await fetch(`${getApiBase()}/health`);
+    if (!res.ok) return { ok: false };
+    const data = (await res.json()) as Record<string, string>;
+    return {
+      ok: true,
+      phase: data.phase,
+      db_backend: data.db_backend,
+      app_mode: data.app_mode,
+    };
+  } catch {
+    return { ok: false };
+  }
+}
 
 export function register(body: {
   org_name: string;
@@ -98,52 +94,38 @@ export function login(email: string, password: string): Promise<Session> {
   });
 }
 
-export function listMatters(): Promise<{ matters: Array<{ matter_id: string; title: string; synthetic: boolean }> }> {
+export type Matter = { matter_id: string; title: string; synthetic?: boolean };
+
+export function listMatters(): Promise<{ matters: Matter[] }> {
   return api("/v1/platform/matters");
 }
 
-export function createMatter(title: string): Promise<{ matter_id: string; title: string }> {
+export function createMatter(title: string): Promise<Matter> {
   return api("/v1/platform/matters", {
     method: "POST",
     body: JSON.stringify({ title, synthetic: true }),
   });
 }
 
-export type CitationVerification = {
-  verification_id?: string;
-  citation_text: string;
+export function verifyCitation(citation_text: string, expected_topic = ""): Promise<{
   status: string;
-  source_id?: string | null;
-  source_url?: string;
   reasons: string[];
   court_ready: boolean;
-};
-
-export type WorkspaceAnalysis = {
-  message: string;
-  mode: string;
-  classification: {
-    issues: string[];
-    requires_human_review: boolean;
-    court_ready: boolean;
-  };
-  citations: CitationVerification[];
-  safety: {
-    court_ready: boolean;
-    legal_advice: boolean;
-    blockers: string[];
-  };
-};
-
-export function verifyCitation(
-  citation_text: string,
-  expected_topic = "",
-): Promise<CitationVerification> {
+}> {
   return api("/v1/platform/citations/verify", {
     method: "POST",
-    body: JSON.stringify({ citation_text, expected_topic }),
-    auth: false,
+    body: JSON.stringify({ content }),
   });
+}
+
+export function listSpecialists(): Promise<{
+  specialists: { id: string; name: string }[];
+}> {
+  return api("/v1/platform/workspace/specialists", { auth: false });
+}
+
+export function listModes(): Promise<{ modes: { id: string; label: string }[] }> {
+  return api("/v1/platform/workspace/modes", { auth: false });
 }
 
 export function analyzeWorkspaceMessage(body: {

@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Data model v1.0 (controlling)
+
+- `docs/DATA_MODEL_AND_EVIDENCE_SCHEMA.md` + `architecture/contracts/sql/v1_data_model.sql`
+- Postgres 16 + pgvector: users/roles/devices/sessions, matters/participants,
+  evidence documents/pages/OCR/embeddings/privilege/custody, evidence items + links,
+  authorities + verification, deadlines, drafts, communications, consent, physical files,
+  conversations, hash-chained audit_entries
+- docker-compose Postgres image: `pgvector/pgvector:pg16`
+
 ### M1 platform core (build in progress)
 
 - SQLite default + Postgres SQL (`m1_platform.sql`): orgs, users, sessions, matters,
