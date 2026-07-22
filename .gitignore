@@ -53,8 +53,11 @@ secrets/
 *.sqlite
 *.sqlite3
 /data/
+data/
+/uploads/
 /uploads/
 /cache/
+tests/_tmp*.sqlite3
 
 # Logs
 *.log

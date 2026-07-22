@@ -1,17 +1,21 @@
 """
-BC Legal AI Associate — Phase 3–4 API gateway (HITL + Layer 6 post-resolution).
+BC Legal AI Associate — modular monolith API gateway.
 
 Run (dev):
   pip install fastapi uvicorn
   uvicorn backend.api.main:app --reload --port 8000
 
-Not legal advice. In-memory stores; no multi-tenant auth yet.
-Do not expose to the public internet with client data.
+M1 platform (auth, matters, audit, evidence) uses SQLite by default
+or Postgres when ALA_POSTGRES_URL is set. HITL/post-resolution remain
+process-local until migrated.
+
+Not legal advice. Do not expose to the public internet with client data.
 """
 
 from __future__ import annotations
 
 import sys
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, Optional
 
@@ -21,14 +25,25 @@ from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from backend.api.platform_routes import router as platform_router
 from backend.api.public_demo import enforce_public_text, is_public_demo, reject_if_public_demo
 from backend.api.state import hitl, post_resolution
+from backend.db import get_db_backend, init_db
 from services.deadlines.jr_clock import JrClockRequest, calculate_jr_clock
 from services.deadlines.states import calculate_deadline
 from services.post_resolution.enforcement.packages import PackageType
 from services.reasoning.hitl.exceptions.kinds import ExceptionKind, Severity
 from services.reasoning.hitl.privilege_check.production import OutputClass
 from services.reasoning.hitl.schemas.common import ModelDestination
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    init_db()
+    yield
+
+
+
 
 
 def _client_dir() -> Path:
@@ -44,11 +59,12 @@ def _client_dir() -> Path:
 
 app = FastAPI(
     title="BC Legal AI Associate — Platform API",
-    version="0.3.0",
+    version="0.4.0",
     description=(
-        "HITL + post-resolution + static client (desktop/PWA). "
-        "Not a lawyer. Not legal advice. In-memory prototype."
+        "Modular monolith: identity, matters, audit, evidence, HITL, post-resolution. "
+        "Not a lawyer. Not legal advice."
     ),
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -57,6 +73,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(platform_router)
 
 _CLIENT = _client_dir()
 if _CLIENT.is_dir():
@@ -109,12 +127,17 @@ def icons(name: str):
 
 @app.get("/health")
 def health() -> dict[str, str]:
+    try:
+        db = get_db_backend()
+    except Exception:
+        db = "unknown"
     return {
         "status": "ok",
-        "phase": "3-4+4-4",
-        "mode": "public_demo" if is_public_demo() else "in-memory",
+        "phase": "m1-platform",
+        "mode": "public_demo" if is_public_demo() else "platform",
         "platform": "api+static-client",
         "app_mode": "public_demo" if is_public_demo() else "development",
+        "db_backend": db,
     }
 
 

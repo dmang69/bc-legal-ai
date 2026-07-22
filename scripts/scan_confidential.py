@@ -26,13 +26,28 @@ SKIP_DIR_NAMES = {
     "build",
     ".venv",
     "venv",
+    "target",
+}
+
+DEFAULT_IGNORE_FILENAMES = {
+    "package-lock.json",
+    "yarn.lock",
+    "pnpm-lock.yaml",
+    "cargo.lock",
+    "uv.lock",
 }
 
 
-def _load_config() -> tuple[list[tuple[str, re.Pattern[str]]], set[str], tuple[str, ...]]:
+def _load_config() -> tuple[
+    list[tuple[str, re.Pattern[str]]],
+    set[str],
+    tuple[str, ...],
+    set[str],
+]:
     patterns: list[tuple[str, re.Pattern[str]]] = []
     allow: set[str] = set()
     prefixes: list[str] = ["tests/", "fixtures/synthetic/"]
+    ignore_names = set(DEFAULT_IGNORE_FILENAMES)
     if CONFIG.is_file():
         try:
             import yaml  # type: ignore
@@ -44,13 +59,15 @@ def _load_config() -> tuple[list[tuple[str, re.Pattern[str]]], set[str], tuple[s
             patterns.append((p["id"], re.compile(p["regex"], re.I)))
         allow = set(data.get("allowlist_paths") or [])
         prefixes = list(data.get("allowlist_prefixes") or prefixes)
+        for name in data.get("ignore_filenames") or []:
+            ignore_names.add(str(name).lower())
     else:
         patterns = [
             ("kam_live_file", re.compile(r"KAM-S-S-\d{5}", re.I)),
             ("party_sanghera", re.compile(r"\bSanghera\b")),
             ("hf_token", re.compile(r"\bhf_[A-Za-z0-9]{20,}\b")),
         ]
-    return patterns, allow, tuple(prefixes)
+    return patterns, allow, tuple(prefixes), ignore_names
 
 
 def _parse_yaml_lite(text: str) -> dict:
@@ -58,6 +75,7 @@ def _parse_yaml_lite(text: str) -> dict:
     patterns = []
     allow: list[str] = []
     prefixes: list[str] = []
+    ignore_filenames: list[str] = []
     mode = None
     cur: dict = {}
     for line in text.splitlines():
@@ -72,10 +90,14 @@ def _parse_yaml_lite(text: str) -> dict:
             allow.append(line.strip()[2:].strip())
         elif line.strip().startswith("- ") and mode == "prefix":
             prefixes.append(line.strip()[2:].strip())
+        elif line.strip().startswith("- ") and mode == "ignore_fn":
+            ignore_filenames.append(line.strip()[2:].strip())
         elif "allowlist_paths:" in line:
             mode = "allow"
         elif "allowlist_prefixes:" in line:
             mode = "prefix"
+        elif "ignore_filenames:" in line:
+            mode = "ignore_fn"
         elif line.startswith("patterns:"):
             mode = "patterns"
     if cur.get("id") and cur.get("regex"):
@@ -84,12 +106,12 @@ def _parse_yaml_lite(text: str) -> dict:
         "patterns": patterns,
         "allowlist_paths": allow,
         "allowlist_prefixes": prefixes or ["tests/", "fixtures/synthetic/"],
+        "ignore_filenames": ignore_filenames,
     }
 
 
 def main() -> int:
-    patterns, allow, prefixes = _load_config()
-    # compile if lite parser left strings
+    patterns, allow, prefixes, ignore_names = _load_config()
     compiled: list[tuple[str, re.Pattern[str]]] = []
     for item in patterns:
         if isinstance(item, tuple):
@@ -102,6 +124,8 @@ def main() -> int:
         if not path.is_file():
             continue
         if any(p in SKIP_DIR_NAMES for p in path.parts):
+            continue
+        if path.name.lower() in ignore_names:
             continue
         rel = path.relative_to(ROOT).as_posix()
         if rel in allow or any(rel.startswith(p) for p in prefixes):
@@ -118,18 +142,18 @@ def main() -> int:
             ".html",
             ".js",
             ".css",
+            ".ts",
+            ".tsx",
         }:
             continue
         try:
             text = path.read_text(encoding="utf-8", errors="ignore")
         except OSError:
             continue
-        # skip synthetic markers with public_demo_approved
         if '"synthetic": true' in text and "public_demo_approved" in text:
             continue
         for label, pat in compiled:
             if pat.search(text):
-                # allow VAN-S-S-999999 style demos only in fixtures
                 if label == "bc_court_file" and "999999" in text and "DEMO" in text.upper():
                     continue
                 hits.append(f"{rel}: {label}")

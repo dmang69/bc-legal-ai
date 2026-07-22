@@ -67,3 +67,12 @@ allowlist_prefixes:
   - fixtures/synthetic/
   - docs/
   - skills/
+  - apps/platform-ui/
+  - apps/desktop-mobile/package-lock.json
+
+# Filename suffixes / names always skipped
+ignore_filenames:
+  - package-lock.json
+  - yarn.lock
+  - pnpm-lock.yaml
+  - Cargo.lock

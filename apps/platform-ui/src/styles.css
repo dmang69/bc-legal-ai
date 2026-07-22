@@ -72,3 +72,52 @@ ul {
   margin: 0.5rem 0 0;
   padding-left: 1.2rem;
 }
+
+.form label {
+  display: block;
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.form input,
+input.wide {
+  display: block;
+  width: 100%;
+  margin-top: 0.25rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 6px;
+  border: 1px solid #2a3a4d;
+  background: #0a0e14;
+  color: var(--text);
+}
+
+.row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 0.75rem 0;
+}
+
+button {
+  background: var(--accent);
+  color: #0a0e14;
+  border: none;
+  border-radius: 6px;
+  padding: 0.45rem 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:hover {
+  filter: brightness(1.08);
+}
+
+pre.out {
+  white-space: pre-wrap;
+  font-size: 0.85rem;
+  background: #0a0e14;
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-top: 0.75rem;
+}

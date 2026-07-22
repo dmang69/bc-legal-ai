@@ -13,7 +13,7 @@ No further feature development should be treated as “released” until M0 pass
 | 1 | Live matter content removed from working tree | **Pass** (synthetic DEMO-*) |
 | 2 | Git history sanitized | **Human action** if ever pushed live data |
 | 3 | Synthetic examples installed | **Pass** |
-| 4 | Confidential scanner operational | **Pass** `scripts/scan_confidential.py` |
+| 4 | Confidential scanner operational | **Pass** (ignores lockfiles; `scripts/scan_confidential.py`) |
 | 5 | Pre-commit scanner operational | **Pass** `.pre-commit-config.yaml` |
 | 6 | CI confidentiality gate | **Pass** `.github/workflows/` |
 | 7 | Incorrect s.56 test disabled | **Pass** |

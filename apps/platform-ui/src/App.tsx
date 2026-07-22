@@ -1,6 +1,17 @@
-import { useEffect, useState } from "react";
-import { getApiBase, healthCheck } from "./lib/api";
+import { FormEvent, useEffect, useState } from "react";
+import {
+  createMatter,
+  getApiBase,
+  getToken,
+  healthCheck,
+  listMatters,
+  login,
+  register,
+  setToken,
+  verifyCitation,
+} from "./lib/api";
 import { getAppMode, type AppMode } from "./lib/mode";
+import "./styles.css";
 
 const MODE_LABEL: Record<AppMode, string> = {
   workbench: "BC Legal AI Workbench",
@@ -11,8 +22,16 @@ const MODE_LABEL: Record<AppMode, string> = {
 
 export function App() {
   const mode = getAppMode();
-  const [health, setHealth] = useState<string>("checking…");
+  const [health, setHealth] = useState("checking…");
   const [offline, setOffline] = useState(!navigator.onLine);
+  const [email, setEmail] = useState("demo@synthetic.invalid");
+  const [password, setPassword] = useState("securepass99");
+  const [orgName, setOrgName] = useState("Demo Org");
+  const [token, setTok] = useState<string | null>(getToken());
+  const [matters, setMatters] = useState<Array<{ matter_id: string; title: string }>>([]);
+  const [msg, setMsg] = useState("");
+  const [citeIn, setCiteIn] = useState("RTA s.56 retaliation");
+  const [citeOut, setCiteOut] = useState("");
 
   useEffect(() => {
     const on = () => setOffline(false);
@@ -26,24 +45,74 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    healthCheck()
-      .then((h) => {
-        if (!cancelled) {
-          setHealth(
-            h.ok
-              ? `API OK · ${h.app_mode ?? "development"} · ${getApiBase()}`
-              : `API unreachable · ${getApiBase()}`,
-          );
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setHealth(`API unreachable · ${getApiBase()}`);
-      });
-    return () => {
-      cancelled = true;
-    };
+    healthCheck().then((h) => {
+      setHealth(
+        h.ok
+          ? `API OK · ${h.phase ?? ""} · db=${h.db_backend ?? "?"} · ${getApiBase()}`
+          : `API unreachable · ${getApiBase()}`,
+      );
+    });
   }, []);
+
+  useEffect(() => {
+    if (!token) return;
+    listMatters()
+      .then((r) => setMatters(r.matters))
+      .catch((e: Error) => setMsg(e.message));
+  }, [token]);
+
+  async function onRegister(e: FormEvent) {
+    e.preventDefault();
+    setMsg("");
+    try {
+      const s = await register({ org_name: orgName, email, password, display_name: "Demo" });
+      setToken(s.token);
+      setTok(s.token);
+      setMsg(`Registered as ${s.user.email}`);
+    } catch (err) {
+      setMsg(String(err));
+    }
+  }
+
+  async function onLogin(e: FormEvent) {
+    e.preventDefault();
+    setMsg("");
+    try {
+      const s = await login(email, password);
+      setToken(s.token);
+      setTok(s.token);
+      setMsg(`Logged in as ${s.user.email}`);
+    } catch (err) {
+      setMsg(String(err));
+    }
+  }
+
+  async function onNewMatter() {
+    setMsg("");
+    try {
+      const m = await createMatter("Synthetic demo matter");
+      setMatters((prev) => [{ matter_id: m.matter_id, title: m.title }, ...prev]);
+      setMsg(`Created ${m.matter_id}`);
+    } catch (err) {
+      setMsg(String(err));
+    }
+  }
+
+  async function onCite() {
+    setCiteOut("…");
+    try {
+      const r = await verifyCitation(citeIn, "retaliatory_eviction");
+      setCiteOut(`${r.status} · court_ready=${r.court_ready}\n${r.reasons.join("\n")}`);
+    } catch (err) {
+      setCiteOut(String(err));
+    }
+  }
+
+  function logout() {
+    setToken(null);
+    setTok(null);
+    setMatters([]);
+  }
 
   return (
     <div className="shell">
@@ -67,57 +136,75 @@ export function App() {
 
       <main>
         <section className="card warn" role="note">
-          <strong>Section G scaffold.</strong> Shared React/Vite UI for Tauri 2 and PWA. Real client
-          matters require private backend, MFA, and matter isolation (M1+). Public demo mode rejects
-          confidential workflows.
+          <strong>M1 platform build.</strong> Auth, org/matter isolation, hash-chained audit,
+          document quarantine, and fail-closed citations. Synthetic data only for demos. No
+          court-ready export without privilege gates.
         </section>
 
-        <section className="card">
-          <h2>Application mode</h2>
-          <p>
-            Active: <code>{mode}</code> — set <code>VITE_APP_MODE</code> to{" "}
-            <code>workbench</code>, <code>client</code>, <code>self_rep</code>, or{" "}
-            <code>portal</code>.
-          </p>
-          <ul>
-            {mode === "workbench" && (
-              <>
-                <li>Lawyer tools: evidence, citations, drafting, privilege approvals (backend-gated)</li>
-                <li>Windows folder connector only via approved-folder native plugin</li>
-              </>
-            )}
-            {mode === "client" && (
-              <>
-                <li>Status, uploads, tasks, messaging, consent — no strategy notes or other matters</li>
-              </>
-            )}
-            {mode === "self_rep" && (
-              <>
-                <li>Personal organization and official-law links only</li>
-                <li>Does not create an attorney–client relationship</li>
-              </>
-            )}
-            {mode === "portal" && (
-              <>
-                <li>Secure web portal / installable PWA entry</li>
-              </>
-            )}
-          </ul>
-        </section>
+        {!token ? (
+          <section className="card">
+            <h2>Sign in (private API)</h2>
+            <form className="form" onSubmit={onLogin}>
+              <label>
+                Org (register only)
+                <input value={orgName} onChange={(e) => setOrgName(e.target.value)} />
+              </label>
+              <label>
+                Email
+                <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" />
+              </label>
+              <label>
+                Password
+                <input
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  type="password"
+                />
+              </label>
+              <div className="row">
+                <button type="submit">Log in</button>
+                <button type="button" onClick={onRegister}>
+                  Register org
+                </button>
+              </div>
+            </form>
+          </section>
+        ) : (
+          <section className="card">
+            <h2>Matters</h2>
+            <div className="row">
+              <button type="button" onClick={onNewMatter}>
+                New synthetic matter
+              </button>
+              <button type="button" onClick={logout}>
+                Log out
+              </button>
+            </div>
+            <ul>
+              {matters.map((m) => (
+                <li key={m.matter_id}>
+                  <code>{m.matter_id}</code> — {m.title}
+                </li>
+              ))}
+              {matters.length === 0 && <li>No matters yet.</li>}
+            </ul>
+          </section>
+        )}
 
         <section className="card">
-          <h2>Delivery targets</h2>
-          <ul>
-            <li>Windows: signed Setup.exe / MSI</li>
-            <li>macOS: notarized DMG</li>
-            <li>Android: Play AAB</li>
-            <li>iOS: TestFlight / App Store IPA</li>
-            <li>Browser: installable PWA</li>
-          </ul>
-          <p className="muted">
-            See <code>docs/SECTION_G_PLATFORM_AND_DISTRIBUTION.md</code>.
-          </p>
+          <h2>Citation check (fail-closed)</h2>
+          <input value={citeIn} onChange={(e) => setCiteIn(e.target.value)} className="wide" />
+          <button type="button" onClick={onCite}>
+            Verify
+          </button>
+          <pre className="out">{citeOut}</pre>
         </section>
+
+        {msg && (
+          <section className="card">
+            <pre className="out">{msg}</pre>
+          </section>
+        )}
       </main>
     </div>
   );

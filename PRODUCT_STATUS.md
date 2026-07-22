@@ -6,10 +6,10 @@
 **Not:** a licensed lawyer, legal advice service, or representation
 
 **Assessment date:** 2026-07-22  
-**Verdict:** strong **prototype / counsel workbench** — **not** a completed AI Legal Associate  
-**Release level:** **Prototype** (~**25%** maturity). Target after M0 human ops: Internal Alpha track starts at M1.  
-**Controlling roadmap:** `docs/PHASE_4_MASTER_ENGINEERING_PROGRAM.md` (corrected plan: ~33–36 workstreams, modular monolith, RAG-first, release levels not “100% complete”).  
-**Full audit:** `architecture/AUDIT_P0_2026-07-21.md` — P0 scrub + s.56 disable in tree; history rewrite + branch protection still human ops if ever needed.
+**Verdict:** strong **prototype / counsel workbench** with **M1 platform core landed** (SQLite/Postgres-ready) — still **not** a completed Associate  
+**Release level:** **Prototype → Internal Alpha foundation** (~**30–35%**).  
+**Controlling roadmap:** `docs/PHASE_4_MASTER_ENGINEERING_PROGRAM.md`  
+**Full audit:** `architecture/AUDIT_P0_2026-07-21.md` — history rewrite + branch protection still human ops.
 
 ---
 
@@ -26,7 +26,9 @@
 | Matter-isolated client files | Local-only via `matters/` gitignore |
 | Evidence Matrix + EvidenceNode (architecture/) | Present (prototype) |
 | Phase 2–4 service skeletons (`services/`, `infra/`, `middleware/`) | **Scaffold only** |
-| Production auth / multi-tenant security | **Absent** |
+| Production auth / multi-tenant security | **Partial** — org/user/session + matter ACL (SQLite default; Postgres SQL ready) |
+| Hash-chained audit ledger | **Partial** — append-only + verify_chain |
+| Document quarantine + page extract | **Partial** — text files; no OCR yet |
 | OCR, page-level citations, live STT | **Absent** (ingestion classifier/dedup rules only) |
 | Live statutory/case research + treatment | **Absent** (fail-closed gate scaffold) |
 | Deadline engine, court-form export | **Absent** |

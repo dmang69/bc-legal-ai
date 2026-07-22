@@ -1,17 +1,3 @@
-"""Matter audit trail."""
+from backend.audit.ledger import AuditLedger, get_audit_ledger
 
-from architecture.audit_event import (
-    AuditAction,
-    AuditActor,
-    AuditEvent,
-    ChainOfCustodySnapshot,
-)
-from backend.audit.log import AuditLog
-
-__all__ = [
-    "AuditAction",
-    "AuditActor",
-    "AuditEvent",
-    "AuditLog",
-    "ChainOfCustodySnapshot",
-]
+__all__ = ["AuditLedger", "get_audit_ledger"]

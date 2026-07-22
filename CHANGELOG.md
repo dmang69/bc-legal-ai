@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### M1 platform core (build in progress)
+
+- SQLite default + Postgres SQL (`m1_platform.sql`): orgs, users, sessions, matters,
+  membership ACL, parties/conflicts, hash-chained audit, documents/pages/propositions,
+  knowledge sources, legal_test_registry seed (s.56 DISABLED)
+- API `/v1/platform/*`: register/login, matters, conflicts, evidence quarantine,
+  citations, consents, Form 66/67 scaffolds, deadlines, audit verify
+- Tests: isolation, audit chain, API flows
+- Workbench UI: login/register/matters/citation check against private API
+
 ### Platform delivery (Section G)
 
 - Full **Section G** architecture: Workbench / Client / Portal naming; React·TS·Vite·Tauri 2;

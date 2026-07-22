@@ -28,6 +28,7 @@ services:
     volumes:
       - ala_pg:/var/lib/postgresql/data
       - ./architecture/contracts/sql/phase3_core.sql:/docker-entrypoint-initdb.d/01_phase3.sql:ro
+      - ./architecture/contracts/sql/m1_platform.sql:/docker-entrypoint-initdb.d/02_m1.sql:ro
 
   redis:
     image: redis:7-alpine
