@@ -1,0 +1,235 @@
+openapi: 3.0.3
+info:
+  title: BC Legal AI Associate — Phase 3 HITL API
+  version: 0.1.0
+  description: |
+    Consent, exceptions, approvals, knowledge-source contracts.
+    Consent is not privilege. Withdrawal is not unconditional deletion.
+    Not legal advice.
+servers:
+  - url: /v1
+paths:
+  /matters/{matter_id}/consents:
+    get:
+      summary: List consents for matter
+      parameters:
+        - $ref: '#/components/parameters/matterId'
+      responses:
+        '200':
+          description: Consent list
+    post:
+      summary: Create / grant consent
+      parameters:
+        - $ref: '#/components/parameters/matterId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsentCreate'
+      responses:
+        '201':
+          description: Created
+  /consents/{consent_id}/withdraw:
+    post:
+      summary: Withdraw consent (blocks optional AI; does not auto-delete holds)
+      parameters:
+        - name: consent_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                derived_artifact_ids:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Withdrawal plan executed (partial)
+  /consents/evaluate-operation:
+    post:
+      summary: Evaluate processing basis before operation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EvaluateOperation'
+      responses:
+        '200':
+          description: OperationDecision
+  /matters/{matter_id}/exceptions:
+    get:
+      summary: List exceptions
+      parameters:
+        - $ref: '#/components/parameters/matterId'
+      responses:
+        '200':
+          description: OK
+    post:
+      summary: Emit exception
+      parameters:
+        - $ref: '#/components/parameters/matterId'
+      responses:
+        '201':
+          description: Created
+  /exceptions/{exception_id}/resolve:
+    post:
+      summary: Human resolution (required reason; AI cannot resolve CRITICAL)
+      parameters:
+        - name: exception_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [human_id, reason]
+              properties:
+                human_id:
+                  type: string
+                reason:
+                  type: string
+                  minLength: 1
+      responses:
+        '200':
+          description: Resolved
+  /matters/{matter_id}/productions/freeze:
+    post:
+      summary: Freeze output snapshot for privilege review
+      parameters:
+        - $ref: '#/components/parameters/matterId'
+      responses:
+        '201':
+          description: Frozen package
+  /productions/{production_id}/review:
+    post:
+      summary: Reviewer stage
+      parameters:
+        - name: production_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Reviewed
+  /productions/{production_id}/approve:
+    post:
+      summary: Approver stage (independent professional for high-risk)
+      parameters:
+        - name: production_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Approved with signed manifest
+  /productions/{production_id}/release:
+    post:
+      summary: Release if post-approval hash matches
+      parameters:
+        - name: production_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Released
+  /knowledge/sources:
+    get:
+      summary: List knowledge sources
+      responses:
+        '200':
+          description: OK
+  /knowledge/citations/verify:
+    post:
+      summary: Verify citation against primary/secondary registry
+      responses:
+        '200':
+          description: Verification result
+  /deadlines/jr-clock:
+    post:
+      summary: Calculate JR limitation clock with uncertainty alternatives
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JrClockRequest'
+      responses:
+        '200':
+          description: JrClockResult
+components:
+  parameters:
+    matterId:
+      name: matter_id
+      in: path
+      required: true
+      schema:
+        type: string
+  schemas:
+    ConsentCreate:
+      type: object
+      required: [subject_id, category, purpose, notice_version]
+      properties:
+        subject_id:
+          type: string
+        category:
+          type: string
+        purpose:
+          type: string
+        processing_scope:
+          type: array
+          items:
+            type: string
+        model_scope:
+          type: string
+          enum: [NONE, PRIVATE_INFERENCE_ONLY, EXTERNAL_MODEL]
+        notice_version:
+          type: string
+    EvaluateOperation:
+      type: object
+      required: [matter_id, subject_id, data_categories, purpose, model_destination]
+      properties:
+        matter_id:
+          type: string
+        subject_id:
+          type: string
+        data_categories:
+          type: array
+          items:
+            type: string
+        purpose:
+          type: string
+        model_destination:
+          type: string
+          enum: [NONE, PRIVATE_INFERENCE_ONLY, EXTERNAL_MODEL, PUBLIC_DEMO_FORBIDDEN]
+    JrClockRequest:
+      type: object
+      required: [matter_id]
+      properties:
+        matter_id:
+          type: string
+        issuance_date:
+          type: string
+          description: Date final decision issued (ISO)
+        finality_known:
+          type: boolean
+        enabling_act_known:
+          type: boolean
+        extension_sought:
+          type: boolean

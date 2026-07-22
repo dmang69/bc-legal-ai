@@ -30,7 +30,7 @@ def rtb_jr_petition_outline(*, matter_id: str | None = None) -> PetitionOutline:
         matter_id=matter_id,
         court="BC Supreme Court",
         statute_route="Judicial Review Procedure Act",
-        related_legal_tests=["RTA-s56-retaliatory-eviction"],
+        related_legal_tests=[],  # no disabled s.56 retaliation test
         grounds=[
             PetitionGround(
                 ground_id="1",

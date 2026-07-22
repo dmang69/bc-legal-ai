@@ -22,6 +22,7 @@ from architecture.legal_test import (
     ElementStatus,
     InferenceStrength,
     LegalTest,
+    LegalTestDisabledError,
     LegalTestEvaluation,
 )
 from backend.evidence.query import query_gaps
@@ -323,7 +324,13 @@ def evaluate_legal_test(
     nodes: list[EvidenceNode],
     *,
     citation_db: Optional[CitationDB] = None,
+    allow_disabled: bool = False,
 ) -> LegalTestEvaluation:
+    if test.disabled and not allow_disabled:
+        raise LegalTestDisabledError(
+            test.disabled_reason
+            or f"Legal test {test.test_id} is DISABLED and cannot be evaluated."
+        )
     for n in nodes:
         if n.strength_score is None:
             apply_strength_to_node(n)

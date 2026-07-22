@@ -318,8 +318,8 @@ class MatterSession:
         """Evaluate a GroundedClaim; returns GroundingResult (may refuse)."""
         return self.grounding_gate().evaluate(claim)
 
-    def evaluate_legal_test(self, test_id: str = "TEST-RETALIATORY-EVICTION-S56"):
-        """Run a LegalTest against this matter's evidence graph."""
+    def evaluate_legal_test(self, test_id: str):
+        """Run a LegalTest against this matter's evidence graph. Disabled tests raise."""
         from backend.legal_tests import default_legal_tests, evaluate_legal_test
         from backend.grounding.citation_db import CitationDB, seed_bc_workbench_citations
 
@@ -337,7 +337,7 @@ class MatterSession:
             db.save()
         return evaluate_legal_test(tests[test_id], self.nodes.all(), citation_db=db)
 
-    def legal_test_report(self, test_id: str = "RTA-s56-retaliatory-eviction") -> str:
+    def legal_test_report(self, test_id: str) -> str:
         """Narrative ELEMENT blocks for lawyer review."""
         return self.evaluate_legal_test(test_id).format_element_report()
 
@@ -361,11 +361,11 @@ class MatterSession:
         return list_outlines(self.matter_id, root=self.root)
 
     def install_sanghera_cross_template(self) -> "Path":
-        """Install the sample Sanghera cross outline (planning template)."""
-        from templates.examination.sanghera_cross_outline import sanghera_cross_outline
+        """Install SYNTHETIC landlord-rep cross outline (no real party names)."""
+        from templates.examination.demo_landlord_rep_cross import demo_landlord_rep_cross
 
         return self.add_examination_outline(
-            sanghera_cross_outline(matter_id=self.matter_id)
+            demo_landlord_rep_cross(matter_id=self.matter_id)
         )
 
     def add_petition_outline(self, outline) -> "Path":
@@ -425,10 +425,10 @@ class MatterSession:
         return load_dashboard(self.matter_id, root=self.root)
 
     def install_kam_jr_case_board(self) -> "Path":
-        """Install KAM-S-S-65285 JR case status dashboard snapshot."""
-        from templates.case.kam_s_s_65285_dashboard import kam_s_s_65285_dashboard
+        """Install SYNTHETIC demo JR dashboard (DEMO-JR-0001)."""
+        from templates.case.demo_jr_dashboard import demo_jr_dashboard
 
-        return self.save_dashboard(kam_s_s_65285_dashboard(matter_id=self.matter_id))
+        return self.save_dashboard(demo_jr_dashboard(matter_id=self.matter_id))
 
     def format_case_board(self) -> str:
         return self.load_dashboard().format_dashboard()

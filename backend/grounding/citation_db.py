@@ -213,8 +213,8 @@ def seed_bc_workbench_citations(db: CitationDB) -> CitationDB:
             jurisdiction_scope=JurisdictionScope.BC,
             status=AuthorityStatus.VERIFIED,
         ),
-        # Structure for retaliatory eviction pin — exact_text NOT invented;
-        # re-verify section number and wording on BC Laws before filing.
+        # P0 2026-07-21: s.56 is NOT the retaliatory-eviction civil test.
+        # Status REJECTED for retaliation use; re-verify current subject on BC Laws.
         Citation(
             citation_id="CIT-RTA-S56",
             type=CitationType.STATUTE,
@@ -223,13 +223,16 @@ def seed_bc_workbench_citations(db: CitationDB) -> CitationDB:
             section="56",
             subsection="1",
             short_cite="RTA s. 56",
-            official_title="Residential Tenancy Act — (verify subject on BC Laws: often cited for retaliation issues)",
+            official_title=(
+                "Residential Tenancy Act s. 56 — landlord early end of tenancy application "
+                "(confirm current heading on BC Laws). NOT a retaliation civil test."
+            ),
             exact_text=None,
             source_url=rta_url,
             last_verified=_VERIFIED_ON,
-            applies_to=["retaliatory_eviction"],
+            applies_to=["early_end_of_tenancy", "landlord_application"],  # not retaliatory_eviction
             jurisdiction_scope=JurisdictionScope.BC,
-            status=AuthorityStatus.PARTIALLY_VERIFIED,  # pin structure only; not fail-closed ready
+            status=AuthorityStatus.REJECTED,
         ),
         Citation(
             citation_id="CIT-DESC-MIERZ",

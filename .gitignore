@@ -37,12 +37,15 @@ venv.bak/
 *.swo
 *~
 .DS_Store
+Thumbs.db
 
 # Secrets and configs
 .env
 .env.local
 *.key
 *.pem
+gh_token*
+hf_token*
 secrets/
 
 # Data
@@ -56,3 +59,15 @@ secrets/
 # Logs
 *.log
 logs/
+
+# Local only
+matters/**
+!matters/.gitkeep
+
+# Skill runtime downloads / search exports (keep code, not PDFs)
+skills/**/outputs/
+.pytest_cache/
+*.pdf
+
+# Infra local secrets
+infra/secrets/.env

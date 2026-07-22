@@ -305,7 +305,9 @@ def query_gaps(
 # --- query_argument_support ---
 
 _LEGAL_TEST_TAGS: list[tuple[re.Pattern[str], set[str]]] = [
-    (re.compile(r"retaliat|s\.?\s*56|s56", re.I), {"retaliatory_eviction"}),
+    # Do NOT map s.56 to retaliation (s.56 = early end of tenancy — verify on BC Laws)
+    (re.compile(r"retaliat", re.I), {"retaliatory_eviction"}),
+    (re.compile(r"s\.?\s*56\b|early\s+end\s+of\s+tenancy", re.I), {"early_end_of_tenancy"}),
     (re.compile(r"mold|mould|habitab|repair|s\.?\s*32", re.I), {"mold_hazard", "non_repair"}),
     (re.compile(r"quiet enjoy|s\.?\s*28", re.I), {"quiet_enjoyment"}),
     (re.compile(r"entry|s\.?\s*29", re.I), {"entry"}),

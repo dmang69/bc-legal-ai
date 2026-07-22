@@ -1,0 +1,50 @@
+[project]
+name = "bc-legal-ai"
+version = "0.1.0"
+description = "BC Legal AI Associate — human-supervised legal research, evidence, and drafting support workbench (not a lawyer)."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Proprietary / research — see SECURITY.md" }
+authors = [{ name = "dmang69" }]
+dependencies = [
+  "gradio>=4.44.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+  "ruff>=0.6",
+]
+pdf = [
+  "pypdf>=4.0",
+]
+ocr = [
+  "pypdf>=4.0",
+  "pytesseract>=0.3",
+  "pdf2image>=1.17",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = [
+  "architecture*",
+  "backend*",
+  "services*",
+  "agents*",
+  "templates*",
+  "middleware*",
+  "knowledgebase*",
+]

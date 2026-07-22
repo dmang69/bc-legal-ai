@@ -1,0 +1,77 @@
+:root {
+  --bg: #0f1419;
+  --card: #1a2332;
+  --text: #e7ecf3;
+  --muted: #9aa8b8;
+  --warn: #3d2e00;
+  --warn-border: #c9a227;
+  --accent: #3d8bfd;
+  --focus: #ffd166;
+}
+* { box-sizing: border-box; }
+body {
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  margin: 0;
+  line-height: 1.55;
+  max-width: 42rem;
+  margin-inline: auto;
+  padding: 1rem 1.1rem 3rem;
+}
+.skip {
+  position: absolute;
+  left: -999px;
+}
+.skip:focus {
+  left: 1rem;
+  top: 1rem;
+  background: var(--focus);
+  color: #000;
+  padding: 0.5rem 1rem;
+  z-index: 10;
+}
+header h1 { font-size: 1.45rem; margin-bottom: 0.2rem; }
+.sub { color: var(--muted); margin-top: 0; font-size: 0.95rem; }
+.warn {
+  background: var(--warn);
+  border: 1px solid var(--warn-border);
+  padding: 0.9rem 1rem;
+  border-radius: 8px;
+  margin: 1rem 0 1.5rem;
+}
+.card {
+  background: var(--card);
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+}
+section { margin-bottom: 1.75rem; }
+h2 { font-size: 1.1rem; margin-bottom: 0.6rem; }
+label { display: block; margin-top: 0.75rem; font-size: 0.9rem; color: var(--muted); }
+input, select, button {
+  width: 100%;
+  margin-top: 0.35rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 6px;
+  border: 1px solid #334;
+  background: #0d1218;
+  color: var(--text);
+  font-size: 1rem;
+}
+button {
+  margin-top: 1rem;
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+button:focus, a:focus, select:focus, input:focus {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+footer { color: var(--muted); font-size: 0.85rem; margin-top: 2rem; }
+@media (min-width: 640px) {
+  body { padding-top: 1.5rem; }
+}

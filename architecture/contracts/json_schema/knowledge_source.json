@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/dmang69/bc-legal-ai/architecture/contracts/json_schema/knowledge_source.json",
+  "title": "KnowledgeSource",
+  "type": "object",
+  "required": [
+    "source_id",
+    "name",
+    "authority_type",
+    "jurisdiction",
+    "permitted_content"
+  ],
+  "properties": {
+    "source_id": { "type": "string" },
+    "name": { "type": "string" },
+    "authority_type": {
+      "type": "string",
+      "enum": ["OFFICIAL_PRIMARY", "SECONDARY"]
+    },
+    "jurisdiction": { "type": "string" },
+    "permitted_content": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "retrieval_method": { "type": "string" },
+    "health_status": { "type": "string" },
+    "terms_reviewed_at": { "type": ["string", "null"] },
+    "last_successful_update": { "type": ["string", "null"] }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/dmang69/bc-legal-ai/architecture/contracts/json_schema/exception.json",
+  "title": "ExceptionRecord",
+  "type": "object",
+  "required": [
+    "exception_id",
+    "matter_id",
+    "category",
+    "severity",
+    "summary",
+    "raw_client_content_logged",
+    "status"
+  ],
+  "properties": {
+    "exception_id": { "type": "string" },
+    "matter_id": { "type": "string" },
+    "task_id": { "type": ["string", "null"] },
+    "category": { "type": "string" },
+    "severity": {
+      "type": "string",
+      "enum": ["INFO", "NOTICE", "WARNING", "HIGH", "CRITICAL"]
+    },
+    "summary": { "type": "string" },
+    "affected_artifacts": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "raw_client_content_logged": { "const": false },
+    "detected_by": { "type": "string" },
+    "model_id": { "type": ["string", "null"] },
+    "prompt_template_version": { "type": ["string", "null"] },
+    "status": {
+      "type": "string",
+      "enum": ["OPEN", "ASSIGNED", "RESOLVED", "WONT_FIX_HUMAN"]
+    },
+    "assigned_reviewer": { "type": ["string", "null"] },
+    "resolution": { "type": ["string", "null"] },
+    "resolution_by": { "type": ["string", "null"] },
+    "freeze_export": { "type": "boolean" },
+    "block_workflow": { "type": "boolean" },
+    "proposed_content_quarantined": { "type": "boolean" },
+    "created_at": { "type": "string" }
+  },
+  "additionalProperties": true
+}

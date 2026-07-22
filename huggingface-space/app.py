@@ -20,9 +20,11 @@ DISCLAIMER = """
 **Disclaimer:** **BC Legal AI Associate** — legal research and drafting **support** only.
 This is **not** a licensed lawyer, **not legal advice**, and does not create a
 solicitor–client relationship. Do **not** upload confidential client or litigation
-files to this public Space. Verify all legislation on the official **BC Laws**
-portal before filing or reliance. Court-ready work requires a licensed supervising
-lawyer and human approval.
+files to this public Space. This Space performs **no model inference** and is a
+**deterministic demo** only. Real matters require private infrastructure, MFA, and
+human supervision. Verify all legislation on the official **BC Laws** portal before
+filing or reliance. Court-ready work requires a licensed supervising lawyer and
+human approval.
 """
 
 FAIL_CLOSED = (
