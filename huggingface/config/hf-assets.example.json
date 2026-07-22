@@ -1,0 +1,26 @@
+{
+  "owner": "dmang69",
+  "space": {
+    "repo_id": "dmang69/bc-legal-ai",
+    "sdk": "static",
+    "local_dir": "huggingface-space",
+    "public_url": "https://dmang69-bc-legal-ai.static.hf.space",
+    "allow_client_data": false
+  },
+  "dataset": {
+    "repo_id": "dmang69/bc-legal-ai",
+    "local_stage": "build/hf-dataset",
+    "allow_client_data": false
+  },
+  "models": {
+    "adapter_repo_id": "dmang69/bc-legal-ai-qwen2.5-lora",
+    "publish_enabled": false,
+    "requires_license_review": true,
+    "allow_client_data": false
+  },
+  "buckets": {
+    "public_demo_assets": "public-demo-assets",
+    "private_quarantine": "private-ingestion-quarantine",
+    "allow_public_client_data": false
+  }
+}
