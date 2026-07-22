@@ -388,6 +388,8 @@ Issues: M0-001…003, 005–010, 013, 016–018, 021, 023 (see M0 gate).
 | `docs/PRODUCT_DESCRIPTION.md` | Official product description (target completed platform) |
 | `docs/SECTION_G_PLATFORM_AND_DISTRIBUTION.md` | **Section G** — full platform & distribution architecture |
 | `docs/SECTION_G_PROJECT_PLAN.md` | Section G WBS, delivery sequence, M6A–F status, risks |
+| `docs/DATA_MODEL_AND_EVIDENCE_SCHEMA.md` | Controlling Postgres/pgvector data model v1.0 |
+| `architecture/contracts/sql/v1_data_model.sql` | Production SQL schema |
 | `docs/PLATFORM_AND_INSTALLATION.md` | Short pointer to Section G |
 | `docs/github/LABELS.md` | GitHub labels |
 | `.github/ISSUE_TEMPLATE/engineering_task.md` | Issue template |
