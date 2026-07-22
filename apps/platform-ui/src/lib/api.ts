@@ -109,14 +109,51 @@ export function createMatter(title: string): Promise<{ matter_id: string; title:
   });
 }
 
-export function verifyCitation(citation_text: string, expected_topic = ""): Promise<{
+export type CitationVerification = {
+  verification_id?: string;
+  citation_text: string;
   status: string;
+  source_id?: string | null;
+  source_url?: string;
   reasons: string[];
   court_ready: boolean;
-}> {
+};
+
+export type WorkspaceAnalysis = {
+  message: string;
+  mode: string;
+  classification: {
+    issues: string[];
+    requires_human_review: boolean;
+    court_ready: boolean;
+  };
+  citations: CitationVerification[];
+  safety: {
+    court_ready: boolean;
+    legal_advice: boolean;
+    blockers: string[];
+  };
+};
+
+export function verifyCitation(
+  citation_text: string,
+  expected_topic = "",
+): Promise<CitationVerification> {
   return api("/v1/platform/citations/verify", {
     method: "POST",
     body: JSON.stringify({ citation_text, expected_topic }),
+    auth: false,
+  });
+}
+
+export function analyzeWorkspaceMessage(body: {
+  message: string;
+  mode: string;
+  matter_id?: string;
+}): Promise<WorkspaceAnalysis> {
+  return api("/v1/platform/workspace/analyze", {
+    method: "POST",
+    body: JSON.stringify(body),
     auth: false,
   });
 }

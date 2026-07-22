@@ -20,10 +20,14 @@ HF = ROOT / "huggingface"
 README_FILE = "README.md"
 INDEX_FILE = "index.html"
 STYLE_FILE = "style.css"
+APP_FILE = "app.py"
+REQ_FILE = "requirements.txt"
 HF_CONFIG_FILE = "hf-assets.example.json"
 
 REQUIRED_PATHS = [
     SPACE / README_FILE,
+    SPACE / APP_FILE,
+    SPACE / REQ_FILE,
     SPACE / INDEX_FILE,
     SPACE / STYLE_FILE,
     HF / README_FILE,
@@ -127,8 +131,24 @@ def check_space_disclaimer(errors: list[str]) -> None:
 
 def check_space_sdk(errors: list[str]) -> None:
     readme = SPACE / README_FILE
-    if readme.exists() and "sdk: static" not in read_text(readme):
-        errors.append(f"{relative(readme)} should declare `sdk: static` for public demo")
+    if readme.exists() and "sdk: gradio" not in read_text(readme):
+        errors.append(f"{relative(readme)} should declare `sdk: gradio` for public demo")
+
+
+def check_transformers_gate(errors: list[str]) -> None:
+    app = SPACE / APP_FILE
+    if not app.exists():
+        return
+    text = read_text(app)
+    required = [
+        'ENABLE_TRANSFORMERS_INFERENCE", "false"',
+        "def safe_model_demo",
+        "enforce_public_text(prompt)",
+        "not legal advice; not court-ready",
+    ]
+    for marker in required:
+        if marker not in text:
+            errors.append(f"Optional Transformers inference gate missing marker `{marker}`")
 
 
 def check_json_bool_false(data: dict, section: str, field: str, errors: list[str]) -> None:
@@ -147,6 +167,8 @@ def check_config(errors: list[str]) -> None:
         return
     check_json_bool_false(data, "space", "allow_client_data", errors)
     check_json_bool_false(data, "dataset", "allow_client_data", errors)
+    if data.get("space", {}).get("sdk") != "gradio":
+        errors.append("HF config must set space.sdk=gradio")
 
 
 def run_checks() -> list[str]:
@@ -157,6 +179,7 @@ def run_checks() -> list[str]:
         check_no_live_matter_ids,
         check_space_disclaimer,
         check_space_sdk,
+        check_transformers_gate,
         check_config,
     ]
     for check in checks:

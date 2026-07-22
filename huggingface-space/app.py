@@ -13,13 +13,24 @@ Not a lawyer. Not legal advice. Legal information and drafting support only.
 from __future__ import annotations
 
 import re
+import sys
+from pathlib import Path
 
 import gradio as gr
 
 import os
 
-# Public Space must run in public_demo mode (M0-E5)
-os.environ.setdefault("APP_MODE", "public_demo")
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+# Public Space must run in public_demo mode (M0-E5); do not allow external overrides.
+os.environ["APP_MODE"] = "public_demo"
+os.environ.setdefault("ALLOW_PUBLIC_UPLOADS", "false")
+os.environ.setdefault("ALLOW_CLIENT_DATA", "false")
+os.environ.setdefault("ALLOW_COURT_READY_EXPORTS", "false")
+os.environ.setdefault("ALLOW_PUBLIC_PERSISTENCE", "false")
+os.environ.setdefault("ALLOW_PUBLIC_CONNECTORS", "false")
 
 DISCLAIMER = """
 **Disclaimer:** **BC Legal AI Associate** — legal research and drafting **support** only.
@@ -37,6 +48,102 @@ FAIL_CLOSED = (
     "reference below must be re-verified on **BC Laws** (check the 'current to' "
     "line) before any reliance or filing."
 )
+
+MODEL_ID = os.environ.get("HF_MODEL_ID", "").strip()
+ENABLE_TRANSFORMERS = os.environ.get("ENABLE_TRANSFORMERS_INFERENCE", "false").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
+_TRANSFORMERS_PIPE = None
+_TRANSFORMERS_ERROR = ""
+
+
+def transformers_status() -> str:
+    if not ENABLE_TRANSFORMERS:
+        return (
+            "Optional Transformers inference is **disabled** for this public demo. "
+            "Set private Space secrets `ENABLE_TRANSFORMERS_INFERENCE=true` and `HF_MODEL_ID` "
+            "only after legal-risk review."
+        )
+    if not MODEL_ID:
+        return (
+            "Optional Transformers inference requested but blocked: set `HF_MODEL_ID` to a real "
+            "Transformers-compatible base or adapter repo. Do not point it at a policy/model-card-only repo."
+        )
+    if _TRANSFORMERS_PIPE is not None:
+        return f"Optional Transformers inference is enabled for `{MODEL_ID}` with fail-closed public-demo guards."
+    if _TRANSFORMERS_ERROR:
+        return f"Optional Transformers inference requested but unavailable: `{_TRANSFORMERS_ERROR}`"
+    return "Optional Transformers inference requested but not loaded yet."
+
+
+def get_transformers_pipe():
+    """Lazily load optional local model inference only when explicitly enabled."""
+    global _TRANSFORMERS_PIPE, _TRANSFORMERS_ERROR
+    if not ENABLE_TRANSFORMERS:
+        return None
+    if _TRANSFORMERS_PIPE is not None:
+        return _TRANSFORMERS_PIPE
+    if not MODEL_ID:
+        _TRANSFORMERS_ERROR = "HF_MODEL_ID is not set to a Transformers-compatible model repo"
+        return None
+    try:
+        from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+
+        tokenizer = AutoTokenizer.from_pretrained(
+            MODEL_ID,
+            trust_remote_code=True,
+            use_fast=False,
+        )
+        model = AutoModelForCausalLM.from_pretrained(
+            MODEL_ID,
+            trust_remote_code=True,
+            device_map="auto",
+        )
+        _TRANSFORMERS_PIPE = pipeline("text-generation", model=model, tokenizer=tokenizer)
+        return _TRANSFORMERS_PIPE
+    except Exception as exc:  # fail closed in public Space
+        _TRANSFORMERS_ERROR = str(exc)
+        return None
+
+
+def safe_model_demo(prompt: str, max_new_tokens: int) -> str:
+    """Optional model demo with public-demo input screening and non-advice output framing."""
+    if not prompt or not prompt.strip():
+        return "Enter a non-confidential synthetic prompt."
+    try:
+        from backend.api.public_demo import enforce_public_text
+
+        check = enforce_public_text(prompt)
+        if not check.get("ok", True):
+            return f"**Rejected (public demo):** {check.get('error')}"
+    except Exception:
+        return "Public-demo safety scanner unavailable; model inference blocked."
+    pipe = get_transformers_pipe()
+    if pipe is None:
+        return transformers_status()
+    guarded_prompt = (
+        "You are a public legal-information demo. Do not provide legal advice, do not claim court-readiness, "
+        "and tell the user to verify law on official sources. Synthetic prompt only:\n"
+        f"{prompt.strip()}\n\nSafe informational response:"
+    )
+    try:
+        outputs = pipe(
+            guarded_prompt,
+            max_new_tokens=int(max(16, min(max_new_tokens, 160))),
+            do_sample=False,
+            return_full_text=False,
+        )
+    except Exception as exc:
+        return f"Model inference failed safely: `{exc}`"
+    text = outputs[0].get("generated_text", "") if outputs else ""
+    return (
+        "## Optional model output (not legal advice; not court-ready)\n\n"
+        f"{text.strip() or '(empty model output)'}\n\n"
+        f"{FAIL_CLOSED}"
+    )
 
 OFFICIAL_LAWS = [
     (
@@ -483,6 +590,23 @@ with gr.Blocks(title="BC Legal AI Workbench") as demo:
             pr_btn = gr.Button("Run post-resolution demo", variant="primary")
             pr_out = gr.Markdown()
             pr_btn.click(demo_post_resolution, inputs=[pr_text, pr_date], outputs=pr_out)
+
+        with gr.Tab("Optional model demo"):
+            gr.Markdown(
+                "This tab is fail-closed. It only runs Transformers inference if private Space secrets "
+                "`ENABLE_TRANSFORMERS_INFERENCE=true` and `HF_MODEL_ID=<compatible model repo>` are set after legal-risk review. Do not enter real names, "
+                "addresses, file numbers, or confidential facts."
+            )
+            gr.Markdown(transformers_status())
+            model_prompt = gr.Textbox(
+                lines=5,
+                label="Synthetic prompt only",
+                placeholder="e.g. Explain why legal outputs should be source-verified before filing.",
+            )
+            max_tokens = gr.Slider(16, 160, value=80, step=8, label="Max new tokens")
+            model_btn = gr.Button("Run optional model demo", variant="secondary")
+            model_out = gr.Markdown()
+            model_btn.click(safe_model_demo, inputs=[model_prompt, max_tokens], outputs=model_out)
 
         with gr.Tab("Phase 3 · HITL API"):
             gr.Markdown(demo_consent_note())

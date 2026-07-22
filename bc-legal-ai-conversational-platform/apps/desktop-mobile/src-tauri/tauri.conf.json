@@ -1,0 +1,36 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "BC Legal AI Associate",
+  "version": "0.1.0",
+  "identifier": "ca.bclegalai.associate",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../../platform-ui/dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "BC Legal AI Associate",
+        "width": 1440,
+        "height": 920,
+        "minWidth": 1024,
+        "minHeight": 700,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; connect-src 'self' https: wss:; img-src 'self' asset: data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self' data:"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "category": "Productivity",
+    "shortDescription": "Conversational legal AI workspace",
+    "longDescription": "A human-supervised conversational legal research, evidence, drafting, and matter-management workspace.",
+    "copyright": "Copyright © BC Legal AI Project"
+  }
+}

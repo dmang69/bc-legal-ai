@@ -2,21 +2,38 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any, Optional
 
 from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel, Field
 
-from backend.api.public_demo import is_public_demo, reject_if_public_demo
+from backend.api.public_demo import (
+    enforce_public_text,
+    is_public_demo,
+    public_deployment_safety,
+    reject_if_public_demo,
+)
 from backend.audit import get_audit_ledger
 from backend.db import get_db_backend, init_db
 from backend.identity import AuthError, get_identity_service
-from backend.platform.citations import list_knowledge_sources, verify_citation
+from backend.platform.citations import list_citation_audit, list_knowledge_sources, verify_citation
 from backend.platform.conflicts import get_conflict_service
 from backend.platform.consent_store import get_consent_store
 from backend.platform import drafting as drafting_mod
 from backend.platform.evidence import get_evidence_service
+from backend.platform.export_manifest import (
+    ExportApprovals,
+    create_export_manifest,
+    list_export_manifests,
+)
 from backend.platform.matters import get_matter_store
+from backend.platform.workspace import (
+    add_message as add_workspace_message,
+    create_conversation,
+    get_conversation,
+    list_conversations,
+)
 
 router = APIRouter(prefix="/v1/platform", tags=["platform"])
 
@@ -74,13 +91,211 @@ class CitationBody(BaseModel):
     expected_topic: str = ""
 
 
+class ExportManifestBody(BaseModel):
+    document_ids: list[str] = Field(default_factory=list)
+    citation_ids: list[str] = Field(default_factory=list)
+    destination: str = "export"
+    human_confirmed_facts: bool = False
+    citation_reviewed: bool = False
+    privilege_reviewed: bool = False
+    lawyer_approved: bool = False
+    client_waiver_signed: bool = False
+
+
+class WorkspaceAnalyzeBody(BaseModel):
+    message: str = Field(min_length=1, max_length=8000)
+    mode: str = "general"
+    matter_id: str = ""
+
+
+class WorkspaceConversationBody(BaseModel):
+    matter_id: str = ""
+    title: str = "Workspace conversation"
+    mode: str = "general"
+
+
+class WorkspaceMessageBody(BaseModel):
+    author: str = "user"
+    body: str = Field(min_length=1, max_length=8000)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+_ALLOWED_WORKSPACE_MODES = {"general", "matter", "document", "research", "drafting", "agent"}
+
+
+def _classify_legal_query(text: str, mode: str) -> dict[str, Any]:
+    low = text.lower()
+    issues: list[str] = []
+    if any(term in low for term in ("judicial review", "jr", "patent unreasonable", "procedural fairness")):
+        issues.append("judicial-review screening")
+    if any(term in low for term in ("rta", "residential tenancy", "rtb", "tenancy")):
+        issues.append("BC residential-tenancy context")
+    if any(term in low for term in ("summarize", "summary", "explain")):
+        issues.append("document-summary request")
+    if any(term in low for term in ("deadline", "limitation", "days", "served")):
+        issues.append("deadline-sensitive issue")
+    if not issues:
+        issues.append(f"{mode} legal triage")
+    return {
+        "issues": issues,
+        "requires_human_review": True,
+        "court_ready": False,
+    }
+
+
+@router.post("/workspace/analyze")
+def workspace_analyze(body: WorkspaceAnalyzeBody) -> dict[str, Any]:
+    mode = body.mode.strip().lower() or "general"
+    if mode not in _ALLOWED_WORKSPACE_MODES:
+        raise HTTPException(status_code=400, detail="Unsupported workspace mode")
+
+    public_check = enforce_public_text(body.message)
+    if not public_check.get("ok", False):
+        raise HTTPException(status_code=403, detail=public_check)
+
+    classification = _classify_legal_query(body.message, mode)
+    citation_results: list[dict[str, Any]] = []
+    citation_patterns = [
+        r"\b(?:RTA|JRPA|ATA)\b(?:\s+s\.?\s*\d+[A-Za-z]?)?",
+        r"\b(?:Residential Tenancy Act|Judicial Review Procedure Act|Administrative Tribunals Act)\b(?:\s+s\.?\s*\d+[A-Za-z]?)?",
+    ]
+    seen: set[str] = set()
+    for pattern in citation_patterns:
+        for match in re.finditer(pattern, body.message, flags=re.I):
+            citation = match.group(0).strip()
+            if citation.lower() in seen:
+                continue
+            seen.add(citation.lower())
+            citation_results.append(
+                verify_citation(
+                    citation,
+                    matter_id=body.matter_id,
+                    expected_topic=" ".join(classification["issues"] + [body.message]),
+                )
+            )
+
+    blockers = [
+        "not legal advice",
+        "human supervision required",
+        "no court-ready output without verified sources and privilege review",
+    ]
+    if mode in {"research", "drafting"} and not citation_results:
+        blockers.append("no verified citation pathway was detected in the request")
+    if mode == "agent":
+        blockers.append("agent execution requires explicit task approval before any external action")
+
+    response_lines = [
+        "I can triage this safely, but I cannot mark it court-ready.",
+        f"Mode: {mode}.",
+        "Detected: " + "; ".join(classification["issues"]) + ".",
+        "Next safe step: provide source text, decision date/service details, and requested jurisdiction so evidence, deadline, citation, and privilege gates can run.",
+    ]
+    if citation_results:
+        response_lines.append(
+            "Citation check: "
+            + "; ".join(f"{r['citation_text']} => {r['status']}" for r in citation_results)
+            + "."
+        )
+
+    return {
+        "message": "\n".join(response_lines),
+        "mode": mode,
+        "classification": classification,
+        "citations": citation_results,
+        "safety": {
+            "court_ready": False,
+            "legal_advice": False,
+            "blockers": blockers,
+        },
+    }
+
+
+@router.post("/workspace/conversations")
+def create_workspace_conversation(
+    body: WorkspaceConversationBody,
+    authorization: Optional[str] = Header(default=None),
+) -> dict[str, Any]:
+    user = _user(authorization)
+    try:
+        return create_conversation(
+            user=user,
+            matter_id=body.matter_id,
+            title=body.title,
+            mode=body.mode,
+        )
+    except AuthError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@router.get("/workspace/conversations")
+def list_workspace_conversations(
+    matter_id: str = "",
+    authorization: Optional[str] = Header(default=None),
+) -> dict[str, Any]:
+    user = _user(authorization)
+    try:
+        return {"conversations": list_conversations(user=user, matter_id=matter_id)}
+    except AuthError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+
+
+@router.get("/workspace/conversations/{conversation_id}")
+def get_workspace_conversation(
+    conversation_id: str,
+    authorization: Optional[str] = Header(default=None),
+) -> dict[str, Any]:
+    user = _user(authorization)
+    try:
+        return get_conversation(user=user, conversation_id=conversation_id)
+    except AuthError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+
+
+@router.post("/workspace/conversations/{conversation_id}/messages")
+def add_workspace_conversation_message(
+    conversation_id: str,
+    body: WorkspaceMessageBody,
+    authorization: Optional[str] = Header(default=None),
+) -> dict[str, Any]:
+    user = _user(authorization)
+    try:
+        return add_workspace_message(
+            user=user,
+            conversation_id=conversation_id,
+            author=body.author,
+            body=body.body,
+            metadata=body.metadata,
+        )
+    except AuthError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
 @router.get("/status")
 def platform_status() -> dict[str, Any]:
     backend = init_db()
     return {
         "db_backend": backend or get_db_backend(),
         "public_demo": is_public_demo(),
-        "modules": ["identity", "matters", "audit", "evidence", "citations", "conflicts"],
+        "public_deployment": public_deployment_safety(),
+        "modules": [
+            "identity",
+            "matters",
+            "audit",
+            "evidence",
+            "citations",
+            "citation_audit",
+            "conflicts",
+            "export_manifests",
+            "workspace_persistence",
+        ],
     }
 
 
@@ -261,6 +476,11 @@ def knowledge_sources() -> dict[str, Any]:
     return {"sources": list_knowledge_sources()}
 
 
+@router.get("/citations/audit")
+def citations_audit(matter_id: str = "") -> dict[str, Any]:
+    return {"matter_id": matter_id, "citations": list_citation_audit(matter_id)}
+
+
 @router.get("/audit/verify")
 def audit_verify(authorization: Optional[str] = Header(default=None)) -> dict[str, Any]:
     _user(authorization)
@@ -353,6 +573,47 @@ def evaluate_ai_consent(
 ) -> dict[str, Any]:
     _user(authorization)
     return get_consent_store().evaluate_optional_ai(matter_id)
+
+
+@router.post("/matters/{matter_id}/exports/manifest")
+def create_manifest(
+    matter_id: str,
+    body: ExportManifestBody,
+    authorization: Optional[str] = Header(default=None),
+) -> dict[str, Any]:
+    user = _user(authorization)
+    try:
+        return create_export_manifest(
+            user=user,
+            matter_id=matter_id,
+            document_ids=body.document_ids,
+            citation_ids=body.citation_ids,
+            destination=body.destination,
+            approvals=ExportApprovals(
+                human_confirmed_facts=body.human_confirmed_facts,
+                citation_reviewed=body.citation_reviewed,
+                privilege_reviewed=body.privilege_reviewed,
+                lawyer_approved=body.lawyer_approved,
+                client_waiver_signed=body.client_waiver_signed,
+            ),
+        )
+    except AuthError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@router.get("/matters/{matter_id}/exports/manifest")
+def list_manifests(
+    matter_id: str, authorization: Optional[str] = Header(default=None)
+) -> dict[str, Any]:
+    user = _user(authorization)
+    try:
+        return {"manifests": list_export_manifests(user, matter_id)}
+    except AuthError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
 
 
 @router.get("/matters/{matter_id}/drafts/form-66")

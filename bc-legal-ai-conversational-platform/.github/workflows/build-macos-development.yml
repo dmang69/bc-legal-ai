@@ -1,0 +1,29 @@
+name: Build macOS development package
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install frontend dependencies
+        working-directory: apps/platform-ui
+        run: npm install
+      - name: Place Tauri project beside frontend
+        run: cp -R apps/desktop-mobile/src-tauri apps/platform-ui/src-tauri
+      - name: Build unsigned development package
+        working-directory: apps/platform-ui
+        run: npm run tauri:build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bc-legal-ai-macos-development
+          path: apps/platform-ui/src-tauri/target/release/bundle/**

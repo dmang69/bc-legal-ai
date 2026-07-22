@@ -2,7 +2,7 @@
   "owner": "dmang69",
   "space": {
     "repo_id": "dmang69/bc-legal-ai",
-    "sdk": "static",
+    "sdk": "gradio",
     "local_dir": "huggingface-space",
     "public_url": "https://dmang69-bc-legal-ai.static.hf.space",
     "allow_client_data": false

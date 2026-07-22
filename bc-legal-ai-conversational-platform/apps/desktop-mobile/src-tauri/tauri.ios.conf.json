@@ -1,0 +1,13 @@
+{
+  "app": {
+    "windows": [
+      {
+        "title": "BC Legal AI Associate",
+        "width": 430,
+        "height": 860,
+        "minWidth": 320,
+        "minHeight": 640
+      }
+    ]
+  }
+}

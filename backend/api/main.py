@@ -26,7 +26,13 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from backend.api.platform_routes import router as platform_router
-from backend.api.public_demo import enforce_public_text, is_public_demo, reject_if_public_demo
+from backend.api.public_demo import (
+    assert_public_deployment_safe,
+    enforce_public_text,
+    is_public_demo,
+    public_deployment_safety,
+    reject_if_public_demo,
+)
 from backend.api.state import hitl, post_resolution
 from backend.db import get_db_backend, init_db
 from services.deadlines.jr_clock import JrClockRequest, calculate_jr_clock
@@ -39,6 +45,7 @@ from services.reasoning.hitl.schemas.common import ModelDestination
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    assert_public_deployment_safe()
     init_db()
     yield
 
@@ -126,18 +133,20 @@ def icons(name: str):
 
 
 @app.get("/health")
-def health() -> dict[str, str]:
+def health() -> dict[str, Any]:
     try:
         db = get_db_backend()
     except Exception:
         db = "unknown"
+    safety = public_deployment_safety()
     return {
-        "status": "ok",
+        "status": "ok" if safety["safe"] else "unsafe",
         "phase": "m1-platform",
         "mode": "public_demo" if is_public_demo() else "platform",
         "platform": "api+static-client",
-        "app_mode": "public_demo" if is_public_demo() else "development",
+        "app_mode": safety["app_mode"],
         "db_backend": db,
+        "public_deployment": safety,
     }
 
 

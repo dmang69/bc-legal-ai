@@ -11,6 +11,7 @@ import {
   verifyCitation,
 } from "./lib/api";
 import { getAppMode, type AppMode } from "./lib/mode";
+import { ConversationalWorkspace } from "./workspace/ConversationalWorkspace";
 import "./styles.css";
 
 const MODE_LABEL: Record<AppMode, string> = {
@@ -32,6 +33,7 @@ export function App() {
   const [msg, setMsg] = useState("");
   const [citeIn, setCiteIn] = useState("RTA s.56 retaliation");
   const [citeOut, setCiteOut] = useState("");
+  const [surface, setSurface] = useState<"workspace" | "platform">("workspace");
 
   useEffect(() => {
     const on = () => setOffline(false);
@@ -117,14 +119,32 @@ export function App() {
   return (
     <div className="shell">
       <header className="header">
-        <h1>{MODE_LABEL[mode]}</h1>
-        <p className="sub">
-          Family: BC Legal AI Associate · Not a lawyer · Not legal advice · Human supervision
-          required
-        </p>
-        <p className="api-status" aria-live="polite">
-          {health}
-        </p>
+        <div>
+          <h1>{MODE_LABEL[mode]}</h1>
+          <p className="sub">
+            Family: BC Legal AI Associate · Not a lawyer · Not legal advice · Human supervision
+            required
+          </p>
+          <p className="api-status" aria-live="polite">
+            {health}
+          </p>
+        </div>
+        <div className="surface-switch" aria-label="Application surface">
+          <button
+            className={surface === "workspace" ? "active" : ""}
+            onClick={() => setSurface("workspace")}
+            type="button"
+          >
+            AI Workspace
+          </button>
+          <button
+            className={surface === "platform" ? "active" : ""}
+            onClick={() => setSurface("platform")}
+            type="button"
+          >
+            Platform Admin
+          </button>
+        </div>
       </header>
 
       {offline && (
@@ -134,78 +154,82 @@ export function App() {
         </div>
       )}
 
-      <main>
-        <section className="card warn" role="note">
-          <strong>M1 platform build.</strong> Auth, org/matter isolation, hash-chained audit,
-          document quarantine, and fail-closed citations. Synthetic data only for demos. No
-          court-ready export without privilege gates.
-        </section>
+      {surface === "workspace" ? (
+        <ConversationalWorkspace />
+      ) : (
+        <main>
+          <section className="card warn" role="note">
+            <strong>M1 platform build.</strong> Auth, org/matter isolation, hash-chained audit,
+            document quarantine, and fail-closed citations. Synthetic data only for demos. No
+            court-ready export without privilege gates.
+          </section>
 
-        {!token ? (
-          <section className="card">
-            <h2>Sign in (private API)</h2>
-            <form className="form" onSubmit={onLogin}>
-              <label>
-                Org (register only)
-                <input value={orgName} onChange={(e) => setOrgName(e.target.value)} />
-              </label>
-              <label>
-                Email
-                <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" />
-              </label>
-              <label>
-                Password
-                <input
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  type="password"
-                />
-              </label>
+          {!token ? (
+            <section className="card">
+              <h2>Sign in (private API)</h2>
+              <form className="form" onSubmit={onLogin}>
+                <label>
+                  Org (register only)
+                  <input value={orgName} onChange={(e) => setOrgName(e.target.value)} />
+                </label>
+                <label>
+                  Email
+                  <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" />
+                </label>
+                <label>
+                  Password
+                  <input
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    type="password"
+                  />
+                </label>
+                <div className="row">
+                  <button type="submit">Log in</button>
+                  <button type="button" onClick={onRegister}>
+                    Register org
+                  </button>
+                </div>
+              </form>
+            </section>
+          ) : (
+            <section className="card">
+              <h2>Matters</h2>
               <div className="row">
-                <button type="submit">Log in</button>
-                <button type="button" onClick={onRegister}>
-                  Register org
+                <button type="button" onClick={onNewMatter}>
+                  New synthetic matter
+                </button>
+                <button type="button" onClick={logout}>
+                  Log out
                 </button>
               </div>
-            </form>
-          </section>
-        ) : (
-          <section className="card">
-            <h2>Matters</h2>
-            <div className="row">
-              <button type="button" onClick={onNewMatter}>
-                New synthetic matter
-              </button>
-              <button type="button" onClick={logout}>
-                Log out
-              </button>
-            </div>
-            <ul>
-              {matters.map((m) => (
-                <li key={m.matter_id}>
-                  <code>{m.matter_id}</code> — {m.title}
-                </li>
-              ))}
-              {matters.length === 0 && <li>No matters yet.</li>}
-            </ul>
-          </section>
-        )}
+              <ul>
+                {matters.map((m) => (
+                  <li key={m.matter_id}>
+                    <code>{m.matter_id}</code> — {m.title}
+                  </li>
+                ))}
+                {matters.length === 0 && <li>No matters yet.</li>}
+              </ul>
+            </section>
+          )}
 
-        <section className="card">
-          <h2>Citation check (fail-closed)</h2>
-          <input value={citeIn} onChange={(e) => setCiteIn(e.target.value)} className="wide" />
-          <button type="button" onClick={onCite}>
-            Verify
-          </button>
-          <pre className="out">{citeOut}</pre>
-        </section>
-
-        {msg && (
           <section className="card">
-            <pre className="out">{msg}</pre>
+            <h2>Citation check (fail-closed)</h2>
+            <input value={citeIn} onChange={(e) => setCiteIn(e.target.value)} className="wide" />
+            <button type="button" onClick={onCite}>
+              Verify
+            </button>
+            <pre className="out">{citeOut}</pre>
           </section>
-        )}
-      </main>
+
+          {msg && (
+            <section className="card">
+              <pre className="out">{msg}</pre>
+            </section>
+          )}
+        </main>
+      )}
     </div>
   );
 }

@@ -225,9 +225,62 @@ CREATE TABLE IF NOT EXISTS citation_verifications (
   citation_text TEXT NOT NULL,
   status TEXT NOT NULL,
   source_id TEXT,
+  source_url TEXT NOT NULL DEFAULT '',
+  authority_type TEXT NOT NULL DEFAULT 'UNKNOWN',
+  jurisdiction TEXT NOT NULL DEFAULT '',
   pinpoint TEXT NOT NULL DEFAULT '',
+  expected_topic TEXT NOT NULL DEFAULT '',
+  source_hash TEXT NOT NULL DEFAULT '',
+  currency_date TEXT NOT NULL DEFAULT '',
   reasons TEXT NOT NULL DEFAULT '[]',
   verified_by TEXT NOT NULL DEFAULT 'system',
+  court_ready INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS citation_audit_events (
+  audit_id TEXT PRIMARY KEY,
+  verification_id TEXT NOT NULL REFERENCES citation_verifications(verification_id),
+  matter_id TEXT NOT NULL DEFAULT '',
+  event_type TEXT NOT NULL,
+  actor_id TEXT NOT NULL DEFAULT 'system',
+  detail_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS export_manifests (
+  manifest_id TEXT PRIMARY KEY,
+  matter_id TEXT NOT NULL REFERENCES matters(matter_id),
+  destination TEXT NOT NULL DEFAULT 'export',
+  document_ids_json TEXT NOT NULL DEFAULT '[]',
+  citation_ids_json TEXT NOT NULL DEFAULT '[]',
+  status TEXT NOT NULL,
+  court_ready INTEGER NOT NULL DEFAULT 0,
+  privilege_decision_json TEXT NOT NULL DEFAULT '{}',
+  blockers_json TEXT NOT NULL DEFAULT '[]',
+  approvals_json TEXT NOT NULL DEFAULT '{}',
+  created_by TEXT NOT NULL DEFAULT 'system',
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS workspace_conversations (
+  conversation_id TEXT PRIMARY KEY,
+  matter_id TEXT NOT NULL DEFAULT '',
+  org_id TEXT NOT NULL DEFAULT '',
+  title TEXT NOT NULL DEFAULT 'Workspace conversation',
+  mode TEXT NOT NULL DEFAULT 'general',
+  created_by TEXT NOT NULL DEFAULT 'system',
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS workspace_messages (
+  message_id TEXT PRIMARY KEY,
+  conversation_id TEXT NOT NULL REFERENCES workspace_conversations(conversation_id) ON DELETE CASCADE,
+  matter_id TEXT NOT NULL DEFAULT '',
+  author TEXT NOT NULL,
+  body TEXT NOT NULL,
+  metadata_json TEXT NOT NULL DEFAULT '{}',
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 """
