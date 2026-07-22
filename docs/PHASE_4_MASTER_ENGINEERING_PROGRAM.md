@@ -385,6 +385,7 @@ Issues: M0-001…003, 005–010, 013, 016–018, 021, 023 (see M0 gate).
 |----------|------|
 | `docs/M0_RELEASE_GATE.md` | M0 checklist status |
 | `docs/M0_001_inventory.md` | Confidential inventory |
+| `docs/PRODUCT_DESCRIPTION.md` | Official product description (target completed platform) |
 | `docs/SECTION_G_PLATFORM_AND_DISTRIBUTION.md` | **Section G** — full platform & distribution architecture |
 | `docs/PLATFORM_AND_INSTALLATION.md` | Short pointer to Section G |
 | `docs/github/LABELS.md` | GitHub labels |
