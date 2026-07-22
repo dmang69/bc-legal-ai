@@ -53,6 +53,7 @@ class EvidenceService:
         blocked = lower.endswith((".exe", ".dll", ".bat", ".cmd", ".ps1", ".js"))
         status = "BLOCKED" if blocked else "CLEAN"
 
+        pages_out: list[dict[str, Any]] = []
         with get_connection() as conn:
             conn.execute(
                 """
@@ -92,6 +93,44 @@ class EvidenceService:
                     """,
                     (page_id, document_id, matter_id, page_hash, text),
                 )
+                pages_out.append({"page_id": page_id, "page_number": 1})
+            elif not blocked and (
+                content_type == "application/pdf" or lower.endswith(".pdf")
+            ):
+                from backend.platform.pdf_extract import extract_pdf_bytes
+
+                extracted = extract_pdf_bytes(data)
+                if extracted.ok:
+                    for p in extracted.pages:
+                        page_id = f"page_{uuid.uuid4().hex[:12]}"
+                        conn.execute(
+                            """
+                            INSERT INTO document_pages
+                            (page_id, document_id, matter_id, page_number, page_hash,
+                             text_content, ocr_confidence, needs_review)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                            """,
+                            (
+                                page_id,
+                                document_id,
+                                matter_id,
+                                p.page_number,
+                                p.page_hash,
+                                p.text,
+                                p.confidence,
+                                1 if p.needs_review else 0,
+                            ),
+                        )
+                        pages_out.append(
+                            {
+                                "page_id": page_id,
+                                "page_number": p.page_number,
+                                "needs_review": p.needs_review,
+                            }
+                        )
+                else:
+                    # Keep document; flag for human OCR review
+                    pages_out.append({"extract_error": extracted.error, "engine": extracted.engine})
 
         get_audit_ledger().append(
             actor_id=user.user_id,
@@ -109,6 +148,7 @@ class EvidenceService:
             "byte_size": len(data),
             "quarantine_status": status,
             "synthetic": synthetic,
+            "pages": pages_out,
         }
 
     def add_proposition(
