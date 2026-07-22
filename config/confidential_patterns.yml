@@ -68,7 +68,7 @@ allowlist_prefixes:
   - docs/
   - skills/
   - apps/platform-ui/
-  - apps/desktop-mobile/package-lock.json
+  - apps/desktop-mobile/
 
 # Filename suffixes / names always skipped
 ignore_filenames:
