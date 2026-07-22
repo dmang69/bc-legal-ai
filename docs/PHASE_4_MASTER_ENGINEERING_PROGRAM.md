@@ -57,7 +57,7 @@ The **Big 18** accurately counts **core legal systems (Section B) only**. Full r
 | Governance, testing, privacy, release | 4–6 |
 | **Practical total** | **~33–36** |
 
-**Task estimate (decomposed):** ~**485–695** engineering tasks (DB, API, service, UI, tests, docs, migration, security per subsystem).
+**Task estimate (decomposed):** ~**485–695** core engineering tasks, plus **~55–75** Section G platform/distribution tasks.
 
 | Work category | Estimated tasks |
 |---------------|----------------:|
@@ -70,7 +70,9 @@ The **Big 18** accurately counts **core legal systems (Section B) only**. Full r
 | Client and Windows integration | 45–65 |
 | Post-resolution | 30–45 |
 | Security, testing and release | 60–90 |
-| **Total** | **485–695** |
+| **Core total** | **485–695** |
+| Section G platform & distribution (M6A–F) | **+55–75** |
+| **Grand total (approx.)** | **540–770** |
 
 ### 1.2 Modular monolith first — not microservices
 
@@ -188,6 +190,7 @@ Defer until the essential platform works:
 | **M4** | Reasoning & HITL | LegalTests, private inference, agents, privilege, competency |
 | **M5** | Procedure & Court Export | Deadlines, forms, books, DOCX/PDF, redaction |
 | **M6** | Client Portal & Windows Connector | Portal, messaging, accessibility, approved-folder connector |
+| **§G / M6A–F** | Platform & Distribution | Tauri 2 + React; Workbench / Client / Portal installers & stores |
 | **M7** | Post-Resolution | Decisions, enforcement, JR clock, retention |
 | **M8** | Hardening & Controlled Release | Eval, security, privacy, pilot, production candidate |
 
@@ -301,13 +304,24 @@ Epics: deadline engine; procedural engine; drafting (Form 66/67/32/33/109, RTB, 
 
 ### M6 — Client Portal and Windows Connector
 
-**Delivery (controlling):** single shared UI wrapped by **Tauri 2** (Windows / macOS / Android / iOS) plus **browser PWA** — see `docs/PLATFORM_AND_INSTALLATION.md` and `apps/tauri/`. Shells connect only to the **private** backend.
+**Delivery (controlling):** **Section G** — `docs/SECTION_G_PLATFORM_AND_DISTRIBUTION.md`.
 
-**Portal:** MFA, dashboard, evidence, preview, guided upload, timeline, tasks, deadlines, messages, consent centre, decision/enforcement/JR viewers, notifications, accessibility, multilingual.
+| Surface | Name | Stack |
+|---------|------|--------|
+| Shared UI | All modes | React · TypeScript · Vite (`apps/platform-ui`) |
+| Desktop | **BC Legal AI Workbench** | Tauri 2 (`apps/desktop-mobile`) |
+| Mobile | **BC Legal AI Client** | Tauri 2 Android/iOS |
+| Web | **BC Legal AI Portal** | PWA from same UI |
+
+**Epics:** M6A foundation · M6B Windows · M6C macOS · M6D Android · M6E iOS · M6F PWA (+ product portal modules below).
+
+**Portal product:** MFA, dashboard, evidence, preview, guided upload, timeline, tasks, deadlines, messages, consent centre, decision/enforcement/JR viewers, notifications, accessibility, multilingual.
 
 **Windows connector (Tauri native plugin, not whole-drive search):** approved folder only; inventory; preview; consent; privilege; duplicates; local redaction (high confidentiality); encrypted transfer; revocation; local audit.
 
-**Exit gate:** client sees only authorized material; uploads quarantine; messaging crypto accurately described; no silent whole-drive scan; consent effective; accessibility testing passes; store installers signed for pilot maturity level.
+**Exit gate:** Section G §19 platform standard **and** product gates: client sees only authorized material; uploads quarantine; messaging crypto accurately described; no silent whole-drive scan; consent effective; accessibility testing passes; store installers signed for pilot maturity level.
+
+**Delivery order:** web portal → PWA → Windows EXE → macOS DMG → Android/iOS beta → stores → enterprise MSI.
 
 ### M7 — Post-Resolution and Enforcement
 
@@ -371,12 +385,14 @@ Issues: M0-001…003, 005–010, 013, 016–018, 021, 023 (see M0 gate).
 |----------|------|
 | `docs/M0_RELEASE_GATE.md` | M0 checklist status |
 | `docs/M0_001_inventory.md` | Confidential inventory |
-| `docs/PLATFORM_AND_INSTALLATION.md` | **Client delivery** — Tauri 2 + PWA five-platform strategy |
+| `docs/SECTION_G_PLATFORM_AND_DISTRIBUTION.md` | **Section G** — full platform & distribution architecture |
+| `docs/PLATFORM_AND_INSTALLATION.md` | Short pointer to Section G |
 | `docs/github/LABELS.md` | GitHub labels |
 | `.github/ISSUE_TEMPLATE/engineering_task.md` | Issue template |
 | `architecture/MODULAR_MONOLITH.md` | Architecture decision |
 | `architecture/WINDOWS_CONNECTOR_BOUNDARY.md` | Connector security model |
-| `apps/tauri/` | Tauri 2 shell (primary packaging) |
+| `apps/platform-ui/` | React/Vite shared UI |
+| `apps/desktop-mobile/` | Tauri 2 shell (primary packaging) |
 | `PHASE_4_ROADMAP.md` | Legacy Phase 4 notes — **subordinate** to this document |
 | `PRODUCT_STATUS.md` | Honest product maturity |
 
@@ -386,11 +402,12 @@ Issues: M0-001…003, 005–010, 013, 016–018, 021, 023 (see M0 gate).
 
 After M0 passes fully (including human ops):
 
-1. GitHub milestones for M0–M8  
+1. GitHub milestones for M0–M8 (+ Section G / M6A–F labels)  
 2. Label set from `docs/github/LABELS.md`  
 3. Issue pack starting **M1** (identity + PostgreSQL + audit)  
+4. Parallel **M6A** shell (React/Vite + unsigned Windows Tauri) against synthetic backend only  
 
-**No new model or portal feature should be merged until M0 remediation is accepted and M1 isolation is designed.**
+**No real client portal features until M0 is accepted and M1 isolation is designed.** Unsigned Workbench shells and portal scaffolds may proceed with synthetic data only.
 
 ---
 

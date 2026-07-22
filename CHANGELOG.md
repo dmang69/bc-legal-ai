@@ -2,12 +2,12 @@
 
 ## Unreleased
 
-### Platform delivery
+### Platform delivery (Section G)
 
-- Controlling install strategy: **Tauri 2** shared shell + private backend + PWA
-  (`docs/PLATFORM_AND_INSTALLATION.md`, `apps/tauri/` scaffold).
-- Five channels: Windows `.exe`/`.msi`, macOS signed `.dmg`, Android `.aab`/`.apk`,
-  iOS `.ipa`, browser PWA. Python/PyInstaller and Capacitor demoted to interim/legacy.
+- Full **Section G** architecture: Workbench / Client / Portal naming; React·TS·Vite·Tauri 2;
+  three client modes; OS install/signing/offline/update model; M6A–M6F epics (+55–75 tasks).
+- Scaffold: `apps/platform-ui`, `apps/desktop-mobile` (platform confs), `packages/`, PWA CI.
+- Docs: `docs/SECTION_G_PLATFORM_AND_DISTRIBUTION.md`.
 
 ### Program governance
 

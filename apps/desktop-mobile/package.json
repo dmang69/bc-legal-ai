@@ -1,8 +1,8 @@
 {
-  "name": "bc-legal-ai-shell",
+  "name": "@bc-legal-ai/desktop-mobile",
   "version": "0.1.0",
   "private": true,
-  "description": "Tauri 2 shell for BC Legal AI Associate — shared UI + private backend",
+  "description": "Tauri 2 shell — BC Legal AI Workbench / Client (Windows, macOS, Android, iOS)",
   "scripts": {
     "tauri": "tauri",
     "dev": "tauri dev",

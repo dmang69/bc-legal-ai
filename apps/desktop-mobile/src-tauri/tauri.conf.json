@@ -4,18 +4,19 @@
   "version": "0.1.0",
   "identifier": "ca.bclegalai.associate",
   "build": {
-    "frontendDist": "../../../frontend/client",
-    "devUrl": "http://127.0.0.1:8000",
-    "beforeDevCommand": "",
-    "beforeBuildCommand": ""
+    "frontendDist": "../../platform-ui/dist",
+    "devUrl": "http://127.0.0.1:5173",
+    "beforeDevCommand": "npm run dev --prefix ../platform-ui",
+    "beforeBuildCommand": "npm run build --prefix ../platform-ui"
   },
   "app": {
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "BC Legal AI Associate",
-        "width": 1100,
-        "height": 780,
+        "label": "main",
+        "title": "BC Legal AI Workbench",
+        "width": 1200,
+        "height": 800,
         "resizable": true,
         "fullscreen": false
       }
@@ -27,12 +28,10 @@
   "bundle": {
     "active": true,
     "targets": "all",
-    "icon": [
-      "icons/icon.png"
-    ],
+    "icon": ["icons/icon.png"],
     "category": "Productivity",
-    "shortDescription": "BC legal research and drafting support (supervised)",
-    "longDescription": "BC Legal AI Associate is a human-supervised legal research, evidence, and drafting support workbench. Not a lawyer. Not legal advice.",
+    "shortDescription": "BC Legal AI Associate — supervised legal support",
+    "longDescription": "BC Legal AI Associate (Workbench / Client). Human-supervised legal research, evidence, and drafting support. Not a lawyer. Not legal advice. Private backend only.",
     "windows": {
       "certificateThumbprint": null,
       "digestAlgorithm": "sha256",

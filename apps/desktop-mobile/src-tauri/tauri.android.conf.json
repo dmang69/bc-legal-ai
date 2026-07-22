@@ -1,0 +1,12 @@
+{
+  "productName": "BC Legal AI Client",
+  "identifier": "ca.bclegalai.client",
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "BC Legal AI Client"
+      }
+    ]
+  }
+}

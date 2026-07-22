@@ -1,0 +1,74 @@
+:root {
+  color-scheme: dark;
+  --bg: #0f1419;
+  --card: #1a2332;
+  --text: #e8eef4;
+  --muted: #9aabbc;
+  --accent: #5b9fd4;
+  --warn: #3d2e14;
+  --warn-border: #c9a227;
+  --offline: #3a1515;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  line-height: 1.45;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.shell {
+  max-width: 52rem;
+  margin: 0 auto;
+  padding: 1.25rem 1rem 3rem;
+}
+
+.header h1 {
+  margin: 0 0 0.35rem;
+  font-size: 1.45rem;
+  font-weight: 650;
+}
+
+.sub,
+.muted,
+.api-status {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.card {
+  background: var(--card);
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  margin: 1rem 0;
+}
+
+.card.warn {
+  background: var(--warn);
+  border: 1px solid var(--warn-border);
+}
+
+.banner.offline {
+  background: var(--offline);
+  border: 1px solid #a44;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin: 0.75rem 0;
+}
+
+code {
+  font-size: 0.88em;
+  background: #0a0e14;
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+}
+
+ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1.2rem;
+}

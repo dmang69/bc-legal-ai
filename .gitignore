@@ -72,7 +72,13 @@ skills/**/outputs/
 # Infra local secrets
 infra/secrets/.env
 
-# Tauri / Node (apps/tauri)
+# Node / Tauri (Section G)
+apps/platform-ui/node_modules/
+apps/platform-ui/dist/
+apps/platform-ui/.env
+apps/desktop-mobile/node_modules/
+apps/desktop-mobile/src-tauri/target/
+apps/desktop-mobile/.env
 apps/tauri/node_modules/
 apps/tauri/src-tauri/target/
 apps/tauri/.env

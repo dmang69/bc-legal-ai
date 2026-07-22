@@ -38,11 +38,10 @@
       <h2 id="inst-h">Install this platform</h2>
       <div class="card">
         <ul>
-          <li><strong>Windows:</strong> signed <code>.exe</code> / optional <code>.msi</code> via Tauri 2 (<code>apps/tauri</code>)</li>
-          <li><strong>macOS:</strong> signed + notarized <code>.dmg</code> (<code>.app</code>) via Tauri 2</li>
-          <li><strong>Android:</strong> Play <code>.aab</code> (or <code>.apk</code>) via Tauri 2</li>
-          <li><strong>iPhone / iPad:</strong> TestFlight / App Store <code>.ipa</code> via Tauri 2</li>
-          <li><strong>Browser:</strong> this page → Install / Add to Home Screen (PWA)</li>
+          <li><strong>Workbench:</strong> Windows/macOS Tauri — <code>apps/desktop-mobile</code> + <code>apps/platform-ui</code></li>
+          <li><strong>Client:</strong> Android/iOS Tauri — same shell, client mode</li>
+          <li><strong>Portal:</strong> secure web / PWA — <code>apps/platform-ui</code> (<code>VITE_APP_MODE=portal</code>)</li>
+          <li><strong>This page:</strong> interim static shell (FastAPI); prefer platform-ui</li>
           <li><strong>API docs:</strong> <a id="docs-link" href="/docs">/docs</a></li>
         </ul>
       </div>

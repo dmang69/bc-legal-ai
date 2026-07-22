@@ -1,11 +1,13 @@
-# Client packaging
-
-**Strategy:** [`docs/PLATFORM_AND_INSTALLATION.md`](../docs/PLATFORM_AND_INSTALLATION.md)
+# Applications and packaging (Section G)
 
 | Path | Role |
 |------|------|
-| **`tauri/`** | **Primary** — Tauri 2 shell (Windows, macOS, Android, iOS) + shared UI |
-| `desktop/` | Interim Python launcher / PyInstaller prototype only |
-| `mobile/` | Legacy Capacitor notes — **do not expand**; use Tauri mobile |
+| **`platform-ui/`** | Shared **React · TypeScript · Vite** UI (all modes + PWA) |
+| **`desktop-mobile/`** | **Tauri 2** shell — Workbench (desktop) / Client (mobile) |
+| **`pwa/`** | Portal packaging notes |
+| `desktop/` | Interim Python launcher only |
+| `tauri/` | Redirect → `desktop-mobile` |
+| `mobile/` | Legacy Capacitor notes — do not expand |
 
-Shared UI lives in `frontend/client/` (also served by FastAPI and as PWA).
+Shared packages: [`../packages/README.md`](../packages/README.md)  
+Strategy: [`../docs/SECTION_G_PLATFORM_AND_DISTRIBUTION.md`](../docs/SECTION_G_PLATFORM_AND_DISTRIBUTION.md)

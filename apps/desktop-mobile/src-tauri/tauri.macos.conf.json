@@ -1,0 +1,19 @@
+{
+  "productName": "BC Legal AI Associate",
+  "identifier": "ca.bclegalai.associate",
+  "bundle": {
+    "targets": ["dmg", "app"],
+    "macOS": {
+      "minimumSystemVersion": "11.0",
+      "hardenedRuntime": true
+    }
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "BC Legal AI Workbench"
+      }
+    ]
+  }
+}
