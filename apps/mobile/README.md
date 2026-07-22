@@ -1,37 +1,18 @@
-# Mobile installs (Android + iPhone)
+# Mobile packaging (legacy notes)
 
-The primary mobile path is a **Progressive Web App (PWA)** served by the local or private API.
+**Preferred path:** **Tauri 2** mobile targets under [`apps/tauri/`](../tauri/README.md)  
+(Android `.aab`/`.apk`, iOS TestFlight/App Store `.ipa`).
 
-## Option A — PWA (recommended for prototype)
+**Always available:** **PWA** — open the private API URL in Safari/Chrome → Install / Add to Home Screen.
 
-1. On a PC, start the platform: `python apps/desktop/launcher.py` (or private server).
-2. Open the URL on the phone (same Wi‑Fi), e.g. `http://192.168.x.x:8765/`.
-3. **iPhone (Safari):** Share → **Add to Home Screen**.
-4. **Android (Chrome):** Menu → **Install app** / **Add to Home Screen**.
+## Capacitor (deprecated for new work)
 
-PWA shell caches UI only; API data is not cached offline (confidentiality).
+The files in this folder are **legacy**. Do not expand Capacitor for production. Migrate any native plugin work into Tauri 2 plugins with security review.
 
-## Option B — Capacitor native shells
+## PWA (prototype)
 
-Requires Node.js 18+, Xcode (iOS), Android Studio (Android).
+1. Start private API: `uvicorn backend.api.main:app --host 127.0.0.1 --port 8000`  
+2. On phone (same private network only if trusted): open URL → Add to Home Screen.  
+3. PWA caches UI only; API data is not cached offline for confidentiality.
 
-```bash
-cd apps/mobile
-npm init -y
-npm install @capacitor/core @capacitor/cli @capacitor/android @capacitor/ios
-npx cap init "BC Legal AI Associate" ca.bc.legalai.associate --web-dir ../../frontend/client
-# copy capacitor.config.json settings (server.url → your API host)
-npx cap add android
-npx cap add ios
-npx cap sync
-npx cap open android   # Android Studio → Run
-npx cap open ios       # Xcode → Run on simulator/device
-```
-
-**Important:** Point `server.url` at a **private** API host (TLS). Do not ship a public Space URL as a production backend for client files.
-
-## App Store notes
-
-- Store submissions need privacy policy, account deletion, legal disclaimers.
-- This product is **support software**, not a substitute for a licensed lawyer.
-- Unsigned / sideload builds are for development only.
+See root **[INSTALL.md](../../INSTALL.md)**.

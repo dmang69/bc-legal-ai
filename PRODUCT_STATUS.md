@@ -32,6 +32,8 @@
 | Deadline engine, court-form export | **Absent** |
 | Graph relationships (Postgres tables; Neo4j deferred) | **Absent** (V1 uses relational edges when built) |
 | Modular monolith + workers (V1 architecture) | **Partial** (FastAPI + module packages; not multi-tenant) |
+| Tauri 2 multi-platform shell | **Scaffold** (`apps/tauri/`) — primary install path; not store-signed yet |
+| Browser PWA | **Partial** (`frontend/client` manifest + SW) |
 | Human approval gates + audit trail | **Partial** (schemas + HITL stubs) |
 | Meaningful legal evaluation suite | **Absent** |
 

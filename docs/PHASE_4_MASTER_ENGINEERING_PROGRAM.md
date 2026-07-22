@@ -301,11 +301,13 @@ Epics: deadline engine; procedural engine; drafting (Form 66/67/32/33/109, RTB, 
 
 ### M6 — Client Portal and Windows Connector
 
+**Delivery (controlling):** single shared UI wrapped by **Tauri 2** (Windows / macOS / Android / iOS) plus **browser PWA** — see `docs/PLATFORM_AND_INSTALLATION.md` and `apps/tauri/`. Shells connect only to the **private** backend.
+
 **Portal:** MFA, dashboard, evidence, preview, guided upload, timeline, tasks, deadlines, messages, consent centre, decision/enforcement/JR viewers, notifications, accessibility, multilingual.
 
-**Windows connector:** approved folder only; inventory; preview; consent; privilege; duplicates; local redaction (high confidentiality); encrypted transfer; revocation; local audit.
+**Windows connector (Tauri native plugin, not whole-drive search):** approved folder only; inventory; preview; consent; privilege; duplicates; local redaction (high confidentiality); encrypted transfer; revocation; local audit.
 
-**Exit gate:** client sees only authorized material; uploads quarantine; messaging crypto accurately described; no silent whole-drive scan; consent effective; accessibility testing passes.
+**Exit gate:** client sees only authorized material; uploads quarantine; messaging crypto accurately described; no silent whole-drive scan; consent effective; accessibility testing passes; store installers signed for pilot maturity level.
 
 ### M7 — Post-Resolution and Enforcement
 
@@ -369,10 +371,12 @@ Issues: M0-001…003, 005–010, 013, 016–018, 021, 023 (see M0 gate).
 |----------|------|
 | `docs/M0_RELEASE_GATE.md` | M0 checklist status |
 | `docs/M0_001_inventory.md` | Confidential inventory |
+| `docs/PLATFORM_AND_INSTALLATION.md` | **Client delivery** — Tauri 2 + PWA five-platform strategy |
 | `docs/github/LABELS.md` | GitHub labels |
 | `.github/ISSUE_TEMPLATE/engineering_task.md` | Issue template |
 | `architecture/MODULAR_MONOLITH.md` | Architecture decision |
 | `architecture/WINDOWS_CONNECTOR_BOUNDARY.md` | Connector security model |
+| `apps/tauri/` | Tauri 2 shell (primary packaging) |
 | `PHASE_4_ROADMAP.md` | Legacy Phase 4 notes — **subordinate** to this document |
 | `PRODUCT_STATUS.md` | Honest product maturity |
 

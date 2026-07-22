@@ -1,11 +1,11 @@
-# Platform packaging
+# Client packaging
+
+**Strategy:** [`docs/PLATFORM_AND_INSTALLATION.md`](../docs/PLATFORM_AND_INSTALLATION.md)
 
 | Path | Role |
 |------|------|
-| `desktop/launcher.py` | Starts API + pywebview/browser |
-| `desktop/build_windows.ps1` | Build `.exe` |
-| `desktop/build_macos.sh` | Build macOS `.app` |
-| `desktop/install_*_dev.*` | Dev shortcuts |
-| `mobile/` | PWA notes + Capacitor config |
+| **`tauri/`** | **Primary** — Tauri 2 shell (Windows, macOS, Android, iOS) + shared UI |
+| `desktop/` | Interim Python launcher / PyInstaller prototype only |
+| `mobile/` | Legacy Capacitor notes — **do not expand**; use Tauri mobile |
 
-See root **[INSTALL.md](../INSTALL.md)** for end-user install matrix.
+Shared UI lives in `frontend/client/` (also served by FastAPI and as PWA).

@@ -1,5 +1,7 @@
 """
-BC Legal AI Associate — desktop shell launcher.
+BC Legal AI Associate — interim Python desktop shell launcher.
+
+Prefer apps/tauri (Tauri 2) for production packaging — see docs/PLATFORM_AND_INSTALLATION.md.
 
 Starts the local FastAPI server and opens a native window (pywebview)
 or the default browser. Used as the entrypoint for Windows .exe / macOS .app.

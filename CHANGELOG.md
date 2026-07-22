@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Platform delivery
+
+- Controlling install strategy: **Tauri 2** shared shell + private backend + PWA
+  (`docs/PLATFORM_AND_INSTALLATION.md`, `apps/tauri/` scaffold).
+- Five channels: Windows `.exe`/`.msi`, macOS signed `.dmg`, Android `.aab`/`.apk`,
+  iOS `.ipa`, browser PWA. Python/PyInstaller and Capacitor demoted to interim/legacy.
+
 ### Program governance
 
 - Adopted corrected Phase 4 controlling roadmap (`docs/PHASE_4_MASTER_ENGINEERING_PROGRAM.md`):
