@@ -1,5 +1,5 @@
 ---
-title: BC Legal AI Workbench
+title: BC Legal AI Associate
 emoji: ⚖️
 colorFrom: blue
 colorTo: gray
@@ -10,13 +10,15 @@ pinned: false
 license: mit
 ---
 
-# BC Legal AI Workbench — Demo
+# BC Legal AI Associate — Public Demo
 
 Legal research, evidence analysis, and drafting **support** for British Columbia
 civil and administrative work (RTB pathways, judicial review, superior court practice).
 
 **Not a lawyer. Not legal advice.** No solicitor–client relationship is created.
 Do not upload confidential client or litigation files to this public Space.
+Runs with `APP_MODE=public_demo` (synthetic scenarios only).
+
 Verify all legislation on the official **BC Laws** portal before filing or reliance.
 
 ## What this demo shows
@@ -26,13 +28,17 @@ Verify all legislation on the official **BC Laws** portal before filing or relia
 - **Analytical tagger** — decomposes draft text into FACT / ALLEGATION / LEGAL ARGUMENT /
   INFERENCE / ASSUMPTION / RECOMMENDATION candidates.
 - **Official legislation links** — BC Laws only for statute text; CanLII for decisions only.
-- **RTA pin self-check** — corrected section map per the repo verification log
-  (BC Laws, current to July 14, 2026, accessed 2026-07-21).
+- **Synthetic JR / post-resolution demos** — no live matter data.
+
+## Full product (not this Space)
+
+Private backend + **Tauri 2** clients (Workbench / Client / Portal): see Section G in the repo.
+
+- GitHub: https://github.com/dmang69/bc-legal-ai
+- Install strategy: `docs/SECTION_G_PLATFORM_AND_DISTRIBUTION.md`
 
 ## Design posture
 
 RAG-first, LoRA-second. This Space performs **no model inference** and quotes **no
 statute text from weights** — statute truth lives at BC Laws, retrieved and verified.
-See `model/BASE_MODEL_DECISION.md` in the source repository.
 
-Source: https://github.com/dmang69/bc-legal-ai
