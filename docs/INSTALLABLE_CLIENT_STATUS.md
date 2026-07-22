@@ -2,6 +2,8 @@
 
 **Status corrected 2026-07-22.** The shared application source **already exists** in this repository. What does **not** exist yet is **published signed installer binaries** on GitHub Releases.
 
+**Full WBS:** [`SECTION_G_PROJECT_PLAN.md`](SECTION_G_PROJECT_PLAN.md) (M6A–M6F, INFRA, risks, critical path).
+
 ## Correct current status
 
 | Platform | Source | Installer binary |

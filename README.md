@@ -17,6 +17,7 @@ The platform shell (web/desktop/mobile) is only the **container**. The product i
 Honest maturity and gaps: **[`PRODUCT_STATUS.md`](PRODUCT_STATUS.md)**  
 Engineering roadmap: **[`docs/PHASE_4_MASTER_ENGINEERING_PROGRAM.md`](docs/PHASE_4_MASTER_ENGINEERING_PROGRAM.md)**  
 Installable clients: **[`docs/INSTALLABLE_CLIENT_STATUS.md`](docs/INSTALLABLE_CLIENT_STATUS.md)**  
+Section G project plan (WBS): **[`docs/SECTION_G_PROJECT_PLAN.md`](docs/SECTION_G_PROJECT_PLAN.md)**  
 M1 platform API: **[`docs/M1_PLATFORM_STATUS.md`](docs/M1_PLATFORM_STATUS.md)**
 
 | Today (approx.) | Target |
