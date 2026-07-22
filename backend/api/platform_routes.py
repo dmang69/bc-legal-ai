@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import json
 from typing import Any, Optional
 
 from fastapi import APIRouter, Header, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from backend.api.public_demo import is_public_demo, reject_if_public_demo
@@ -16,6 +18,7 @@ from backend.platform.conflicts import get_conflict_service
 from backend.platform.consent_store import get_consent_store
 from backend.platform import drafting as drafting_mod
 from backend.platform.evidence import get_evidence_service
+from backend.platform.conversation import get_conversation_service
 from backend.platform.matters import get_matter_store
 
 router = APIRouter(prefix="/v1/platform", tags=["platform"])
@@ -375,3 +378,112 @@ def draft_form_67(
         return drafting_mod.response_outline(user, matter_id)
     except AuthError as e:
         raise HTTPException(status_code=403, detail=str(e)) from e
+
+
+# ----- Conversational workspace -----
+
+
+class ConversationCreate(BaseModel):
+    title: str = "New chat"
+    chat_type: str = "general"
+    matter_id: Optional[str] = None
+    model_mode: str = "balanced"
+    specialist: str = "bc_legal_associate"
+
+
+class ChatSendBody(BaseModel):
+    content: str
+    attachments: list[dict[str, Any]] = Field(default_factory=list)
+
+
+@router.get("/workspace/specialists")
+def workspace_specialists() -> dict[str, Any]:
+    return {"specialists": get_conversation_service().list_specialists()}
+
+
+@router.get("/workspace/modes")
+def workspace_modes() -> dict[str, Any]:
+    return {"modes": get_conversation_service().list_modes()}
+
+
+@router.post("/conversations")
+def create_conversation(
+    body: ConversationCreate, authorization: Optional[str] = Header(default=None)
+) -> dict[str, Any]:
+    user = _user(authorization)
+    try:
+        return get_conversation_service().create(
+            user=user,
+            title=body.title,
+            chat_type=body.chat_type,
+            matter_id=body.matter_id,
+            model_mode=body.model_mode,
+            specialist=body.specialist,
+        )
+    except AuthError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@router.get("/conversations")
+def list_conversations(
+    authorization: Optional[str] = Header(default=None),
+) -> dict[str, Any]:
+    user = _user(authorization)
+    return {"conversations": get_conversation_service().list_for_user(user)}
+
+
+@router.get("/conversations/{conversation_id}")
+def get_conversation(
+    conversation_id: str, authorization: Optional[str] = Header(default=None)
+) -> dict[str, Any]:
+    user = _user(authorization)
+    try:
+        conv = get_conversation_service().get(user, conversation_id)
+        msgs = get_conversation_service().list_messages(user, conversation_id)
+        return {"conversation": conv, "messages": msgs}
+    except AuthError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+
+@router.post("/conversations/{conversation_id}/messages")
+def send_message(
+    conversation_id: str,
+    body: ChatSendBody,
+    authorization: Optional[str] = Header(default=None),
+) -> dict[str, Any]:
+    user = _user(authorization)
+    try:
+        return get_conversation_service().send(
+            user=user,
+            conversation_id=conversation_id,
+            content=body.content,
+            attachments=body.attachments,
+        )
+    except AuthError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@router.post("/conversations/{conversation_id}/messages/stream")
+def send_message_stream(
+    conversation_id: str,
+    body: ChatSendBody,
+    authorization: Optional[str] = Header(default=None),
+):
+    """SSE-style text stream (scaffold)."""
+    user = _user(authorization)
+
+    def gen():
+        try:
+            for chunk in get_conversation_service().stream_tokens(
+                user, conversation_id, body.content
+            ):
+                yield f"data: {json.dumps({'t': chunk})}\n\n"
+            yield 'data: {"done": true}\n\n'
+        except Exception as e:
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+    return StreamingResponse(gen(), media_type="text/event-stream")

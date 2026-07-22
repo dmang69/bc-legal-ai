@@ -3,6 +3,7 @@
 ## Integrated Legal Practice and Litigation Support Platform
 
 > **Document role:** Official product description for the **completed / target platform**.  
+> **Interaction model:** Conversational AI legal workspace (not a traditional case-management shell only). See `docs/CONVERSATIONAL_WORKSPACE_SPEC.md`.  
 > **Current maturity:** Prototype → Internal Alpha foundation (~30–35%). See `PRODUCT_STATUS.md` and `docs/PHASE_4_MASTER_ENGINEERING_PROGRAM.md` for what is implemented today.  
 > **Public rule:** Do not market capabilities as live unless the corresponding milestone gate has passed.
 

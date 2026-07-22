@@ -6,11 +6,11 @@
 
 ## Product description (target platform)
 
-Full official description:
+**[`docs/PRODUCT_DESCRIPTION.md`](docs/PRODUCT_DESCRIPTION.md)** — integrated supervised practice platform  
 
-**[`docs/PRODUCT_DESCRIPTION.md`](docs/PRODUCT_DESCRIPTION.md)**
+**[`docs/CONVERSATIONAL_WORKSPACE_SPEC.md`](docs/CONVERSATIONAL_WORKSPACE_SPEC.md)** — chat-first multi-agent workspace (primary UX)
 
-In short: the completed platform integrates matter management, drafting, research, evidence, calendaring, communications, electronic and physical records, procedural checks, and human approvals — under clear supervision. It does **not** autonomously practise law.
+The platform shell (web/desktop/mobile) is only the **container**. The product is a **conversational AI legal operating environment**: matter chats, research, drafting beside the conversation, specialist agents, evidence links, and human approvals — **not** autonomous legal practice.
 
 ## Current implementation status
 
