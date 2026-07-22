@@ -1,5 +1,8 @@
 # Phase 4 — Client Interaction & Post-Resolution Engine
 
+> **Controlling roadmap:** [`docs/PHASE_4_MASTER_ENGINEERING_PROGRAM.md`](docs/PHASE_4_MASTER_ENGINEERING_PROGRAM.md)  
+> This file is a **subordinate** design note for M6–M7 themes. Architecture defaults below were corrected 2026-07-22: **modular monolith**, PostgreSQL + pgvector (not Neo4j/TSDB at V1), RAG-first (fine-tune late), Windows **approved-folder** connector only.
+
 **Objective:** Make the system usable by real clients and supervising lawyers through the entire matter lifecycle.
 
 ## 4.1 Client Interaction Layer
@@ -90,22 +93,22 @@
 
 **Output:** `/services/post_resolution/`, `/services/enforcement/`, `/services/jr_pipeline/`, `/services/retention/`
 
-## 4.3 Infrastructure Requirements
+## 4.3 Infrastructure Requirements (V1 — corrected)
 
 ### Database Architecture
 
-- **Graph database** (Neo4j): Evidence Matrix, relationships
-- **Relational database** (PostgreSQL): Clients, matters, users, permissions, audit logs
-- **Document store** (S3-compatible): Evidence files, PDFs, photos, audio
-- **Vector database**: Semantic search across evidence and law
-- **Time-series database**: Audit logs (append-only)
+- **PostgreSQL**: clients, matters, users, permissions, evidence metadata, **relationship tables**, append-only audit (+ hash chain)
+- **pgvector**: semantic search across evidence and law
+- **S3-compatible object store**: originals, pages, audio, exports
+- **Redis**: job queue, short cache, rate limits
+- **Not V1-required:** Neo4j (defer until relational graph is insufficient); dedicated time-series DB (defer; use partitioned Postgres audit)
 
 ### Application Architecture
 
-- Microservices per layer
-- API gateway (unified access control)
-- Message queue (async OCR, transcription, relationship analysis)
-- Cache layer (Redis): Citation lookups, privilege state, matter context
+- **Modular monolith** (FastAPI domain modules) — see `architecture/MODULAR_MONOLITH.md`
+- Background **workers** for OCR, transcription, knowledge updates, rendering, evaluation
+- Split to microservices only when scale, security isolation, or release cadence requires it
+- Cache/queue: Redis
 
 ### Security
 

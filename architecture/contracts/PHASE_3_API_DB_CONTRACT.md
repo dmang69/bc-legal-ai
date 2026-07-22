@@ -31,7 +31,7 @@
 | `created_at` / `updated_at` | `timestamptz` | UTC |
 | Append-only audit | separate tables | Never UPDATE audit rows |
 
-Postgres is system of record for contracts; Neo4j/object store referenced by id only.
+Postgres is system of record for contracts and relationship tables (V1). Object store holds blobs by id. Neo4j is deferred until relational graphs prove insufficient (see `architecture/MODULAR_MONOLITH.md`).
 
 ---
 

@@ -5,9 +5,11 @@
 **Public positioning:** legal research, evidence analysis, and drafting **support**  
 **Not:** a licensed lawyer, legal advice service, or representation
 
-**Assessment date:** 2026-07-21  
+**Assessment date:** 2026-07-22  
 **Verdict:** strong **prototype / counsel workbench** — **not** a completed AI Legal Associate  
-**Full audit:** `architecture/AUDIT_P0_2026-07-21.md` — estimated supervised V1 **~25%** complete; **P0** scrub of live matter + disable incorrect RTA s.56 retaliation test **applied in working tree** (git history rewrite still required if ever pushed).
+**Release level:** **Prototype** (~**25%** maturity). Target after M0 human ops: Internal Alpha track starts at M1.  
+**Controlling roadmap:** `docs/PHASE_4_MASTER_ENGINEERING_PROGRAM.md` (corrected plan: ~33–36 workstreams, modular monolith, RAG-first, release levels not “100% complete”).  
+**Full audit:** `architecture/AUDIT_P0_2026-07-21.md` — P0 scrub + s.56 disable in tree; history rewrite + branch protection still human ops if ever needed.
 
 ---
 
@@ -28,7 +30,8 @@
 | OCR, page-level citations, live STT | **Absent** (ingestion classifier/dedup rules only) |
 | Live statutory/case research + treatment | **Absent** (fail-closed gate scaffold) |
 | Deadline engine, court-form export | **Absent** |
-| GraphRAG knowledge graph (live Neo4j) | **Absent** (compose skeleton) |
+| Graph relationships (Postgres tables; Neo4j deferred) | **Absent** (V1 uses relational edges when built) |
+| Modular monolith + workers (V1 architecture) | **Partial** (FastAPI + module packages; not multi-tenant) |
 | Human approval gates + audit trail | **Partial** (schemas + HITL stubs) |
 | Meaningful legal evaluation suite | **Absent** |
 

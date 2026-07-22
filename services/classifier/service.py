@@ -1,5 +1,5 @@
 """
-Document classification microservice (rule-based skeleton).
+Document classification domain module (rule-based skeleton).
 
 Labels: court filing, RTB decision, email, photo, audio, etc.
 Production: replace heuristics with supervised model behind HITL thresholds.

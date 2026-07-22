@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Program governance
+
+- Adopted corrected Phase 4 controlling roadmap (`docs/PHASE_4_MASTER_ENGINEERING_PROGRAM.md`):
+  ~33–36 workstreams; release levels; modular monolith; Postgres/pgvector/S3/Redis only for V1;
+  fine-tune late; Windows approved-folder connector boundary.
+
 ## v0.1.0-remediated — 2026-07-21
 
 ### M0 Critical Remediation

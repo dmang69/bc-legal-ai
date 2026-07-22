@@ -1,4 +1,5 @@
-# Local foundation (M0/M1) — not production multi-tenant
+# Local foundation (M0/M1) — modular monolith stack (API + Postgres + Redis + MinIO)
+# Not production multi-tenant. Neo4j/TSDB not required for V1.
 # Usage: docker compose up --build
 
 services:

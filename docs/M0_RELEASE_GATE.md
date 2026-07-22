@@ -2,7 +2,9 @@
 
 **Objective:** eliminate confidentiality, legal-integrity, deadline, packaging, and public-demo risks.
 
-No further feature development should be treated as “released” until M0 passes.
+**Controlling program:** [`PHASE_4_MASTER_ENGINEERING_PROGRAM.md`](PHASE_4_MASTER_ENGINEERING_PROGRAM.md)
+
+No further feature development should be treated as “released” until M0 passes. Priority Zero is a **hard stop** before feature expansion.
 
 ## Gate checklist
 
