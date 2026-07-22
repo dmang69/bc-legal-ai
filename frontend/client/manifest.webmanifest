@@ -1,0 +1,26 @@
+{
+  "name": "BC Legal AI Associate",
+  "short_name": "BC Legal AI",
+  "description": "Human-supervised BC legal research and drafting support. Not a lawyer. Not legal advice.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f1419",
+  "theme_color": "#1a2332",
+  "orientation": "any",
+  "lang": "en-CA",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "utilities"]
+}

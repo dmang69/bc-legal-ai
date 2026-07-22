@@ -1,0 +1,18 @@
+{
+  "invalidations": [
+    {
+      "affected_test": "TEST-RETALIATORY-EVICTION-S56",
+      "aliases": ["RTA-s56-retaliatory-eviction"],
+      "status": "INVALIDATED",
+      "reason": "Section-topic mismatch: RTA s.56 is not a multi-element retaliatory-eviction civil test as previously encoded. Confirm current RTA on BC Laws.",
+      "affected_outputs": ["*prior matter evaluations referencing this test_id*"],
+      "review_required": true,
+      "invalidated_at": "2026-07-21",
+      "replacement_status": "PENDING_LAWYER_APPROVAL",
+      "notes": [
+        "Separate statutory offence language, RTB remedies, improper-purpose arguments, human-rights retaliation, and JR grounds.",
+        "No burden-shift rule may re-activate without verified authority and lawyer approval state ACTIVE."
+      ]
+    }
+  ]
+}

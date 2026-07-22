@@ -16,15 +16,20 @@ import re
 
 import gradio as gr
 
+import os
+
+# Public Space must run in public_demo mode (M0-E5)
+os.environ.setdefault("APP_MODE", "public_demo")
+
 DISCLAIMER = """
 **Disclaimer:** **BC Legal AI Associate** — legal research and drafting **support** only.
 This is **not** a licensed lawyer, **not legal advice**, and does not create a
 solicitor–client relationship. Do **not** upload confidential client or litigation
 files to this public Space. This Space performs **no model inference** and is a
-**deterministic demo** only. Real matters require private infrastructure, MFA, and
-human supervision. Verify all legislation on the official **BC Laws** portal before
-filing or reliance. Court-ready work requires a licensed supervising lawyer and
-human approval.
+**deterministic demo** only (`APP_MODE=public_demo`). Real matters require private
+infrastructure, MFA, and human supervision. Verify all legislation on the official
+**BC Laws** portal before filing or reliance. Court-ready work requires a licensed
+supervising lawyer and human approval.
 """
 
 FAIL_CLOSED = (
@@ -163,6 +168,16 @@ FORUM_RULES = [
 def triage(scenario: str) -> str:
     if not scenario or not scenario.strip():
         return "Describe the situation above (facts only — no names or confidential details)."
+
+    # M0-E5 public demo guard
+    try:
+        from backend.api.public_demo import enforce_public_text
+
+        check = enforce_public_text(scenario)
+        if not check.get("ok", True):
+            return f"**Rejected (public demo):** {check.get('error')}"
+    except Exception:
+        pass
 
     text = scenario.lower()
     out = ["## Triage result (demonstration output — not legal advice)", ""]

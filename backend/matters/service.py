@@ -360,13 +360,17 @@ class MatterSession:
 
         return list_outlines(self.matter_id, root=self.root)
 
-    def install_sanghera_cross_template(self) -> "Path":
+    def install_demo_landlord_rep_cross_template(self) -> "Path":
         """Install SYNTHETIC landlord-rep cross outline (no real party names)."""
         from templates.examination.demo_landlord_rep_cross import demo_landlord_rep_cross
 
         return self.add_examination_outline(
             demo_landlord_rep_cross(matter_id=self.matter_id)
         )
+
+    def install_sanghera_cross_template(self) -> "Path":
+        """Deprecated alias — installs synthetic demo only (M0 scrub)."""
+        return self.install_demo_landlord_rep_cross_template()
 
     def add_petition_outline(self, outline) -> "Path":
         from backend.petition.service import save_petition

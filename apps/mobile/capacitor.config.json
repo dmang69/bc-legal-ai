@@ -1,0 +1,17 @@
+{
+  "appId": "ca.bc.legalai.associate",
+  "appName": "BC Legal AI Associate",
+  "webDir": "../../frontend/client",
+  "server": {
+    "androidScheme": "https",
+    "iosScheme": "https",
+    "url": "http://127.0.0.1:8765",
+    "cleartext": true
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1500,
+      "backgroundColor": "#0f1419"
+    }
+  }
+}

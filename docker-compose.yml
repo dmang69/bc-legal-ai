@@ -1,0 +1,50 @@
+# Local foundation (M0/M1) — not production multi-tenant
+# Usage: docker compose up --build
+
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      APP_MODE: development
+      ALA_POSTGRES_URL: postgresql://ala:ala_dev_change_me@postgres:5432/ala
+      ALA_REDIS_URL: redis://redis:6379/0
+      ALA_S3_ENDPOINT: http://minio:9000
+    depends_on:
+      - postgres
+      - redis
+      - minio
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ala
+      POSTGRES_PASSWORD: ala_dev_change_me
+      POSTGRES_DB: ala
+    ports:
+      - "5432:5432"
+    volumes:
+      - ala_pg:/var/lib/postgresql/data
+      - ./architecture/contracts/sql/phase3_core.sql:/docker-entrypoint-initdb.d/01_phase3.sql:ro
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ala_minio
+      MINIO_ROOT_PASSWORD: ala_dev_change_me
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - ala_minio:/data
+
+volumes:
+  ala_pg:
+  ala_minio:

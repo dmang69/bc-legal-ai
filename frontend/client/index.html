@@ -2,15 +2,23 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>BC Legal AI — Client Portal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#1a2332" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="BC Legal AI" />
+  <meta name="description" content="BC Legal AI Associate — legal research and drafting support. Not a lawyer. Not legal advice." />
+  <title>BC Legal AI Associate</title>
+  <link rel="manifest" href="manifest.webmanifest" />
   <link rel="stylesheet" href="styles.css" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
   <header>
-    <h1>Client Portal</h1>
-    <p class="sub">BC Legal AI Associate — support tools only · Not legal advice</p>
+    <h1>BC Legal AI Associate</h1>
+    <p class="sub">Support tools only · Not legal advice · Human supervision required</p>
+    <p id="api-status" class="api-status" aria-live="polite">API: checking…</p>
     <label for="lang">Language</label>
     <select id="lang" aria-label="Language">
       <option value="en">English</option>
@@ -22,25 +30,42 @@
 
   <main id="main">
     <div class="warn" role="alert" id="disclaimer">
-      <strong>Scaffold only.</strong> Do not upload confidential client or litigation files
-      to a public demo. MFA, encryption, and matter ACL are required before real use.
+      <strong>Scaffold / local platform.</strong> Do not put confidential client files on public demos.
+      Install as a PWA (Add to Home Screen) or use the desktop app. MFA and matter ACL required before real client use.
     </div>
+
+    <section aria-labelledby="inst-h">
+      <h2 id="inst-h">Install this platform</h2>
+      <div class="card">
+        <ul>
+          <li><strong>Windows:</strong> run <code>BCLegalAIAssociate.exe</code> or <code>platform/desktop/build_windows.ps1</code></li>
+          <li><strong>macOS:</strong> run the <code>.app</code> or <code>platform/desktop/build_macos.sh</code></li>
+          <li><strong>iPhone / Android:</strong> open this URL in Safari/Chrome → <em>Add to Home Screen</em> (PWA)</li>
+          <li><strong>API docs:</strong> <a id="docs-link" href="/docs">/docs</a></li>
+        </ul>
+      </div>
+    </section>
+
+    <section aria-labelledby="tools-h">
+      <h2 id="tools-h">Phase tools (local API)</h2>
+      <div class="card">
+        <label for="jr-date">JR issuance date (demo)</label>
+        <input id="jr-date" type="date" value="2026-01-15" />
+        <button type="button" id="jr-btn">Calculate JR clock</button>
+        <pre id="jr-out" class="out" aria-live="polite"></pre>
+      </div>
+    </section>
 
     <section aria-labelledby="dash-h">
       <h2 id="dash-h">Matter dashboard</h2>
       <div id="dashboard" class="card">
-        <p id="dash-empty">No matters loaded (API not connected).</p>
+        <p id="dash-empty">Connects to <code>/health</code> when API is running.</p>
       </div>
     </section>
 
     <section aria-labelledby="ev-h">
       <h2 id="ev-h">Evidence tracker</h2>
       <ul id="evidence-list" class="card"></ul>
-    </section>
-
-    <section aria-labelledby="tl-h">
-      <h2 id="tl-h">Timeline</h2>
-      <ol id="timeline" class="card"></ol>
     </section>
 
     <section aria-labelledby="up-h">
@@ -67,25 +92,13 @@
     <section aria-labelledby="con-h">
       <h2 id="con-h">Consent management</h2>
       <div id="consent" class="card">
-        <p>Current consent state loads from <code>services/consent_center</code> when API is wired.</p>
-        <ul>
-          <li>View / modify / withdraw</li>
-          <li>History log</li>
-          <li>Plain-language explanations</li>
-        </ul>
-      </div>
-    </section>
-
-    <section aria-labelledby="msg-h">
-      <h2 id="msg-h">Secure messaging</h2>
-      <div class="card">
-        <p>Privilege flagging · read receipts · classification prompts · E2E (server scaffold).</p>
+        <p>Consent API: <code>POST /v1/matters/&#123;id&#125;/consents</code> — consent ≠ privilege.</p>
       </div>
     </section>
   </main>
 
   <footer>
-    <p>Screen-reader friendly structure · mobile-optimized layout · plain-language summaries planned per locale.</p>
+    <p>Windows · macOS · iOS PWA · Android PWA · API · Not a lawyer</p>
   </footer>
   <script src="app.js"></script>
 </body>
