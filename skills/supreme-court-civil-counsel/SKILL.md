@@ -101,20 +101,27 @@ Prefix sections or critical sentences:
 - Costs exposure  
 - Public interest (if engaged)  
 
-## Citation protocol
+## Authority and currency protocol (fail closed)
 
-1. Verify **existence** and format (CanLII / official reporter) — use `canlii-boa-builder`.  
-2. State the legal principle.  
-3. Apply to **these** facts.  
-4. Distinguish adverse authority.  
-5. Identify standard of review where applicable.  
-6. Tie to evidentiary support in the record.  
+Before relying on an authority:
 
-If unverified:
+1. Record the **jurisdiction, court/tribunal, decision date, citation, URL, access date, and pinpoint**.
+2. Verify case existence and text on CanLII or an official court source; verify **BC enactment text only on BC Laws**.
+3. Record the source's currency/effective date and determine whether point-in-time law is required.
+4. Classify the authority as binding, persuasive, non-binding guidance, or factual material.
+5. Verify appellate history and negative treatment before calling a proposition settled.
+6. State the legal principle, connect it to record evidence, and address material adverse authority.
+7. Identify the standard of review only where a review/appeal framework actually engages it.
+
+Use these labels:
 
 ```
-[CITATION UNVERIFIED — confirm on CanLII before filing]
+[AUTHORITY VERIFIED — source, access date, pinpoint, treatment recorded]
+[CITATION UNVERIFIED — do not rely on or file]
+[LAW CURRENCY UNVERIFIED — current or point-in-time text required]
 ```
+
+An unverified citation may appear only as a research lead. It must not support a conclusion, deadline, requested remedy, or document described as court-ready.
 
 ## When to flag independent counsel
 
