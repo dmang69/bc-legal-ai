@@ -159,15 +159,18 @@ See also: `../../checklists/decision-review.md`
 
 ## 9. Workflow
 
-1. Jurisdiction first.  
-2. Legislation + Rules + limitations.  
-3. Facts from record only (label categories).  
-4. Chronology + procedural history.  
-5. Issues.  
-6. Authorities (verify).  
-7. Analysis + counterarguments.  
-8. Draft.  
-9. Quality review + counsel flag + disclaimer.  
+1. Jurisdiction and procedural posture first.  
+2. Material event date; current versus point-in-time law.  
+3. Official enactments + Rules + practice directions + forms + limitations + service.  
+4. Facts from record only, with source pinpoints and category labels.  
+5. Chronology + procedural history + missing-record list.  
+6. Issues, burdens, remedies, and strongest opposing position.  
+7. Authorities through the fail-closed protocol.  
+8. Draft as **WORKING DRAFT — HUMAN VERIFICATION REQUIRED BEFORE FILING**.  
+9. Qualified-human review of law, procedure, evidence, privilege, redaction, and requested relief.  
+10. Quality review + counsel flag + disclaimer.
+
+A draft cannot be described as court-ready merely because it follows a template. Court-ready status requires recorded human validation of facts, authority currency/treatment, Rules, forms, deadlines, service, registry requirements, privilege, and formatting.  
 
 ---
 

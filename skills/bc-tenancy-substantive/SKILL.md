@@ -89,11 +89,11 @@ Court-ready extracts: `../../legislation/court-ready/RTA-key-sections-OFFICIAL.m
 
 ## Module 2: Bad-Faith Move Detector ⭐
 
-### Renoviction (Four Month Notice — often s. 51.3)
+### Renovations or repairs requiring vacancy — director's order under s. 49.2
 
-**The scam:** Four Month Notice claiming major renovation needing vacant possession — never renovates, or re-rents higher.
+**Potential bad-faith pattern:** A landlord asserts that major work requires vacancy, but the proposed work is cosmetic, unsupported by permits, or followed by re-rental at a higher rent.
 
-**The law (working):** Landlord must offer **right of first refusal** to return post-renovation at the **same rent** (often framed under s. 51.3(2) — **`[VERIFY]`**). Failure may trigger **12 months’ rent compensation** — confirm current remedy.
+**Official map (BC Laws consolidation current to July 14, 2026):** For renovations or repairs requiring vacancy, **s. 49.2** provides an application-for-order route and specifies statutory conditions. **Section 51.2** addresses a right of first refusal in qualifying circumstances; **s. 51.3** addresses compensation where no right of first refusal is given. Do not collapse these distinct provisions or assume that every renovation engages a same-rent return right. Verify the current Act, regulations, order, tenancy/building facts, eligibility, notice requirements, and remedy before making a claim.
 
 **Detection signals:**
 
@@ -110,18 +110,11 @@ Court-ready extracts: `../../legislation/court-ready/RTA-key-sections-OFFICIAL.m
 
 Landlord must have an **actual demolition permit** and approved development. Speculative future demolition is not enough.
 
-### Caretaker loophole (often discussed with s. 37 / employment housing)
+### Caretaker / employment housing — s. 48
 
-**The scam:** Label occupant “caretaker/employee,” not tenant — skip RTA process.
+**Potential issue:** The parties dispute whether a rental unit was provided for the term of genuine caretaker, manager, superintendent, or other employment.
 
-**Legal test — substance over label:**
-
-1. Regular, consistent payment for the unit?  
-2. Unit primary residence?  
-3. Employment real and significant, or nominal/pretextual?  
-4. Structure designed to avoid the RTA?  
-
-If the person primarily paid to live there → **tenant**. **s. 6:** calling someone a caretaker in a contract does not make it true.
+**Official map:** RTA **s. 48** governs specified end-of-employment notices and contains factual and notice requirements. The analysis must begin with the statutory definition of tenancy/tenancy agreement, exclusions in s. 4, the agreement, payment and employment records, why the unit was provided, whether employment ended, good faith where required, and the current notice requirements. Labels alone are not conclusive, but payment alone does not decide the issue either. **Section 5**, not s. 6, provides that the Act cannot be avoided.
 
 ### Common end-run table
 
