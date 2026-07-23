@@ -13,7 +13,6 @@ if str(ROOT) not in sys.path:
 from architecture.intake import (
     NoticeType,
     ServiceMethod,
-    TenancyIntake,
     calculate_dispute_deadline,
     completeness_check,
 )

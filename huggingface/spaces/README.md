@@ -6,7 +6,7 @@ Space assets and deployment notes.
 
 | Purpose | HF repo | Local source | SDK | Data policy |
 |---|---|---|---|---|
-| Public landing/demo | `dmang69/bc-legal-ai` | `huggingface-space/` | static | Synthetic/no-client-data only |
+| Public deterministic demo | `dmang69/bc-legal-ai` | `huggingface-space/` | Gradio | Synthetic/no-client-data only |
 
 ## Future private Spaces
 
@@ -22,7 +22,7 @@ dmang69/bc-legal-ai-model-eval
 
 ## Publish source
 
-The active static Space source remains:
+The active Gradio Space source remains:
 
 ```text
 huggingface-space/

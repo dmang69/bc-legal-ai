@@ -15,7 +15,6 @@ from typing import Iterable, Optional
 from architecture.evidence_node import (
     EvidenceNode,
     KeyFact,
-    PrivilegeClass,
     evidence_item_to_node,
 )
 from architecture.schemas import EvidenceItem
@@ -227,11 +226,11 @@ class EvidenceNodeStore:
             self.save()
 
     def set_temporal(self, earlier: str, later: str, *, persist: bool = True) -> None:
-        e, l = self._pair(earlier, later)
-        if later not in e.temporal_sequence.after:
-            e.temporal_sequence.after.append(later)
-        if earlier not in l.temporal_sequence.before:
-            l.temporal_sequence.before.append(earlier)
+        earlier_node, later_node = self._pair(earlier, later)
+        if later not in earlier_node.temporal_sequence.after:
+            earlier_node.temporal_sequence.after.append(later)
+        if earlier not in later_node.temporal_sequence.before:
+            later_node.temporal_sequence.before.append(earlier)
         if persist:
             self.save()
 

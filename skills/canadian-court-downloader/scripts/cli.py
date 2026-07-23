@@ -18,7 +18,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from court_engine import (  # noqa: E402
     DownloaderConfig,
     download_batch,
-    download_case,
     is_scanned_pdf,
     ocr_pdf,
 )

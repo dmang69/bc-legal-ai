@@ -50,6 +50,7 @@ FAIL_CLOSED = (
 )
 
 MODEL_ID = os.environ.get("HF_MODEL_ID", "").strip()
+MODEL_REVISION = os.environ.get("HF_MODEL_REVISION", "").strip()
 ENABLE_TRANSFORMERS = os.environ.get("ENABLE_TRANSFORMERS_INFERENCE", "false").strip().lower() in {
     "1",
     "true",
@@ -58,6 +59,12 @@ ENABLE_TRANSFORMERS = os.environ.get("ENABLE_TRANSFORMERS_INFERENCE", "false").s
 }
 _TRANSFORMERS_PIPE = None
 _TRANSFORMERS_ERROR = ""
+
+# Remote repository Python must never execute in this legal-data boundary. A usable
+# model must be a complete, standard Transformers causal-LM checkpoint. The public
+# Space keeps inference disabled; private reviewed deployments should pin a commit.
+TRUST_REMOTE_CODE = False
+BLOCKED_MODEL_TYPES = {"bc_legal_ai_policy_card"}
 
 
 def transformers_status() -> str:
@@ -69,11 +76,19 @@ def transformers_status() -> str:
         )
     if not MODEL_ID:
         return (
-            "Optional Transformers inference requested but blocked: set `HF_MODEL_ID` to a real "
-            "Transformers-compatible base or adapter repo. Do not point it at a policy/model-card-only repo."
+            "Optional Transformers inference requested but blocked: set `HF_MODEL_ID` to a complete, "
+            "standard causal-language-model checkpoint. A policy/model-card repository is not a model."
+        )
+    if not MODEL_REVISION:
+        return (
+            "Optional Transformers inference requested but blocked: set `HF_MODEL_REVISION` to a reviewed "
+            "immutable commit SHA. Remote model code is never trusted."
         )
     if _TRANSFORMERS_PIPE is not None:
-        return f"Optional Transformers inference is enabled for `{MODEL_ID}` with fail-closed public-demo guards."
+        return (
+            f"Optional Transformers inference is enabled for `{MODEL_ID}` at reviewed revision "
+            f"`{MODEL_REVISION}` with fail-closed public-demo guards."
+        )
     if _TRANSFORMERS_ERROR:
         return f"Optional Transformers inference requested but unavailable: `{_TRANSFORMERS_ERROR}`"
     return "Optional Transformers inference requested but not loaded yet."
@@ -87,20 +102,34 @@ def get_transformers_pipe():
     if _TRANSFORMERS_PIPE is not None:
         return _TRANSFORMERS_PIPE
     if not MODEL_ID:
-        _TRANSFORMERS_ERROR = "HF_MODEL_ID is not set to a Transformers-compatible model repo"
+        _TRANSFORMERS_ERROR = "HF_MODEL_ID is not set to a standard Transformers causal-LM repo"
+        return None
+    if not MODEL_REVISION:
+        _TRANSFORMERS_ERROR = "HF_MODEL_REVISION must pin a reviewed immutable commit SHA"
         return None
     try:
-        from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+        from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer, pipeline
 
-        tokenizer = AutoTokenizer.from_pretrained(
-            MODEL_ID,
-            trust_remote_code=True,
-            use_fast=False,
-        )
+        load_kwargs = {
+            "revision": MODEL_REVISION,
+            "trust_remote_code": TRUST_REMOTE_CODE,
+        }
+        config = AutoConfig.from_pretrained(MODEL_ID, **load_kwargs)
+        model_type = str(getattr(config, "model_type", "")).strip()
+        if not model_type or model_type in BLOCKED_MODEL_TYPES:
+            raise ValueError(
+                f"Blocked or missing model_type `{model_type or '(empty)'}`; "
+                "use a complete standard causal-language-model checkpoint"
+            )
+        if getattr(config, "auto_map", None):
+            raise ValueError("Custom auto_map repositories are blocked; remote model code is not permitted")
+
+        tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, use_fast=True, **load_kwargs)
         model = AutoModelForCausalLM.from_pretrained(
             MODEL_ID,
-            trust_remote_code=True,
-            device_map="auto",
+            torch_dtype="auto",
+            low_cpu_mem_usage=True,
+            **load_kwargs,
         )
         _TRANSFORMERS_PIPE = pipeline("text-generation", model=model, tokenizer=tokenizer)
         return _TRANSFORMERS_PIPE
@@ -365,9 +394,12 @@ def tag_text(raw: str) -> str:
 # RTA pin self-check (corrected pins — see RTA_VERIFIED_MAP)
 # ---------------------------------------------------------------------------
 
+RTA_CONTRACTING_OUT_TOPIC = "Cannot contract out of RTA"
+
+
 def quiz_section(choice: str) -> str:
     answers = {
-        "Cannot contract out of RTA": (
+        RTA_CONTRACTING_OUT_TOPIC: (
             "Official answer: **s. 5** (not s. 6).\n\n"
             "s. 6 is about enforcing rights between landlord and tenant.\n"
             "Verify: BC Laws RTA link above."
@@ -551,13 +583,13 @@ with gr.Blocks(title="BC Legal AI Workbench") as demo:
             )
             topic = gr.Dropdown(
                 [
-                    "Cannot contract out of RTA",
+                    RTA_CONTRACTING_OUT_TOPIC,
                     "Quiet enjoyment",
                     "Landlord entry notice",
                     "Deposit return timeline",
                 ],
                 label="Topic",
-                value="Cannot contract out of RTA",
+                value=RTA_CONTRACTING_OUT_TOPIC,
             )
             quiz_out = gr.Markdown()
             topic.change(quiz_section, inputs=topic, outputs=quiz_out)

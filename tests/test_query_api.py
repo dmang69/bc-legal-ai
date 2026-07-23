@@ -19,7 +19,6 @@ from architecture.evidence_node import (
 )
 from architecture.query_api import ArgumentStrategy
 from backend.evidence.query import (
-    MatterQueryAPI,
     query_argument_support,
     query_evidence,
     query_gaps,

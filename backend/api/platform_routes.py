@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import json
+import re
 from typing import Any, Optional
 
 from fastapi import APIRouter, Header, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
+from backend.api.dependencies import CurrentUser
 from backend.api.public_demo import (
     enforce_public_text,
     is_public_demo,
@@ -20,14 +23,20 @@ from backend.identity import AuthError, get_identity_service
 from backend.platform.citations import list_citation_audit, list_knowledge_sources, verify_citation
 from backend.platform.conflicts import get_conflict_service
 from backend.platform.consent_store import get_consent_store
+from backend.platform.conversation import get_conversation_service
 from backend.platform import drafting as drafting_mod
 from backend.platform.evidence import get_evidence_service
+from backend.platform.export_manifest import (
+    ExportApprovals,
+    create_export_manifest,
+    list_export_manifests,
+)
 from backend.platform.matters import get_matter_store
 from backend.platform.workspace import (
     add_message as add_workspace_message,
-    create_conversation,
-    get_conversation,
-    list_conversations,
+    create_conversation as create_workspace_conversation_record,
+    get_conversation as get_workspace_conversation_record,
+    list_conversations as list_workspace_conversation_records,
 )
 
 router = APIRouter(prefix="/v1/platform", tags=["platform"])
@@ -208,12 +217,11 @@ def workspace_analyze(body: WorkspaceAnalyzeBody) -> dict[str, Any]:
 @router.post("/workspace/conversations")
 def create_workspace_conversation(
     body: WorkspaceConversationBody,
-    authorization: Optional[str] = Header(default=None),
+    current_user: CurrentUser,
 ) -> dict[str, Any]:
-    user = _user(authorization)
     try:
-        return create_conversation(
-            user=user,
+        return create_workspace_conversation_record(
+            user=current_user,
             matter_id=body.matter_id,
             title=body.title,
             mode=body.mode,
@@ -233,7 +241,7 @@ def list_workspace_conversations(
 ) -> dict[str, Any]:
     user = _user(authorization)
     try:
-        return {"conversations": list_conversations(user=user, matter_id=matter_id)}
+        return {"conversations": list_workspace_conversation_records(user=user, matter_id=matter_id)}
     except AuthError as e:
         raise HTTPException(status_code=403, detail=str(e)) from e
 
@@ -245,7 +253,7 @@ def get_workspace_conversation(
 ) -> dict[str, Any]:
     user = _user(authorization)
     try:
-        return get_conversation(user=user, conversation_id=conversation_id)
+        return get_workspace_conversation_record(user=user, conversation_id=conversation_id)
     except AuthError as e:
         raise HTTPException(status_code=403, detail=str(e)) from e
 

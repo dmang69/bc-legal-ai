@@ -96,6 +96,29 @@ export function login(email: string, password: string): Promise<Session> {
 
 export type Matter = { matter_id: string; title: string; synthetic?: boolean };
 
+export type CitationVerification = {
+  citation_text: string;
+  status: string;
+  reasons?: string[];
+  court_ready?: boolean;
+};
+
+export type WorkspaceAnalysis = {
+  message: string;
+  mode: string;
+  classification: {
+    issues: string[];
+    requires_human_review: boolean;
+    court_ready: boolean;
+  };
+  citations: CitationVerification[];
+  safety: {
+    court_ready: boolean;
+    legal_advice: boolean;
+    blockers: string[];
+  };
+};
+
 export function listMatters(): Promise<{ matters: Matter[] }> {
   return api("/v1/platform/matters");
 }
@@ -107,14 +130,14 @@ export function createMatter(title: string): Promise<Matter> {
   });
 }
 
-export function verifyCitation(citation_text: string, expected_topic = ""): Promise<{
+export function verifyCitation(citation_text: string, expected_topic = "", matter_id = ""): Promise<{
   status: string;
   reasons: string[];
   court_ready: boolean;
 }> {
   return api("/v1/platform/citations/verify", {
     method: "POST",
-    body: JSON.stringify({ content }),
+    body: JSON.stringify({ citation_text, expected_topic, matter_id }),
   });
 }
 

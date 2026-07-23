@@ -11,7 +11,7 @@ from knowledgebase.treatment_analyzer import AuthorityTreatmentAnalyzer
 from services.client_portal.quarantine import QuarantineService, UploadStatus
 from services.reasoning.hitl.consent import ConsentLedger, ConsentScope
 from services.reasoning.hitl.control_plane import HitlControlPlane
-from services.reasoning.hitl.exceptions import ExceptionBus, ExceptionKind, Severity
+from services.reasoning.hitl.exceptions import ExceptionBus, Severity
 from services.reasoning.hitl.privilege_check import (
     DocumentDisposition,
     OutputClass,

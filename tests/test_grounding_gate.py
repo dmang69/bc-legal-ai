@@ -17,7 +17,7 @@ from architecture.grounding import (
 )
 from architecture.schemas import AuthorityStatus
 from backend.grounding.citation_db import CitationDB, seed_bc_workbench_citations
-from backend.grounding.gate import GroundingGate, build_gate_for_nodes
+from backend.grounding.gate import GroundingGate
 
 
 def _gate() -> GroundingGate:

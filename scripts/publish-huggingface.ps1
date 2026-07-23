@@ -15,9 +15,18 @@ $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
 Set-Location $root
 
-$hf = "$env:APPDATA\Python\Python314\Scripts\hf.exe"
-if (-not (Test-Path $hf)) {
-    $hf = (Get-Command hf -ErrorAction SilentlyContinue).Source
+Write-Host "Running Hugging Face safety validation ..."
+& (Get-Command python -ErrorAction Stop).Source "$root\scripts\validate-huggingface-assets.py"
+if ($LASTEXITCODE -ne 0) {
+    throw "Hugging Face asset validation failed; publication blocked."
+}
+
+$hf = (Get-Command hf -ErrorAction SilentlyContinue).Source
+if (-not $hf) {
+    $candidate = Get-ChildItem "$env:APPDATA\Python\Python*\Scripts\hf.exe" -ErrorAction SilentlyContinue |
+        Sort-Object FullName -Descending |
+        Select-Object -First 1
+    if ($candidate) { $hf = $candidate.FullName }
 }
 if (-not $hf) {
     Write-Host "Install: pip install -U huggingface_hub" -ForegroundColor Yellow

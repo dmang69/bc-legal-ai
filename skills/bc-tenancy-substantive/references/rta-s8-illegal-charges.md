@@ -1,41 +1,53 @@
-# RTA Section 8 — Illegal Charges
+# Disputed Fees, Charges, Fines, and Damages
 
-> Legal information only. Confirm current text of RTA ss. 6, 8, 19, 20 (if applicable) on BC Laws.
+> Legal information only. Verify the current Residential Tenancy Act and regulations on BC Laws, the tenancy agreement and standard terms, and any applicable strata or local-government enactment.
 
-## Core idea
+## Critical statutory correction
 
-Landlords may only impose charges the RTA permits. “Because the lease says so” fails under **s. 6** (no contracting out).
+Current RTA **s. 8 concerns appointment of the director**. It is not an “illegal charges” provision and does not limit every tenancy payment to rent plus deposits. **Section 5** provides that the Act and regulations cannot be avoided, but a payment term must still be tested against the specific substantive provision engaged.
 
-## Common void charges
+## Classification before conclusion
 
-| Charge type | Why void (working analysis) |
-|-------------|-----------------------------|
-| City / bylaw / nuisance fine passed to tenant | Obligation is on **owner**; not a permitted tenant charge under s. 8 framework |
-| Admin / processing / late “fees” (non-rent) | Not rent or deposit |
-| Strata fines passed through | SPA binds owner; RTA landlord–tenant layer separate |
-| Penalty clauses | Often void as non-permitted charges |
-| Utilities not in original agreement | Confirm agreement + RTA rules |
-| Damage deductions without consent or RTB order | Use deposit/RTB process — not unilateral “invoice” |
+Classify the amount before arguing validity:
 
-## Bylaw fine trap (plain language)
+- rent or a rent increase;
+- security or pet damage deposit;
+- prescribed fee;
+- application/processing-type fee (see s. 15);
+- utility or service/facility obligation;
+- liquidated-damages term or penalty;
+- compensation/damages claim;
+- strata fine/cost or indemnity;
+- municipal or other government fine.
 
-The City bills the **property owner**. That does not automatically make the tenant the debtor under the RTA. Passing the fine as “rent” or “additional charge” is a classic end-run.
+Then determine:
 
-## Remedy package (RTB)
+1. What does the tenancy agreement and standard terms actually require?
+2. Which current RTA/regulation provision governs this type of amount?
+3. Does s. 5 make a conflicting term ineffective?
+4. Who is primarily liable under any external enactment or bylaw?
+5. Is contractual allocation or indemnity authorized and enforceable?
+6. What notice, hearing, proof, mitigation, consent, deduction, or order requirements apply?
+7. What remedy and limitation period are actually available?
 
-1. Declaration: charge void under s. 8  
-2. Order: stop charging  
-3. Repayment of amounts paid  
-4. If eviction followed refusal → **s. 47.1** retaliation  
+## Important distinctions
 
-## Evidence
+- A government or strata invoice addressed to an owner does not, by itself, resolve whether a tenant has a separate lawful contractual indemnity obligation.
+- A landlord may assert a damages claim without already possessing an RTB order; that is different from unilaterally deducting the amount from a deposit or enforcing a monetary award.
+- A utility obligation can be enforceable when properly agreed; current s. 46(6), for example, addresses specified unpaid utility charges after written demand.
+- A lease term is not valid merely because it is written, but it is not void merely because the payment is not called rent or a deposit.
 
-- [ ] Invoice / ledger line items  
-- [ ] Tenancy agreement (what was agreed)  
-- [ ] Proof of payment of illegal amount  
-- [ ] City/strata document naming owner  
-- [ ] Timeline relative to any eviction notice  
+## Evidence checklist
 
-## Labels
+- tenancy agreement, addenda, and standard terms;
+- rent ledger and invoice identifying the legal basis;
+- proof of payment or deduction;
+- utility, strata, municipal, or other originating record;
+- notice and hearing records;
+- condition inspection reports and damage evidence where applicable;
+- correspondence showing agreement, objection, consent, or mitigation;
+- current official statutory/regulatory text and any verified authority.
 
-`[LAW]` s. 8 · `[FACT]` amount paid · `[ARGUMENT]` not permitted charge · `[REMEDY]` repayment  
+## Output labels
+
+`[FACT]` amount and source document · `[LAW]` verified governing provision · `[ARGUMENT]` enforceability · `[ASSUMPTION]` unverified liability/allocation · `[REMEDY]` remedy supported by current authority

@@ -32,21 +32,22 @@ description: >
 
 **Core skill:** Convert chaotic “he said / she said” into a package an arbitrator can follow in ~30 minutes and resolve in your favour.
 
-### Evidence hierarchy (strongest → weakest at RTB)
+### Evidence assessment (no fixed hierarchy)
 
-| Rank | Type | Notes |
-|------|------|--------|
-| 1 | **Primary documents** | Signed agreements, receipts, bank records, official reports |
-| 2 | **Contemporaneous records** | Texts/emails **at the time** of the event (not reconstructed) |
-| 3 | **Photos/videos** | Dated, geotagged if possible, labelled by issue |
-| 4 | **Third-party corroboration** | Inspector reports, doctor’s notes, neighbour statements |
-| 5 | **Witness testimony** | Live or sworn written statement |
-| 6 | **Hearsay** | e.g. police/bylaw letters — often admissible but discounted |
+RTA **s. 75** provides that formal rules of evidence do not apply to RTB dispute-resolution proceedings. Admissibility, reliability, relevance, authenticity, completeness, procedural fairness, and weight remain distinct questions. No evidence type is automatically stronger merely because it appears in a ranked list.
 
-**Rules of thumb**
+Assess each item for:
 
-- Anchor every claim to a document the other side cannot credibly deny.  
-- **Timestamps are non-negotiable** — undated evidence is heavily discounted.  
+- source and personal knowledge;
+- creation date and whether it is contemporaneous;
+- authenticity, completeness, and metadata;
+- relevance to a disputed statutory element;
+- corroboration or contradiction;
+- hearsay level and ability to test the account;
+- service/disclosure compliance and opportunity to respond;
+- privacy, privilege, redaction, and necessity.
+
+Anchor material claims to precise exhibit/page/timestamp references. Undated evidence is not automatically excluded, but missing date or provenance can reduce reliability and weight.  
 
 ### Evidence bundle structure
 
@@ -118,7 +119,7 @@ Any failure → RTB internal review (**often discussed as s. 79 — `[VERIFY]`**
 | “Tenant caused the damage” | Condition inspection shows pre-existing |
 | “Rent was not paid” | E-transfer records + bank statements |
 | “Notice was properly served” | Address discrepancy / service method defect |
-| “The charge is legitimate” | RTA permitted charges only (often s. 8 — **`[VERIFY]`**) |
+| “The charge is legitimate” | Classify the amount; test the agreement under RTA s. 5 and the specific governing Act/regulation provision—never current s. 8 |
 | “Tenant violated the rules” | No written warning; first offence; remediated |
 | “Genuine renovation” | No permits; unit re-listed immediately after |
 
@@ -146,7 +147,7 @@ Any failure → RTB internal review (**often discussed as s. 79 — `[VERIFY]`**
 - [ ] Evidence submitted by deadline (commonly discussed as **14 days before hearing** — **`[VERIFY]`**)  
 - [ ] Witnesses identified  
 
-**Evidence deadline is hard.** Late submissions risk exclusion — including for self-reps.
+Evidence deadlines are important. Late material may be excluded, adjourned, or otherwise addressed under the current RTB Rules and procedural-fairness requirements. Verify the current rule, calculation method, service requirements, and any available exception or direction; do not state that there are “no exceptions.”
 
 ### Hearing types
 
@@ -199,8 +200,7 @@ Illegal charges repayment:        $___
 TOTAL LANDLORD EXPOSURE:          $___
 ```
 
-**Rent abatement (working ranges — not formulas of law):**  
-~10–30% for heating/hot water failures; ~20–50% for severe habitability (mold, structural). Base on proportion of rental value actually delivered. Arbitrator-specific; cite evidence.
+**Rent abatement / compensation:** Do not use preset percentage bands as a legal rule or settlement valuation. Build the amount from duration, severity, affected space/service, rent, notice, response, mitigation, causation, comparable verified decisions (if any), and proof of actual loss. Explain any methodology and present alternatives where valuation is uncertain.
 
 ### Settlement offer structure
 

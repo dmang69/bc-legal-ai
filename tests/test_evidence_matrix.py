@@ -141,7 +141,7 @@ def test_ingest_preserves_hash():
 
 
 def test_privilege_lock_blocks_export_gate():
-    from architecture.privilege_schemas import PrivilegeBasis, PrivilegeStatus
+    from architecture.privilege_schemas import PrivilegeStatus
     from backend.privilege.production_gate import export_items_from_evidence, run_production_gate
 
     with tempfile.TemporaryDirectory() as tmp:

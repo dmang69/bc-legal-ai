@@ -3,7 +3,7 @@ name: bc-tenancy-substantive
 description: >
   Deep BC Residential Tenancy Act knowledge: critical sections, bad-faith detection
   (renoviction, demoviction, caretaker loophole), eviction defence timelines, repairs,
-  illegal charges (s.8), rent increases, deposits. Tenant-side and landlord-side.
+  disputed fees/charges, rent increases, deposits. Tenant-side and landlord-side.
   Plain language for self-reps; technical depth for lawyers. Legal information only.
   Pair with bc-tenancy-procedure for RTB process and bc-tenancy-advanced for JR/HR/strata/MHPTA.
 ---
@@ -116,18 +116,18 @@ Landlord must have an **actual demolition permit** and approved development. Spe
 
 **Official map:** RTA **s. 48** governs specified end-of-employment notices and contains factual and notice requirements. The analysis must begin with the statutory definition of tenancy/tenancy agreement, exclusions in s. 4, the agreement, payment and employment records, why the unit was provided, whether employment ended, good faith where required, and the current notice requirements. Labels alone are not conclusive, but payment alone does not decide the issue either. **Section 5**, not s. 6, provides that the Act cannot be avoided.
 
-### Common end-run table
+### Common disputed-practice issue map
 
-| Tactic | Section often violated | Counter |
-|--------|------------------------|---------|
-| City/bylaw fine passed to tenant | s. 8 — void | Fine runs against owner |
-| “Administrative fee” | s. 8 — void | Only rent + deposits (confirm list) |
-| Strata fine passed to tenant | s. 8 — void | Strata binds owner, not tenant |
-| Deposit held without order | s. 38 — illegal | RTB claim + possible double penalty |
-| Entry without 24-hr notice | s. 25–26 | Quiet enjoyment + compensation |
-| Informal rent increase | s. 43 — void | Dispute within **30 days** of notice (verify) |
-| Eviction after complaint | s. 47.1 | Retaliation — notice voidable |
-| “Lease says you must pay X” | s. 6 | Cannot contract out of RTA |
+| Issue | Correct starting point | Required verification |
+|--------|------------------------|-----------------------|
+| City/bylaw charge allocated to tenant | Agreement, enabling bylaw/statute, RTA s. 5, rent/services provisions, damages principles | Who is legally liable; whether contractual allocation is authorized and enforceable |
+| Administrative/application/processing fee | RTA s. 15 for prohibited application-type fees; agreement and regulations for other fees | Do not use s. 8, which appoints the director |
+| Strata fine or charge | SPA/bylaws, notice and hearing process, tenancy agreement, RTA s. 5 | Do not assume every pass-through is automatically void |
+| Deposit retained | RTA ss. 23–24, 35–39 and regulation | Inspections, forwarding address, consent, application/order, timing |
+| Entry without required notice | RTA s. 29; quiet enjoyment s. 28 | Statutory exception, notice contents/timing, consent, emergency |
+| Rent increase | RTA ss. 40–43.1 and regulation | Form, timing, amount, service, effective date, available remedy |
+| Adverse action after complaint | Facts, applicable notice ground, RTA ss. 5–7/28/47–49.2, human-rights or other law as engaged | There is no general RTA s. 47.1 retaliation provision in the current consolidation |
+| “Lease says you must pay X” | RTA s. 5 plus the specific substantive provision and regulation | Contract terms are not void merely because they impose a payment; identify the actual prohibition |
 
 ---
 
@@ -159,7 +159,7 @@ Deadline runs from **date of service**. Add **deemed-service** days for mailed n
 
 | Defence | Core idea |
 |---------|-----------|
-| **Retaliation (s. 47.1)** | Eviction after tenant exercised legal rights |
+| **Improper purpose / bad faith / legally insufficient ground** | Test the actual notice provision and evidence; do not cite current s. 47.1 as a general retaliation section |
 | **Bad faith renoviction/demoviction** | Module 2 |
 | **Caretaker scam** | Actually a tenant |
 | **Non-payment disputed** | Paid / refused / amount wrong |
@@ -206,31 +206,22 @@ Deadline runs from **date of service**. Add **deemed-service** days for mailed n
 
 ---
 
-## Module 5: Illegal Charges & RTA Section 8 ⭐
+## Module 5: Disputed Fees, Charges, Fines, and Damages ⭐
 
-**Working rule:** Only limited charges are permitted (often framed as rent + security deposit + pet deposit under **s. 8** / related provisions including **s. 20** in some materials — **confirm exact statutory list**).
+**Critical correction:** Current RTA **s. 8 appoints the director**. It does not create a “rent plus deposits only” rule and must not be cited to invalidate a charge.
 
-### Typically void under s. 8 analysis
+### Issue-by-issue analysis
 
-- City/bylaw/nuisance fines passed to tenant  
-- Administrative fees of any kind  
-- Damage charges without RTB order (deposit path is separate)  
-- Utility charges not in original agreement  
-- Strata fines passed through  
-- Penalty clauses in tenancy agreements  
+1. Identify what the amount legally is: rent, deposit, prescribed fee, utility obligation, service/facility charge, liquidated damages, compensation claim, strata amount, or government fine.
+2. Read the tenancy agreement and standard terms, then test the term under **s. 5** and the specific RTA/regulation provision engaged.
+3. For application/processing-type fees, examine **s. 15**. For deposits, use ss. 17–21 and 23–24/35–39 as applicable. For rent/services, use the relevant Part 2/3 provisions.
+4. For strata or government amounts, verify the enabling enactment/bylaw, who is primarily liable, procedural prerequisites, and whether contractual indemnity/allocation is lawful.
+5. Distinguish a landlord's damages claim from a unilateral deposit deduction. A party may assert damages without already holding an RTB order, but collection, deduction, proof, mitigation, and forum rules differ.
+6. Identify the actual statutory remedy and burden. Do not promise a declaration, repayment, penalty, or retaliation remedy without verified authority.
 
-**Bylaw fine trap:** City fine issues to **property owner**. Legal obligation runs against the registered owner — not the tenant. Address on invoice does not change that.
+A charge is not automatically valid because it appears in a lease, and it is not automatically void merely because it is not labelled rent or deposit.
 
-### RTB remedy package
-
-Cite **ss. 8** (and **s. 20** if applicable after verification). Seek:
-
-1. Declaration that charge is void  
-2. Cease-and-desist  
-3. Repayment of amounts paid  
-4. Add **s. 47.1** if eviction followed refusal  
-
-→ `references/rta-s8-illegal-charges.md`
+→ `references/rta-s8-illegal-charges.md` (retained filename for compatibility; corrected content)
 
 ---
 
@@ -273,24 +264,30 @@ Landlord applies to RTB + financial records. Tenant files Response and attends. 
 
 ---
 
-## Master statute reference (quick card)
+## Master statute reference (official topic map)
+
+Verified against the BC Laws consolidation current to **July 14, 2026**; re-verify at the time of use.
 
 | Provision | Key idea |
 |-----------|----------|
-| s. 6 | Cannot contract out |
-| s. 8 | Only rent + deposits (confirm list) |
-| s. 19 | Deposit maximums |
-| s. 22 | Quiet enjoyment |
-| s. 25–27 | Entry rules |
-| s. 32–33 | Repair duties |
-| s. 38–39 | Deposit return |
-| s. 42–44 | Rent increases |
-| s. 47.1 | No retaliation |
-| s. 50–57 | Eviction framework |
-| s. 51.3 | Renovation + first refusal |
-| s. 79 | RTB internal review |
-| s. 88–89 | Service rules |
-| PG 26 / 37 / 40 | Advocates · two-month · four-month |
+| s. 5 | Act cannot be avoided |
+| s. 6 | Enforcing landlord/tenant rights and obligations |
+| s. 8 | Appointment of director |
+| s. 15 | Application and processing fees prohibited |
+| ss. 17–21 | Security/pet deposits and related restrictions |
+| s. 22 | Acceleration term prohibited |
+| s. 28 | Quiet enjoyment |
+| s. 29 | Landlord entry restrictions |
+| ss. 32–33 | Repair/maintenance and emergency repairs |
+| ss. 38–39 | Deposit return and forwarding-address rules |
+| ss. 40–43.1 | Rent increases |
+| ss. 46–49.2 | Principal landlord notice/order routes |
+| ss. 51.2–51.4 | First refusal and specified compensation provisions |
+| s. 75 | Formal rules of evidence do not apply to RTB proceedings |
+| ss. 79–82 | Review of decisions/orders |
+| ss. 84–85 | Filing/enforcement of specified director's orders |
+| ss. 88–90 | Service methods and deemed receipt |
+| Policy Guidelines | Non-binding administrative guidance; verify current number, title, and text |
 
 ## Reference files
 

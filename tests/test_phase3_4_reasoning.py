@@ -12,7 +12,7 @@ from services.consent_center import ConsentCenter
 from services.jr_pipeline.service import JrPipelineStub
 from services.reasoning.hitl.competency_gate import CompetencyGate, LawyerProfile
 from services.reasoning.hitl.consent import ConsentLedger, ConsentScope, consent_allows_privilege_class
-from services.reasoning.hitl.exceptions import ExceptionBus, ExceptionKind, Severity
+from services.reasoning.hitl.exceptions import ExceptionBus, Severity
 from services.reasoning.hitl.privilege_check import (
     PrivilegeReviewWorkflow,
     scan_evidence_bundle,

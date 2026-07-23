@@ -89,11 +89,11 @@ File at **both** RTB and BC Human Rights Tribunal where grounds overlap. Claims 
 
 | Situation | Action |
 |-----------|--------|
-| Eviction after disability disclosure | RTB retaliation (often discussed as RTA s. 47.1 — **`[VERIFY]`**) + BCHRT complaint |
+| Eviction after disability disclosure | Test the actual RTA notice ground/good-faith requirements and consider a BCHRT complaint; current RTA s. 47.1 is not a general retaliation section |
 | "No pets" used to exclude service animal | BCHRT (Code) |
 | Refusal of housing-benefit recipients | Code s. 10 (source of income) — **`[VERIFY]`** |
 | Eviction pretext based on family status (children) | RTB dispute + BCHRT |
-| Harassment targeting ethnicity or religion | BCHRT + RTB quiet enjoyment (often RTA s. 22 — **`[VERIFY]`**) |
+| Harassment targeting ethnicity or religion | BCHRT analysis + RTB quiet enjoyment under current RTA s. 28, with proof and remedy verified |
 
 ### BCHRT filing basics
 
@@ -118,11 +118,11 @@ Strata bylaws bind the **owner (landlord)**, not the tenant directly in the RTA 
 
 | Situation | Working rule (verify) |
 |-----------|------------------------|
-| Strata levies fine on owner for tenant conduct | Generally cannot pass to tenant as RTA charge (often RTA s. 8 — **`[VERIFY]`**) |
-| Strata bylaw bans pets | RTA governs pet deposit / pet terms between tenant and landlord |
-| Strata restricts rentals | Affects landlord’s right to rent; does not automatically end existing tenancy |
-| Strata move-in/out time restrictions | May engage quiet enjoyment (often RTA s. 22 — **`[VERIFY]`**) |
-| Strata demands access to unit | RTA entry rules (often ss. 25–26 — **`[VERIFY]`**) still apply as between landlord and tenant |
+| Strata levies fine/cost for tenant conduct | Analyze the SPA/bylaws and procedure, tenancy agreement, indemnity/allocation, RTA s. 5, proof, and remedy; current RTA s. 8 does not invalidate the charge |
+| Strata bylaw regulates pets | Analyze SPA/bylaws plus tenancy pet terms and RTA deposit provisions; do not assume one framework automatically answers every issue |
+| Strata restricts rentals | Verify current SPA provisions, exemptions/transitions, bylaws, and effect on the particular tenancy |
+| Strata move-in/out restrictions | May engage quiet enjoyment under RTA s. 28; assess reasonableness, notice, interference, and loss |
+| Access involving strata/contractors | Identify who seeks access and authority; landlord–tenant entry analysis begins with current RTA s. 29 and its exceptions |
 
 **When SPA conflicts with RTA for the landlord–tenant relationship:** RTA typically prevails for that relationship — **confirm** with current authorities.
 

@@ -22,7 +22,6 @@ from architecture.evidence_node import (
     EvidenceNode,
     KeyFact,
     PrivilegeClass,
-    SourceType,
 )
 from services.classifier.service import ClassificationResult, classify_document
 from services.common.confidence import ConfidenceScore, HitlDecision, score_confidence

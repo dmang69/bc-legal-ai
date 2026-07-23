@@ -7,7 +7,7 @@ import sqlite3
 import threading
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Iterator, Optional
+from typing import Any, Iterator
 
 _ROOT = Path(__file__).resolve().parents[2]
 _DEFAULT_SQLITE = _ROOT / "data" / "ala_platform.sqlite3"

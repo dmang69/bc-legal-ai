@@ -15,7 +15,7 @@ from knowledgebase.citation_verifier.jurisdiction import (
     JurisdictionFlag,
     weight_for_jurisdiction,
 )
-from knowledgebase.primary_sources import PrimarySourceRegistry, SourceRecord
+from knowledgebase.primary_sources import PrimarySourceRegistry
 
 
 class CitationVerdict(str, Enum):

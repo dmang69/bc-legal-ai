@@ -3,8 +3,10 @@
   "space": {
     "repo_id": "dmang69/bc-legal-ai",
     "sdk": "gradio",
+    "sdk_version": "5.49.1",
+    "app_file": "app.py",
     "local_dir": "huggingface-space",
-    "public_url": "https://dmang69-bc-legal-ai.static.hf.space",
+    "public_url": "https://dmang69-bc-legal-ai.hf.space",
     "allow_client_data": false
   },
   "dataset": {
@@ -13,8 +15,13 @@
     "allow_client_data": false
   },
   "models": {
+    "documentation_repo_id": "Dmang69/bc-legal-ai-base",
+    "deployable_base_model_id": "Qwen/Qwen2.5-7B-Instruct",
     "adapter_repo_id": "dmang69/bc-legal-ai-qwen2.5-lora",
     "publish_enabled": false,
+    "inference_enabled_by_default": false,
+    "trust_remote_code": false,
+    "requires_pinned_revision": true,
     "requires_license_review": true,
     "allow_client_data": false
   },

@@ -138,7 +138,7 @@ class GapDetectionItem:
             f"- {self._fmt_date(self.to_date)}: {self.to_description} ({self.gap_label})",
         ]
         if self.gap_significance == GapSignificance.NORMAL:
-            lines.append(f"    → Normal response window")
+            lines.append("    → Normal response window")
             if self.analytical_question:
                 lines.append(f"    → {self.analytical_question}")
         elif self.gap_significance == GapSignificance.NOTABLE_GAP:

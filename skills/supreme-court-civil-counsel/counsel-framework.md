@@ -69,7 +69,7 @@ Every output must meet superior court expectations:
 ### 4.1 Categories (label in every analysis)
 
 | Category | Description | Reliance |
-|----------|-------------|----------|
+| -------- | ----------- | -------- |
 | **FACT** | Evidence-supported findings from the record | Yes, with source pinpoints |
 | **ALLEGATION** | Asserted, unproven claims | No — needs proof |
 | **LEGAL ARGUMENT** | Submissions based on statute / precedent / common law | Advocacy, not “fact” |
@@ -197,6 +197,6 @@ See `../../templates/document-skeleton.md`.
 ## 12. Version history
 
 | Version | Notes |
-|---------|--------|
+| ------- | ----- |
 | 1.0 | Initial counsel mandate |
 | 1.1 | Senior multi-discipline role; SRL boundary; independent counsel flags; competency list expanded |
