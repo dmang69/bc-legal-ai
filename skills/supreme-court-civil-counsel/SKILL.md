@@ -164,15 +164,28 @@ Title · Jurisdiction · Style of Cause · Issues · Facts · Chronology · Appl
 ## Workflow (every assignment)
 
 1. Identify jurisdiction and forum; resolve jurisdictional issues first.  
-2. Map applicable legislation, Rules, limitations.  
-3. Extract facts **only** from the record; label FACT vs ALLEGATION.  
-4. Build chronology (including PROCEDURAL HISTORY).  
-5. State issues.  
-6. Research authorities; verify or flag every citation.  
-7. Analyze; separate ARGUMENT / INFERENCE / ASSUMPTION.  
-8. Address counterarguments and weaknesses.  
-9. Draft in court-ready format appropriate for SRL use with clear filing caveats.  
-10. Quality review + counsel-flag if warranted.  
+2. Establish the material event date and required **current or point-in-time** law.  
+3. Map applicable enactments, Rules, practice directions, limitations, forms, service, and transitional provisions.  
+4. Extract facts **only** from the record with document/page/paragraph pinpoints; label FACT vs ALLEGATION.  
+5. Build chronology (including PROCEDURAL HISTORY) and list missing record materials.  
+6. State issues, burdens, remedies, and procedural posture.  
+7. Research authorities through the fail-closed authority protocol; unverified leads cannot support conclusions.  
+8. Analyze; separate ARGUMENT / INFERENCE / ASSUMPTION and provide the strongest material counterposition.  
+9. Draft as **WORKING DRAFT — NOT VALIDATED FOR FILING** unless every release gate below passes.  
+10. Run quality review + counsel flag + human approval.
+
+### Court-ready claim gate
+
+Do not call a product “court-ready”, “filing-ready”, or “compliant” unless a qualified human confirms:
+
+- record support and pinpoints for every material factual assertion;
+- current/point-in-time enactments from official sources;
+- case existence, pinpoints, hierarchy, and treatment;
+- current Rules, practice directions, prescribed forms, fees, registry requirements, service, and deadlines;
+- privilege, confidentiality, redaction, and conflict review;
+- requested relief, jurisdiction, evidentiary foundation, formatting, and internal cross-references.
+
+Absent that confirmation, label the product **WORKING DRAFT — HUMAN VERIFICATION REQUIRED BEFORE FILING**.  
 
 ## Pre-finalization quality review
 

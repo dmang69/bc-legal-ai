@@ -117,19 +117,20 @@ Always separate: **FACT · LAW · ARGUMENT · ANALYSIS · REMEDY**
 
 ---
 
-## 6. Citation protocol
+## 6. Authority and currency protocol
 
-1. Confirm existence (CanLII preferred).  
-2. Correct citation + pinpoints.  
-3. State principle.  
-4. Apply to facts.  
-5. Distinguish adverse cases.  
-6. Standard of review if reviewing a decision.  
-7. Evidentiary hook.  
+1. Record jurisdiction, source, citation, decision/effective date, URL, access date, and pinpoint.  
+2. Verify cases on CanLII or an official court source; verify BC enactment text only on BC Laws.  
+3. Determine whether current or point-in-time law governs and record the currency line.  
+4. Classify binding weight; check appellate history and negative treatment.  
+5. State the supported principle without extending it beyond the cited passage.  
+6. Apply it to record-linked facts and distinguish material adverse authority.  
+7. Identify standard of review only where legally engaged.  
 
-Unverified:
+`[CITATION UNVERIFIED — do not rely on or file]`  
+`[LAW CURRENCY UNVERIFIED — current or point-in-time text required]`
 
-`[CITATION UNVERIFIED — confirm on CanLII before filing]`
+Unverified material is a research lead only and cannot support a conclusion, deadline, remedy, or court-ready claim.
 
 ---
 
