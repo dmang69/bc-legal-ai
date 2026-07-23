@@ -6,11 +6,11 @@ import json
 import re
 from typing import Any, Optional
 
-from fastapi import APIRouter, Header, HTTPException
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-from backend.api.dependencies import CurrentUser
+from backend.api.dependencies import CurrentUser, RawBearerToken
 from backend.api.public_demo import (
     enforce_public_text,
     is_public_demo,
@@ -40,16 +40,6 @@ from backend.platform.workspace import (
 )
 
 router = APIRouter(prefix="/v1/platform", tags=["platform"])
-
-
-def _user(authorization: Optional[str] = Header(default=None)):
-    if not authorization or not authorization.lower().startswith("bearer "):
-        raise HTTPException(status_code=401, detail="Bearer token required")
-    token = authorization.split(" ", 1)[1].strip()
-    try:
-        return get_identity_service().resolve_token(token)
-    except AuthError as e:
-        raise HTTPException(status_code=401, detail=str(e)) from e
 
 
 class RegisterOrgBody(BaseModel):
@@ -236,12 +226,11 @@ def create_workspace_conversation(
 
 @router.get("/workspace/conversations")
 def list_workspace_conversations(
+    current_user: CurrentUser,
     matter_id: str = "",
-    authorization: Optional[str] = Header(default=None),
 ) -> dict[str, Any]:
-    user = _user(authorization)
     try:
-        return {"conversations": list_workspace_conversation_records(user=user, matter_id=matter_id)}
+        return {"conversations": list_workspace_conversation_records(user=current_user, matter_id=matter_id)}
     except AuthError as e:
         raise HTTPException(status_code=403, detail=str(e)) from e
 
@@ -249,11 +238,10 @@ def list_workspace_conversations(
 @router.get("/workspace/conversations/{conversation_id}")
 def get_workspace_conversation(
     conversation_id: str,
-    authorization: Optional[str] = Header(default=None),
+    current_user: CurrentUser,
 ) -> dict[str, Any]:
-    user = _user(authorization)
     try:
-        return get_workspace_conversation_record(user=user, conversation_id=conversation_id)
+        return get_workspace_conversation_record(user=current_user, conversation_id=conversation_id)
     except AuthError as e:
         raise HTTPException(status_code=403, detail=str(e)) from e
 
@@ -262,12 +250,11 @@ def get_workspace_conversation(
 def add_workspace_conversation_message(
     conversation_id: str,
     body: WorkspaceMessageBody,
-    authorization: Optional[str] = Header(default=None),
+    current_user: CurrentUser,
 ) -> dict[str, Any]:
-    user = _user(authorization)
     try:
         return add_workspace_message(
-            user=user,
+            user=current_user,
             conversation_id=conversation_id,
             author=body.author,
             body=body.body,
@@ -348,29 +335,29 @@ def login(body: LoginBody) -> dict[str, Any]:
 
 
 @router.get("/auth/me")
-def me(authorization: Optional[str] = Header(default=None)) -> dict[str, Any]:
-    return _user(authorization).to_dict()
+def me(current_user: CurrentUser) -> dict[str, Any]:
+    return current_user.to_dict()
 
 
 @router.post("/auth/logout")
-def logout(authorization: Optional[str] = Header(default=None)) -> dict[str, str]:
-    if authorization and authorization.lower().startswith("bearer "):
-        get_identity_service().revoke_session(authorization.split(" ", 1)[1].strip())
+def logout(raw_token: RawBearerToken) -> dict[str, str]:
+    """Revoke the current session by invalidating its bearer token."""
+    get_identity_service().revoke_session(raw_token)
     return {"status": "ok"}
 
 
 @router.post("/matters")
 def create_matter(
-    body: MatterBody, authorization: Optional[str] = Header(default=None)
+    body: MatterBody,
+    current_user: CurrentUser,
 ) -> dict[str, Any]:
-    user = _user(authorization)
     if not body.synthetic:
         try:
             reject_if_public_demo("non-synthetic matter creation")
         except PermissionError as e:
             raise HTTPException(status_code=403, detail=str(e)) from e
     return get_matter_store().create_matter(
-        user=user,
+        user=current_user,
         title=body.title,
         client_label=body.client_label,
         synthetic=body.synthetic,
@@ -378,29 +365,28 @@ def create_matter(
 
 
 @router.get("/matters")
-def list_matters(authorization: Optional[str] = Header(default=None)) -> dict[str, Any]:
-    user = _user(authorization)
-    return {"matters": get_matter_store().list_matters(user)}
+def list_matters(current_user: CurrentUser) -> dict[str, Any]:
+    return {"matters": get_matter_store().list_matters(current_user)}
 
 
 @router.get("/matters/{matter_id}")
 def get_matter(
-    matter_id: str, authorization: Optional[str] = Header(default=None)
+    matter_id: str,
+    current_user: CurrentUser,
 ) -> dict[str, Any]:
-    user = _user(authorization)
     try:
-        return get_matter_store().get_matter(user, matter_id)
+        return get_matter_store().get_matter(current_user, matter_id)
     except AuthError as e:
         raise HTTPException(status_code=403, detail=str(e)) from e
 
 
 @router.post("/conflicts/check")
 def conflict_check(
-    body: ConflictBody, authorization: Optional[str] = Header(default=None)
+    body: ConflictBody,
+    current_user: CurrentUser,
 ) -> dict[str, Any]:
-    user = _user(authorization)
     return get_conflict_service().check_name(
-        user=user, query_name=body.query_name, matter_id=body.matter_id
+        user=current_user, query_name=body.query_name, matter_id=body.matter_id
     )
 
 
@@ -408,9 +394,8 @@ def conflict_check(
 def upload_text_document(
     matter_id: str,
     body: UploadMeta,
-    authorization: Optional[str] = Header(default=None),
+    current_user: CurrentUser,
 ) -> dict[str, Any]:
-    user = _user(authorization)
     try:
         reject_if_public_demo("document upload")
     except PermissionError:
@@ -419,7 +404,7 @@ def upload_text_document(
     data = body.text_content.encode("utf-8")
     try:
         return get_evidence_service().quarantine_upload(
-            user=user,
+            user=current_user,
             matter_id=matter_id,
             filename=body.filename,
             data=data,
@@ -434,11 +419,11 @@ def upload_text_document(
 
 @router.get("/matters/{matter_id}/documents")
 def list_documents(
-    matter_id: str, authorization: Optional[str] = Header(default=None)
+    matter_id: str,
+    current_user: CurrentUser,
 ) -> dict[str, Any]:
-    user = _user(authorization)
     try:
-        return {"documents": get_evidence_service().list_documents(user, matter_id)}
+        return {"documents": get_evidence_service().list_documents(current_user, matter_id)}
     except AuthError as e:
         raise HTTPException(status_code=403, detail=str(e)) from e
 
@@ -447,12 +432,11 @@ def list_documents(
 def add_proposition(
     matter_id: str,
     body: PropositionBody,
-    authorization: Optional[str] = Header(default=None),
+    current_user: CurrentUser,
 ) -> dict[str, Any]:
-    user = _user(authorization)
     try:
         return get_evidence_service().add_proposition(
-            user=user,
+            user=current_user,
             matter_id=matter_id,
             text=body.text,
             document_id=body.document_id,
@@ -485,8 +469,8 @@ def citations_audit(matter_id: str = "") -> dict[str, Any]:
 
 
 @router.get("/audit/verify")
-def audit_verify(authorization: Optional[str] = Header(default=None)) -> dict[str, Any]:
-    _user(authorization)
+def audit_verify(current_user: CurrentUser) -> dict[str, Any]:
+    # Auth check: only authenticated users may verify the audit chain
     return get_audit_ledger().verify_chain()
 
 
@@ -529,12 +513,11 @@ class ConsentBody(BaseModel):
 def grant_consent(
     matter_id: str,
     body: ConsentBody,
-    authorization: Optional[str] = Header(default=None),
+    current_user: CurrentUser,
 ) -> dict[str, Any]:
-    user = _user(authorization)
     try:
         return get_consent_store().grant(
-            user=user,
+            user=current_user,
             matter_id=matter_id,
             subject_id=body.subject_id,
             category=body.category,
@@ -550,31 +533,32 @@ def grant_consent(
 
 @router.get("/matters/{matter_id}/consents")
 def list_consents(
-    matter_id: str, authorization: Optional[str] = Header(default=None)
+    matter_id: str,
+    current_user: CurrentUser,
 ) -> dict[str, Any]:
-    user = _user(authorization)
     try:
-        return {"consents": get_consent_store().list_for_matter(user, matter_id)}
+        return {"consents": get_consent_store().list_for_matter(current_user, matter_id)}
     except AuthError as e:
         raise HTTPException(status_code=403, detail=str(e)) from e
 
 
 @router.post("/consents/{consent_id}/withdraw")
 def withdraw_consent(
-    consent_id: str, authorization: Optional[str] = Header(default=None)
+    consent_id: str,
+    current_user: CurrentUser,
 ) -> dict[str, Any]:
-    user = _user(authorization)
     try:
-        return get_consent_store().withdraw(user=user, consent_id=consent_id)
+        return get_consent_store().withdraw(user=current_user, consent_id=consent_id)
     except AuthError as e:
         raise HTTPException(status_code=403, detail=str(e)) from e
 
 
 @router.get("/matters/{matter_id}/consents/evaluate-ai")
 def evaluate_ai_consent(
-    matter_id: str, authorization: Optional[str] = Header(default=None)
+    matter_id: str,
+    current_user: CurrentUser,
 ) -> dict[str, Any]:
-    _user(authorization)
+    # Auth check: user must be authenticated to evaluate consent state
     return get_consent_store().evaluate_optional_ai(matter_id)
 
 
@@ -582,12 +566,11 @@ def evaluate_ai_consent(
 def create_manifest(
     matter_id: str,
     body: ExportManifestBody,
-    authorization: Optional[str] = Header(default=None),
+    current_user: CurrentUser,
 ) -> dict[str, Any]:
-    user = _user(authorization)
     try:
         return create_export_manifest(
-            user=user,
+            user=current_user,
             matter_id=matter_id,
             document_ids=body.document_ids,
             citation_ids=body.citation_ids,
@@ -610,33 +593,33 @@ def create_manifest(
 
 @router.get("/matters/{matter_id}/exports/manifest")
 def list_manifests(
-    matter_id: str, authorization: Optional[str] = Header(default=None)
+    matter_id: str,
+    current_user: CurrentUser,
 ) -> dict[str, Any]:
-    user = _user(authorization)
     try:
-        return {"manifests": list_export_manifests(user, matter_id)}
+        return {"manifests": list_export_manifests(current_user, matter_id)}
     except AuthError as e:
         raise HTTPException(status_code=403, detail=str(e)) from e
 
 
 @router.get("/matters/{matter_id}/drafts/form-66")
 def draft_form_66(
-    matter_id: str, authorization: Optional[str] = Header(default=None)
+    matter_id: str,
+    current_user: CurrentUser,
 ) -> dict[str, Any]:
-    user = _user(authorization)
     try:
-        return drafting_mod.petition_outline(user, matter_id)
+        return drafting_mod.petition_outline(current_user, matter_id)
     except AuthError as e:
         raise HTTPException(status_code=403, detail=str(e)) from e
 
 
 @router.get("/matters/{matter_id}/drafts/form-67")
 def draft_form_67(
-    matter_id: str, authorization: Optional[str] = Header(default=None)
+    matter_id: str,
+    current_user: CurrentUser,
 ) -> dict[str, Any]:
-    user = _user(authorization)
     try:
-        return drafting_mod.response_outline(user, matter_id)
+        return drafting_mod.response_outline(current_user, matter_id)
     except AuthError as e:
         raise HTTPException(status_code=403, detail=str(e)) from e
 
@@ -669,12 +652,12 @@ def workspace_modes() -> dict[str, Any]:
 
 @router.post("/conversations")
 def create_conversation(
-    body: ConversationCreate, authorization: Optional[str] = Header(default=None)
+    body: ConversationCreate,
+    current_user: CurrentUser,
 ) -> dict[str, Any]:
-    user = _user(authorization)
     try:
         return get_conversation_service().create(
-            user=user,
+            user=current_user,
             title=body.title,
             chat_type=body.chat_type,
             matter_id=body.matter_id,
@@ -689,20 +672,19 @@ def create_conversation(
 
 @router.get("/conversations")
 def list_conversations(
-    authorization: Optional[str] = Header(default=None),
+    current_user: CurrentUser,
 ) -> dict[str, Any]:
-    user = _user(authorization)
-    return {"conversations": get_conversation_service().list_for_user(user)}
+    return {"conversations": get_conversation_service().list_for_user(current_user)}
 
 
 @router.get("/conversations/{conversation_id}")
 def get_conversation(
-    conversation_id: str, authorization: Optional[str] = Header(default=None)
+    conversation_id: str,
+    current_user: CurrentUser,
 ) -> dict[str, Any]:
-    user = _user(authorization)
     try:
-        conv = get_conversation_service().get(user, conversation_id)
-        msgs = get_conversation_service().list_messages(user, conversation_id)
+        conv = get_conversation_service().get(current_user, conversation_id)
+        msgs = get_conversation_service().list_messages(current_user, conversation_id)
         return {"conversation": conv, "messages": msgs}
     except AuthError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
@@ -712,12 +694,11 @@ def get_conversation(
 def send_message(
     conversation_id: str,
     body: ChatSendBody,
-    authorization: Optional[str] = Header(default=None),
+    current_user: CurrentUser,
 ) -> dict[str, Any]:
-    user = _user(authorization)
     try:
         return get_conversation_service().send(
-            user=user,
+            user=current_user,
             conversation_id=conversation_id,
             content=body.content,
             attachments=body.attachments,
@@ -732,15 +713,13 @@ def send_message(
 def send_message_stream(
     conversation_id: str,
     body: ChatSendBody,
-    authorization: Optional[str] = Header(default=None),
-):
+    current_user: CurrentUser,
+) -> StreamingResponse:
     """SSE-style text stream (scaffold)."""
-    user = _user(authorization)
-
     def gen():
         try:
             for chunk in get_conversation_service().stream_tokens(
-                user, conversation_id, body.content
+                current_user, conversation_id, body.content
             ):
                 yield f"data: {json.dumps({'t': chunk})}\n\n"
             yield 'data: {"done": true}\n\n'
