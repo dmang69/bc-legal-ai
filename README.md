@@ -39,7 +39,24 @@ All public-demo logic is **deterministic** and runs **client-side** when publish
 start "" "D:\AI legal\hf-workspace\spaces\bc-legal-ai-demo-static\index.html"
 ```
 
-Source: `hf-workspace/spaces/bc-legal-ai-demo-static/` (workspace root) and repo Gradio draft under `huggingface-space/`.
+Source in this repo: [`huggingface-space-static/`](huggingface-space-static/)  
+(Gradio draft remains under [`huggingface-space/`](huggingface-space/).)
+
+### Auto-deploy (GitHub Actions)
+
+On every push to `main` that changes `huggingface-space-static/**`, workflow
+[`.github/workflows/deploy-hf-space.yml`](.github/workflows/deploy-hf-space.yml)
+uploads that folder to Space **`Dmang69/bc-legal-ai-demo`** (static SDK).
+
+**One-time setup**
+
+1. Create a Hugging Face **Write** token: https://huggingface.co/settings/tokens  
+2. In this GitHub repo: **Settings → Secrets and variables → Actions → New repository secret**  
+   - Name: `HF_TOKEN`  
+   - Value: the write token  
+3. Optional: run the workflow manually via **Actions → Deploy HF Space (static demo) → Run workflow**
+
+If deploy fails with **402**, verify email / billing method on the HF account and confirm the Space SDK is **static** (not Gradio). Static Spaces are free; Gradio/Docker need PRO.
 
 ---
 
