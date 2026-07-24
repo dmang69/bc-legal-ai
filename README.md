@@ -122,13 +122,20 @@ The platform shell (web/desktop/mobile) is only the **container**. The product i
 
 ## Quick start (local)
 
+**Canonical stack:** API = `backend/` · skills = `skills/` · services = `services/`.  
+See [`docs/CANONICAL_STACK.md`](docs/CANONICAL_STACK.md). Do not use `apps/api` or `eap-monorepo` as the product entrypoint.
+
 ```bash
 pip install -r requirements.txt
+# Windows: set APP_MODE=development
+export APP_MODE=development
 uvicorn backend.api.main:app --reload --port 8000
-# API docs: http://127.0.0.1:8000/docs  →  /v1/platform/*
+# API docs: http://127.0.0.1:8000/docs
+# Chat: POST /v1/platform/auth/register → /v1/platform/conversations → .../messages
+# Skills: GET /v1/platform/skills
 ```
 
-Workbench UI:
+Workbench UI (optional, later):
 
 ```bash
 cd apps/platform-ui && npm install && npm run dev

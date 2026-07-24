@@ -19,6 +19,11 @@ from backend.db.helpers import compat_schema_ddl, now_iso, wrap_timestamp_defaul
 from backend.identity import AuthError, UserInfo, get_identity_service
 from backend.platform.citations import verify_citation
 from backend.platform.model_providers import ChatModelRequest, get_model_provider_registry
+from backend.skills_runtime import (
+    build_skill_context_block,
+    catalog_summary,
+    resolve_skills,
+)
 
 _CHAT_DDL = """
 CREATE TABLE IF NOT EXISTS conversations (
@@ -48,7 +53,7 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 SPECIALISTS = [
     {"id": "bc_legal_associate", "name": "BC Legal Associate", "description": "General BC legal workspace triage and supervised drafting.", "capabilities": ["chat", "legal_triage", "drafting", "citations"]},
     {"id": "rtb_specialist", "name": "RTB Specialist", "description": "Residential tenancy issue spotting, RTB process, and evidence organization.", "capabilities": ["tenancy", "rtb", "evidence", "deadlines"]},
-    {"id": "jr_counsel", "name": "Judicial Review Counsel", "description": "Judicial review grounds, record review, statutory reasonableness, and petition structure.", "capabilities": ["judicial_review", "vavilov", "drafting", "record_review"]},
+    {"id": "jr_counsel", "name": "Judicial Review Counsel", "description": "RTB/tribunal JR: ATA s.58 patent unreasonableness, Form 66, s.57 clock, stays, record review.", "capabilities": ["judicial_review", "ata_s58", "form_66", "drafting", "record_review"]},
     {"id": "statutory_interpreter", "name": "Statutory Interpreter", "description": "Text, context, scheme, purpose, consequences, and Vavilov statutory constraints.", "capabilities": ["statutory_interpretation", "scheme_analysis", "purpose_analysis"]},
     {"id": "legal_terminology", "name": "Legal Terminology Translator", "description": "Terminology cleanup, plain-language conversion, and doctrine distinction policing.", "capabilities": ["terminology", "plain_language", "draft_cleanup"]},
     {"id": "evidence_analyst", "name": "Evidence Analyst", "description": "Evidence matrix, gaps, chronology, propositions, and source-linking.", "capabilities": ["evidence", "chronology", "gap_analysis"]},
@@ -150,7 +155,11 @@ class ConversationService:
     def list_model_providers(self) -> list[dict[str, Any]]:
         return get_model_provider_registry().list_providers()
 
+    def list_skills_catalog(self) -> dict[str, Any]:
+        return catalog_summary()
+
     def capabilities(self) -> dict[str, Any]:
+        skills = catalog_summary()
         return {
             "product": "BC Legal AI Conversational Platform",
             "court_ready_default": False,
@@ -159,6 +168,8 @@ class ConversationService:
             "supports_matter_scoping": True,
             "supports_agent_plans": True,
             "supports_settings": True,
+            "supports_skill_loading": True,
+            "skills_loaded_count": skills.get("count", 0),
             "specialists": self.list_specialists(),
             "modes": self.list_modes(),
             "chat_types": self.list_chat_types(),
@@ -172,7 +183,10 @@ class ConversationService:
                 "deadline_human_confirmation_required",
                 "privilege_warning",
                 "no_autonomous_filing_or_service",
+                "skill_pack_grounding",
+                "design_locks_enforced",
             ],
+            "design_locks": skills.get("locked_guards", []),
         }
 
     def create(
@@ -347,6 +361,7 @@ class ConversationService:
         low = text.lower()
         warnings = [
             "Not legal advice. Human supervision required for any filing, service, or advice.",
+            "WORKING DRAFT — human verification required before filing.",
         ]
         tools: list[str] = []
         citations: list[dict[str, Any]] = []
@@ -355,12 +370,72 @@ class ConversationService:
             {"id": "view_evidence", "label": "View Evidence"},
         ]
         work_panel: Optional[dict[str, Any]] = {"view": "sources", "title": "Sources"}
+        controls: dict[str, Any] = {"court_ready": False, "legal_advice": False}
+
+        # Load in-repo skills for this specialist + message
+        specialist_id = conv.get("specialist") or "bc_legal_associate"
+        active_skills = resolve_skills(specialist=specialist_id, message=text, limit=4)
+        skill_names = [s.name for s in active_skills]
+        if skill_names:
+            tools.append("skills:" + ",".join(skill_names))
+        skill_block = build_skill_context_block(active_skills, per_skill_chars=1600)
+        controls["skills_loaded"] = skill_names
 
         # Matter isolation reminder
         if conv.get("chat_type") == "general":
             warnings.append("General Chat does not automatically access confidential matters.")
         elif conv.get("matter_id"):
             tools.append(f"Matter scope: {conv['matter_id']}")
+
+        # Deterministic JR clock when issuance-like cues present
+        jr_clock_block = ""
+        if any(k in low for k in ("jr clock", "60 day", "sixty day", "limitation", "s.57", "issuance")):
+            tools.append("deadline_service")
+            iss = None
+            m_date = re.search(r"\b(20\d{2}-\d{2}-\d{2})\b", text)
+            if m_date:
+                iss = m_date.group(1)
+            try:
+                from services.deadlines.jr_clock import JrClockRequest, calculate_jr_clock
+
+                clock = calculate_jr_clock(
+                    JrClockRequest(
+                        matter_id=str(conv.get("matter_id") or "CHAT"),
+                        issuance_date=iss,
+                        finality_known="finality unknown" not in low and "not final" not in low,
+                        enabling_act_known="enabling" not in low or "ata" in low or "s.57" in low,
+                        extension_sought="extension" in low or "s.57(2)" in low,
+                        human_confirmed=False,
+                    )
+                )
+                jr_clock_block = (
+                    "\n\n### JR clock (deterministic — not filing advice)\n"
+                    f"- Mode: `{clock.clock_mode.value}`\n"
+                    f"- Primary deadline: {clock.primary_deadline or 'n/a'}\n"
+                    f"- HITL required: {clock.hitl_required}\n"
+                    f"- Display: {clock.client_display}\n"
+                )
+                if clock.alternatives:
+                    lines = []
+                    for a in clock.alternatives:
+                        if isinstance(a, dict):
+                            label = a.get("label") or a.get("mode") or "alternative"
+                            deadline = a.get("deadline")
+                            note = a.get("note")
+                            bit = f"{label}"
+                            if deadline:
+                                bit += f" → {deadline}"
+                            if note:
+                                bit += f" ({note})"
+                            lines.append(f"  - {bit}")
+                        else:
+                            lines.append(f"  - {a}")
+                    jr_clock_block += "- Alternatives:\n" + "\n".join(lines)
+                warnings.append(
+                    "Only HUMAN_CONFIRMED limitation dates may be treated as definitive."
+                )
+            except Exception as exc:  # pragma: no cover - defensive
+                warnings.append(f"JR clock module unavailable: {exc}")
 
         # Citation / s.56 safety
         if "s.56" in low or "s 56" in low or "section 56" in low:
@@ -373,17 +448,41 @@ class ConversationService:
                     "Confirm section heading on BC Laws."
                 )
 
+        def _pack(body: str, **kwargs: Any) -> AssistantReply:
+            """Attach skills footer/disclaimer uniformly."""
+            skills_note = ""
+            if skill_names:
+                skills_note = (
+                    "\n\n---\n"
+                    f"**Skills loaded:** {', '.join(f'`{n}`' for n in skill_names)}\n"
+                    "Apply category labels. Forms: petition **Form 66** (not 67); "
+                    "interlocutory ≈ **Form 32**/**33**; affidavit **Form 109**. "
+                    "Statute text: BC Laws only. Not legal advice."
+                )
+            content = body + jr_clock_block + skills_note
+            # Keep a compact skill digest in controls for UI/debug (not full body)
+            controls["skill_excerpt_chars"] = len(skill_block)
+            return AssistantReply(
+                content=content,
+                citations=kwargs.get("citations", citations),
+                actions=kwargs.get("actions", actions),
+                warnings=kwargs.get("warnings", warnings),
+                work_panel=kwargs.get("work_panel", work_panel),
+                tool_activity=kwargs.get("tool_activity", tools),
+                controls=controls,
+            )
+
         # Agent-style multi-step
         if any(k in low for k in ("book of authorities", "build the complete", "agent", "plan:")):
             tools.append("agent_planner")
             plan = [
                 "Extract every authority from the draft",
-                "Verify citation and existence",
+                "Verify citation and existence (CanLII / official) — no fabricated cites",
                 "Confirm treatment and binding weight",
                 "Retrieve official or authorized copy",
                 "Identify missing authorities",
-                "Build the index",
-                "Assemble bookmarked PDF",
+                "Build the index (court BOA discipline)",
+                "Assemble bookmarked PDF on filing day",
                 "Submit for human approval",
             ]
             body = (
@@ -391,116 +490,122 @@ class ConversationService:
                 + "\n".join(f"{i}. {p}" for i, p in enumerate(plan, 1))
                 + "\n\nNo step will file, serve, or disclose without authorization."
             )
-            actions = [
-                {"id": "approve_plan", "label": "Approve Plan"},
-                {"id": "edit_plan", "label": "Edit Plan"},
-                {"id": "cancel_plan", "label": "Cancel"},
-            ]
-            work_panel = {"view": "agent", "title": "Agent Activity", "plan": plan}
-            return AssistantReply(
-                content=body,
-                actions=actions,
-                warnings=warnings,
-                work_panel=work_panel,
-                tool_activity=tools,
-                citations=citations,
+            if skill_block:
+                body += "\n\n" + skill_block[:1200]
+            return _pack(
+                body,
+                actions=[
+                    {"id": "approve_plan", "label": "Approve Plan"},
+                    {"id": "edit_plan", "label": "Edit Plan"},
+                    {"id": "cancel_plan", "label": "Cancel"},
+                ],
+                work_panel={"view": "agent", "title": "Agent Activity", "plan": plan},
             )
 
         # JR / RTB analysis style
-        if any(k in low for k in ("judicial review", "rtb decision", "grounds", "petition", "form 66")):
-            tools.extend(["legal_analysis", "evidence_linker"])
+        if any(
+            k in low
+            for k in (
+                "judicial review",
+                "rtb decision",
+                "grounds",
+                "petition",
+                "form 66",
+                "form 67",
+                "patent unreason",
+                "procedural fairness",
+            )
+        ):
+            tools.extend(["legal_analysis", "evidence_linker", "skill_pack"])
             body = (
                 "I can help structure a **supervised** judicial-review analysis "
-                "(scaffold — not a filing).\n\n"
+                "(WORKING DRAFT — not a filing).\n\n"
                 "**Potential structure**\n"
-                "1. Orders sought (Form 66)\n"
-                "2. Procedural fairness grounds (record-linked)\n"
-                "3. Patent unreasonableness / standard of review (confirm current law)\n"
-                "4. Evidence gaps requiring human confirmation\n"
-                "5. Authorities — verify on BC Laws / CanLII before reliance\n\n"
-                "Flag anything not source-linked. I will not mark output court-ready "
-                "until evidence, citation, privilege, and lawyer approval complete."
+                "1. Orders sought (**Form 66** petition — Form 67 is the *response*)\n"
+                "2. Procedural fairness grounds (correctness; record-linked)\n"
+                "3. **ATA s.58** patent unreasonableness for typical RTB fact/law "
+                "(do not default-label as Vavilov reasonableness without checking ATA)\n"
+                "4. JR clock — **60 days from issuance** of final decision when s.57 applies; "
+                "alternatives if finality/date/Act uncertain\n"
+                "5. Evidence gaps requiring human confirmation\n"
+                "6. Authorities — verify on BC Laws / CanLII before reliance\n\n"
+                "Label FACT / ALLEGATION / ARGUMENT / INFERENCE / ASSUMPTION.\n"
+                "I will not mark output court-ready until evidence, citation, privilege, "
+                "and human approval complete."
             )
-            actions = [
-                {"id": "open_analysis", "label": "Open Analysis"},
-                {"id": "view_evidence", "label": "View Evidence"},
-                {"id": "verify_authorities", "label": "Verify Authorities"},
-                {"id": "draft_petition", "label": "Draft Petition"},
-            ]
-            work_panel = {
-                "view": "legal_issues",
-                "title": "Legal Issues",
-                "issues": [
-                    {"label": "Procedural fairness", "strength": "review_required"},
-                    {"label": "Patent unreasonableness", "strength": "review_required"},
-                    {"label": "Additional evidence", "strength": "gap"},
+            if skill_block:
+                body += "\n\n" + skill_block[:2000]
+            return _pack(
+                body,
+                actions=[
+                    {"id": "open_analysis", "label": "Open Analysis"},
+                    {"id": "view_evidence", "label": "View Evidence"},
+                    {"id": "verify_authorities", "label": "Verify Authorities"},
+                    {"id": "draft_petition", "label": "Draft Petition (Form 66)"},
                 ],
-            }
-            return AssistantReply(
-                content=body,
-                actions=actions,
-                warnings=warnings,
-                work_panel=work_panel,
-                tool_activity=tools,
-                citations=citations,
+                work_panel={
+                    "view": "legal_issues",
+                    "title": "Legal Issues",
+                    "issues": [
+                        {"label": "Procedural fairness (correctness)", "strength": "review_required"},
+                        {"label": "Patent unreasonableness (ATA s.58)", "strength": "review_required"},
+                        {"label": "JR clock / finality", "strength": "review_required"},
+                        {"label": "Additional evidence", "strength": "gap"},
+                    ],
+                    "skills": skill_names,
+                },
             )
 
         # Deadline questions — deterministic service only
-        if any(k in low for k in ("deadline", "limitation", "60 day", "sixty day", "when is")):
+        if any(k in low for k in ("deadline", "limitation", "60 day", "sixty day", "when is", "jr clock")):
             tools.append("deadline_service")
             warnings.append(
                 "Deadline engine returns provisional states only. "
                 "Only HUMAN_CONFIRMED dates may be treated as definitive."
             )
             body = (
-                "For limitation and filing windows I use the **deterministic deadline service**, "
-                "not free-form model guessing.\n\n"
-                "Provide: forum, document type, service method, start date, and whether "
-                "finality is known. I will return a state such as CALCULATED or "
-                "HUMAN_REVIEW_REQUIRED — never a silent final client deadline."
+                "For limitation and filing windows I use the **deterministic deadline / JR clock "
+                "service**, not free-form model guessing.\n\n"
+                "Provide: forum, document type, service method, **issuance date** (YYYY-MM-DD), "
+                "whether finality is known, and whether ATA s.57 applies. "
+                "I return modes such as STANDARD_60_FROM_ISSUANCE or FINALITY_UNCERTAIN — "
+                "never a silent final client deadline.\n\n"
+                "Petition form: **Form 66**. Stay / interlocutory: generally **Form 32**."
             )
-            actions = [
-                {"id": "deadline_review", "label": "Deadline Review"},
-                {"id": "require_lawyer", "label": "Require Lawyer Review"},
-            ]
-            work_panel = {"view": "deadlines", "title": "Deadline Review"}
-            return AssistantReply(
-                content=body,
-                actions=actions,
-                warnings=warnings,
-                work_panel=work_panel,
-                tool_activity=tools,
+            if skill_block:
+                body += "\n\n" + skill_block[:1200]
+            return _pack(
+                body,
+                actions=[
+                    {"id": "deadline_review", "label": "Deadline Review"},
+                    {"id": "require_lawyer", "label": "Require Lawyer Review"},
+                ],
+                work_panel={"view": "deadlines", "title": "Deadline Review", "skills": skill_names},
             )
 
-        # Default conversational support
+        # Default conversational support — still skill-grounded
         tools.append("general_support")
-        specialist = next(
-            (s["name"] for s in SPECIALISTS if s["id"] == conv.get("specialist")),
+        specialist_name = next(
+            (s["name"] for s in SPECIALISTS if s["id"] == specialist_id),
             "BC Legal Associate",
         )
         body = (
-            f"**{specialist}** (mode: {conv.get('model_mode', 'balanced')})\n\n"
-            "I'm the conversational legal workspace scaffold. I can help organize "
-            "research questions, structure JR/RTB analysis, flag citation risks, "
-            "and prepare supervised drafts.\n\n"
+            f"**{specialist_name}** (mode: {conv.get('model_mode', 'balanced')})\n\n"
+            "Supervised conversational workspace. I can organize research questions, "
+            "structure JR/RTB analysis, flag citation risks, and prepare drafts.\n\n"
             f"You said:\n> {text[:800]}\n\n"
             "Tell me the **matter**, **forum**, and whether you want research, "
             "evidence review, drafting, or an agent plan. "
             "I will not invent statute text — use BC Laws for official wording."
         )
+        if skill_block:
+            body += "\n\n" + skill_block[:1600]
         if re.search(r"\b(file|serve|settle|waive)\b", low):
             warnings.append(
                 "I cannot autonomously file, serve, settle, or waive rights. "
                 "Human authorization required."
             )
-        return AssistantReply(
-            content=body,
-            actions=actions,
-            warnings=warnings,
-            work_panel=work_panel,
-            tool_activity=tools,
-            citations=citations,
-        )
+        return _pack(body)
 
 
 _svc: Optional[ConversationService] = None

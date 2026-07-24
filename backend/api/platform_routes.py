@@ -714,6 +714,12 @@ def workspace_model_providers() -> dict[str, Any]:
     return {"providers": get_conversation_service().list_model_providers()}
 
 
+@router.get("/skills")
+def list_skills_catalog() -> dict[str, Any]:
+    """In-repo skill pack catalog (markdown operating procedures)."""
+    return get_conversation_service().list_skills_catalog()
+
+
 @router.post("/conversations")
 def create_conversation(
     body: ConversationCreate,
