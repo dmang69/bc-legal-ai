@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BC Legal AI Workbench — Demo</title>
+<meta name="bc-legal-ai-demo" content="static-v1.1" data-demo-version="1.1.0" />
+<meta name="robots" content="noindex,nofollow" />
 <style>
   :root{
     --bg:#0d1117; --panel:#161b22; --panel2:#1c2129; --border:#30363d;
@@ -65,7 +67,7 @@
     This is <strong>not</strong> a licensed lawyer, <strong>not legal advice</strong>, and does not create a solicitor–client
     relationship. Do <strong>not</strong> enter confidential client or litigation details. This page performs
     <strong>no model inference</strong>; all logic is deterministic and runs client-side. Verify all legislation on the official
-    <a href="https://www.bclaws.gov.bc.ca/" target="_blank" rel="noopener"><strong>BC Laws</strong></a> portal before filing or
+    <a href="https://www.bclaws.gov.bc.ca/" target="_blank" rel="noopener noreferrer"><strong>BC Laws</strong></a> portal before filing or
     reliance. Court-ready work requires a licensed supervising lawyer and human approval.
   </div>
 
@@ -89,7 +91,7 @@
 
   <!-- JR CLOCK -->
   <div class="panel" id="p-jr">
-    <p><strong>Correction #4 live:</strong> the ordinary clock is <strong>60 days from issuance of the final decision</strong> (ATA s.57(1)), subject to the <strong>s.57(2) extension power</strong>. When finality, date, or enabling Act is uncertain, alternatives are computed — never a single confident date.</p>
+    <p><strong>Correction #4 live:</strong> the ordinary clock is <strong>60 days from issuance of the final decision</strong> (ATA s.57(1)), subject to the <strong>s.57(2) extension power</strong>. When finality, date, enabling Act, or post-decision review status is uncertain, alternatives are required — no single date is filing-safe until those anchors are confirmed.</p>
     <label style="font-size:.9rem;color:var(--muted)">Issuance date of final decision (YYYY-MM-DD)</label>
     <input type="text" id="jr-date" placeholder="2026-06-15" style="margin-top:4px">
     <div class="row">
@@ -196,9 +198,9 @@
   </div>
 
   <div class="footer">
-    <strong>Project:</strong> <a href="https://github.com/dmang69/bc-legal-ai" target="_blank" rel="noopener">GitHub — dmang69/bc-legal-ai</a> ·
-    <a href="https://huggingface.co/datasets/Dmang69/bc-legal-ai" target="_blank" rel="noopener">Dataset</a> ·
-    <a href="https://huggingface.co/Dmang69/bc-legal-ai-base" target="_blank" rel="noopener">Model card</a><br>
+    <strong>Project:</strong> <a href="https://github.com/dmang69/bc-legal-ai" target="_blank" rel="noopener noreferrer">GitHub — dmang69/bc-legal-ai</a> ·
+    <a href="https://huggingface.co/datasets/Dmang69/bc-legal-ai" target="_blank" rel="noopener noreferrer">Dataset</a> ·
+    <a href="https://huggingface.co/Dmang69/bc-legal-ai-base" target="_blank" rel="noopener noreferrer">Model card</a><br>
     Published RTB decisions are a <strong>subset</strong> — absence from the archive is not proof that no decision exists.
   </div>
 </div>
@@ -217,9 +219,11 @@ const FAIL_CLOSED = '<div class="fail"><strong>Fail-closed note:</strong> this d
 
 // ---------- public-demo PII screen ----------
 const PII = [
-  [/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/, 'email address'],
-  [/(\+?1[\s.\-]?)?\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4}\b/, 'phone number'],
-  [/\b[A-Za-z]\d[A-Za-z][\s\-]?\d[A-Za-z]\d\b/, 'postal code'],
+  [/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/i, 'email address'],
+  // North American phone with separators/brackets (avoids bare RTB file numbers)
+  [/(?:\+?1[\s.\-]?)?(?:\(\d{3}\)|\d{3})[\s.\-]\d{3}[\s.\-]\d{4}\b/, 'phone number'],
+  // Canadian postal code (A1A 1A1)
+  [/\b[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z][\s\-]?\d[ABCEGHJ-NPRSTV-Z]\d\b/i, 'postal code'],
 ];
 function screenText(t){
   for(const [re,label] of PII){ if(re.test(t)) return label; }
@@ -270,7 +274,32 @@ function runTriage(){
   el.innerHTML = h;
 }
 
-// ---------- JR clock ----------
+// ---------- JR clock (timezone-safe local calendar arithmetic) ----------
+function pad2(n){ return String(n).padStart(2,'0'); }
+function ymdLocal(d){
+  return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());
+}
+function parseYmdLocal(raw){
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
+  if(!m) return null;
+  const y = +m[1], mo = +m[2], da = +m[3];
+  if(mo < 1 || mo > 12 || da < 1 || da > 31) return null;
+  const d = new Date(y, mo - 1, da);
+  // Reject JS overflow dates (e.g. 2026-02-31 → March)
+  if(d.getFullYear() !== y || d.getMonth() !== mo - 1 || d.getDate() !== da) return null;
+  return d;
+}
+function addDaysLocal(d, days){
+  const out = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  out.setDate(out.getDate() + days);
+  return out;
+}
+function daysBetweenLocal(a, b){
+  const ms = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate())
+           - Date.UTC(a.getFullYear(), a.getMonth(), a.getDate());
+  return Math.round(ms / 86400000);
+}
+
 function runJr(){
   const el = document.getElementById('jr-out');
   const raw = document.getElementById('jr-date').value.trim();
@@ -282,43 +311,46 @@ function runJr(){
   let h = '<h4>JR limitation clock (demonstration — confirm with counsel)</h4><ul>';
   let parsed = null;
   if(raw){
-    if(/^\d{4}-\d{2}-\d{2}$/.test(raw)){
-      const d = new Date(raw+'T00:00:00');
-      if(!isNaN(d)) parsed = d;
-    }
-    if(!parsed) h += '<li><strong style="color:var(--bad)">Input error:</strong> <code>'+esc(raw)+'</code> is not a valid <code>YYYY-MM-DD</code> date.</li>';
+    parsed = parseYmdLocal(raw);
+    if(!parsed) h += '<li><strong style="color:var(--bad)">Input error:</strong> <code>'+esc(raw)+'</code> is not a valid calendar <code>YYYY-MM-DD</code> date.</li>';
   }
+  // Uncertain when any of the statutory anchors is missing or review may shift finality
   const uncertain = !parsed || !finality || !actKnown || review;
 
   if(parsed){
-    const primary = new Date(parsed); primary.setDate(primary.getDate()+60);
-    const iso = primary.toISOString().slice(0,10);
-    const today = new Date(); today.setHours(0,0,0,0);
-    const remaining = Math.round((primary - today)/86400000);
-    h += '<li><strong>Issuance date entered:</strong> '+raw+'</li>';
-    h += '<li><strong>Ordinary deadline (ATA s.57(1)):</strong> <span class="'+(remaining>=0?'deadline-big':'deadline-bad')+'">'+iso+'</span> (60 days from issuance of the final decision).</li>';
-    if(remaining>=0){ h += '<li><strong>Days remaining (from today):</strong> '+remaining+'</li>'; }
-    else { h += '<li><strong>Ordinary window appears expired</strong> ('+(-remaining)+' days past). An extension application under <strong>ATA s.57(2)</strong> with its statutory criteria becomes the operative route — counsel review is mandatory.</li>'; }
+    const primary = addDaysLocal(parsed, 60);
+    const iso = ymdLocal(primary);
+    const today = new Date();
+    const remaining = daysBetweenLocal(new Date(today.getFullYear(), today.getMonth(), today.getDate()), primary);
+    h += '<li><strong>Issuance date entered:</strong> '+esc(raw)+' (local calendar date; no UTC conversion)</li>';
+    if(uncertain){
+      h += '<li><strong>Candidate ordinary deadline (ATA s.57(1) arithmetic only):</strong> <span class="deadline-bad">'+iso+'</span> — <em>not confident</em> while mode is ALTERNATIVES REQUIRED. 60 calendar days after the entered issuance date.</li>';
+    } else {
+      h += '<li><strong>Ordinary deadline (ATA s.57(1)):</strong> <span class="'+(remaining>=0?'deadline-big':'deadline-bad')+'">'+iso+'</span> (60 days from issuance of the final decision).</li>';
+    }
+    if(remaining>=0){ h += '<li><strong>Days remaining if this candidate were correct:</strong> '+remaining+'</li>'; }
+    else { h += '<li><strong>If this issuance date were final and ATA s.57 applied, the ordinary window would appear expired</strong> ('+(-remaining)+' days past). Extension under <strong>ATA s.57(2)</strong> is then the operative inquiry — counsel review is mandatory.</li>'; }
   } else {
-    h += '<li><strong>No valid issuance date</strong> — the clock cannot be fixed. See alternatives.</li>';
+    h += '<li><strong>No valid issuance date</strong> — the clock cannot be fixed to one date. See alternatives.</li>';
   }
   h += '</ul><h4>Clock mode</h4><ul>';
   if(uncertain){
-    h += '<li><strong>MODE: ALTERNATIVES REQUIRED</strong> — finality, issuance date, or enabling legislation is uncertain. The engine must not display a single confident date.</li>';
+    h += '<li><strong>MODE: ALTERNATIVES REQUIRED</strong> — finality, issuance date, enabling legislation, and/or post-decision review status is uncertain. The engine must not treat any single computed date as filing-safe.</li>';
   } else {
-    h += '<li><strong>MODE: ORDINARY</strong> — 60 days from issuance, subject to ATA s.57(2) extension power.</li>';
+    h += '<li><strong>MODE: ORDINARY</strong> — 60 days from issuance of the final decision, still subject to ATA s.57(2) extension power and human confirmation before filing.</li>';
   }
   h += '</ul><h4>Alternatives the engine must calculate when uncertain</h4><ul>';
-  h += '<li><strong>Earliest-candidate rule:</strong> compute the deadline from the <em>earliest</em> plausible issuance date and file to the earliest deadline.</li>';
-  if(review) h += '<li><strong>RTB review/correction/clarification pending:</strong> the <em>final</em> decision for clock purposes may be the post-review decision — but never assume; preserve the original 60-day date in parallel.</li>';
+  h += '<li><strong>Earliest-candidate rule:</strong> compute the deadline from the <em>earliest</em> plausible issuance date and calendar the earliest deadline while investigating later candidates in parallel.</li>';
+  if(review) h += '<li><strong>RTB review/correction/clarification pending:</strong> the <em>final</em> decision for clock purposes may be the post-review decision — but never assume; preserve the original 60-day candidate in parallel.</li>';
   if(!finality) h += '<li><strong>Finality unknown:</strong> confirm whether the decision is final or interlocutory; interim orders may engage different treatment.</li>';
-  if(!actKnown) h += '<li><strong>Enabling legislation unknown:</strong> confirm the tribunal\u2019s enabling Act adopts ATA s.57; a different limitation regime may apply.</li>';
-  if(ext) h += '<li><strong>Extension (ATA s.57(2)):</strong> the court <em>may</em> extend if satisfied there are serious grounds for relief, reasonable explanation for delay, and no substantial prejudice or hardship to affected persons — statutory criteria, not automatic.</li>';
+  if(!actKnown) h += '<li><strong>Enabling legislation unknown:</strong> confirm the tribunal\u2019s enabling Act incorporates ATA s.57; a different limitation regime may apply.</li>';
+  if(ext) h += '<li><strong>Extension (ATA s.57(2)):</strong> the court <em>may</em> extend the time if satisfied that there are serious grounds for relief, there is a reasonable explanation for the delay, and no substantial prejudice or hardship will result to a person affected by the delay — paraphrased criteria only; verify current ATA text on BC Laws before reliance. Extension is not automatic.</li>';
   h += '<li><strong>Deemed service / receipt rules</strong> never extend the <em>issuance</em>-based JR clock — do not conflate RTB dispute windows with the JR limitation period.</li>';
+  h += '<li><strong>HITL:</strong> no filing deadline is court-ready until a human confirms finality, issuance date, and the applicable enabling provision.</li>';
   h += '</ul><h4>Correct court forms (correction #3)</h4><ul>';
   h += '<li>Petition commencing JR: <strong>Form 66</strong> (Form 67 is the <em>response</em> to petition).</li>';
-  h += '<li>Stay / interlocutory application: <strong>Form 32</strong>; application response: <strong>Form 33</strong>.</li>';
-  h += '<li>Affidavits: <strong>Form 109</strong>.</li></ul>';
+  h += '<li>Stay / interlocutory application: generally <strong>Form 32</strong>; application response: <strong>Form 33</strong>.</li>';
+  h += '<li>Affidavits: may use <strong>Form 109</strong>.</li></ul>';
   h += FAIL_CLOSED;
   el.innerHTML = h;
 }
@@ -363,7 +395,7 @@ const LAWS = [
   ['CanLII (BC decisions)','https://www.canlii.org/en/bc/','RTB decisions (published subset) and BCSC/BCCA jurisprudence. Cases only — never statute text.'],
   ['BC Human Rights Tribunal','https://www.bchrt.bc.ca/','Discrimination complaints (not a source for RTA text).'],
 ];
-document.getElementById('laws-list').innerHTML = LAWS.map(([t,u,n])=>'<li style="margin:5px 0"><a href="'+u+'" target="_blank" rel="noopener"><strong>'+t+'</strong></a> — '+n+'</li>').join('');
+document.getElementById('laws-list').innerHTML = LAWS.map(([t,u,n])=>'<li style="margin:5px 0"><a href="'+u+'" target="_blank" rel="noopener noreferrer"><strong>'+t+'</strong></a> — '+n+'</li>').join('');
 
 // ---------- quiz ----------
 const QUIZ = {

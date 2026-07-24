@@ -155,7 +155,8 @@ jobs:
                   f"({os.environ.get('GITHUB_REF_NAME', 'main')})"
               ),
               allow_patterns=["index.html", "README.md", "*.css", "*.js", "*.svg", "*.png", "*.ico"],
-              delete_patterns=["app.py", "requirements.txt"],  # drop Gradio leftovers if any
+              # Drop Gradio leftovers and the HF static template CSS if still present.
+              delete_patterns=["app.py", "requirements.txt", "style.css"],
           )
           print(f"Upload commit: {commit}")
           print(f"Live URL: https://huggingface.co/spaces/{space_id}")
