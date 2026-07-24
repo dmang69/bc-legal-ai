@@ -8,6 +8,7 @@ from typing import Any
 
 from backend.api.public_demo import reject_if_public_demo
 from backend.db import get_connection, init_db
+from backend.db.helpers import now_iso
 from backend.identity import AuthError, UserInfo, get_identity_service
 
 _ALLOWED_MODES = {"general", "matter", "document", "research", "drafting", "agent"}
@@ -119,6 +120,7 @@ def add_message(
         raise ValueError("Message body required")
     mid = _message_id()
     metadata = metadata or {}
+    now = now_iso()
     with get_connection() as conn:
         conn.execute(
             """
@@ -138,10 +140,10 @@ def add_message(
         conn.execute(
             """
             UPDATE workspace_conversations
-            SET updated_at = datetime('now')
+            SET updated_at = ?
             WHERE conversation_id = ?
             """,
-            (conversation_id,),
+            (now, conversation_id),
         )
         row = conn.execute(
             "SELECT * FROM workspace_messages WHERE message_id = ?",

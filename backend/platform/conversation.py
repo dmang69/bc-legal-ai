@@ -15,8 +15,10 @@ from dataclasses import dataclass, field
 from typing import Any, Iterator, Optional
 
 from backend.db import get_connection, init_db
+from backend.db.helpers import compat_schema_ddl, now_iso, wrap_timestamp_defaults
 from backend.identity import AuthError, UserInfo, get_identity_service
 from backend.platform.citations import verify_citation
+from backend.platform.model_providers import ChatModelRequest, get_model_provider_registry
 
 _CHAT_DDL = """
 CREATE TABLE IF NOT EXISTS conversations (
@@ -29,8 +31,8 @@ CREATE TABLE IF NOT EXISTS conversations (
   model_mode TEXT NOT NULL DEFAULT 'balanced',
   specialist TEXT NOT NULL DEFAULT 'bc_legal_associate',
   archived INTEGER NOT NULL DEFAULT 0,
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  created_at TEXT NOT NULL DEFAULT '',
+  updated_at TEXT NOT NULL DEFAULT ''
 );
 
 CREATE TABLE IF NOT EXISTS chat_messages (
@@ -39,39 +41,59 @@ CREATE TABLE IF NOT EXISTS chat_messages (
   role TEXT NOT NULL,
   content TEXT NOT NULL,
   meta_json TEXT NOT NULL DEFAULT '{}',
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  created_at TEXT NOT NULL DEFAULT ''
 );
 """
 
 SPECIALISTS = [
-    {"id": "bc_legal_associate", "name": "BC Legal Associate"},
-    {"id": "rtb_specialist", "name": "RTB Specialist"},
-    {"id": "jr_counsel", "name": "Judicial Review Counsel"},
-    {"id": "evidence_analyst", "name": "Evidence Analyst"},
-    {"id": "citation_clerk", "name": "Citation Clerk"},
-    {"id": "procedural_clerk", "name": "Procedural Clerk"},
-    {"id": "deadline_clerk", "name": "Deadline Clerk"},
-    {"id": "affidavit_drafter", "name": "Affidavit Drafter"},
-    {"id": "boa_builder", "name": "Book of Authorities Builder"},
-    {"id": "cross_exam_planner", "name": "Cross-Examination Planner"},
-    {"id": "devils_advocate", "name": "Devil's Advocate"},
-    {"id": "privilege_sentinel", "name": "Privilege Sentinel"},
-    {"id": "client_intake", "name": "Client Intake Assistant"},
-    {"id": "enforcement_assistant", "name": "Enforcement Assistant"},
+    {"id": "bc_legal_associate", "name": "BC Legal Associate", "description": "General BC legal workspace triage and supervised drafting.", "capabilities": ["chat", "legal_triage", "drafting", "citations"]},
+    {"id": "rtb_specialist", "name": "RTB Specialist", "description": "Residential tenancy issue spotting, RTB process, and evidence organization.", "capabilities": ["tenancy", "rtb", "evidence", "deadlines"]},
+    {"id": "jr_counsel", "name": "Judicial Review Counsel", "description": "Judicial review grounds, record review, statutory reasonableness, and petition structure.", "capabilities": ["judicial_review", "vavilov", "drafting", "record_review"]},
+    {"id": "statutory_interpreter", "name": "Statutory Interpreter", "description": "Text, context, scheme, purpose, consequences, and Vavilov statutory constraints.", "capabilities": ["statutory_interpretation", "scheme_analysis", "purpose_analysis"]},
+    {"id": "legal_terminology", "name": "Legal Terminology Translator", "description": "Terminology cleanup, plain-language conversion, and doctrine distinction policing.", "capabilities": ["terminology", "plain_language", "draft_cleanup"]},
+    {"id": "evidence_analyst", "name": "Evidence Analyst", "description": "Evidence matrix, gaps, chronology, propositions, and source-linking.", "capabilities": ["evidence", "chronology", "gap_analysis"]},
+    {"id": "citation_clerk", "name": "Citation Clerk", "description": "Fail-closed citation triage and authority verification workflow.", "capabilities": ["citations", "authority_check", "court_ready_gate"]},
+    {"id": "procedural_clerk", "name": "Procedural Clerk", "description": "Procedure checklists, filing steps, service, and forum-sensitive tasks.", "capabilities": ["procedure", "service", "forms"]},
+    {"id": "deadline_clerk", "name": "Deadline Clerk", "description": "Provisional deadline collection and human-confirmation workflow.", "capabilities": ["deadlines", "jr_clock", "limitation_triage"]},
+    {"id": "affidavit_drafter", "name": "Affidavit Drafter", "description": "Fact/evidence-separated affidavit outline support.", "capabilities": ["affidavits", "evidence", "drafting"]},
+    {"id": "boa_builder", "name": "Book of Authorities Builder", "description": "Authority extraction, verification plan, and BOA assembly workflow.", "capabilities": ["authorities", "boa", "pinpoints"]},
+    {"id": "cross_exam_planner", "name": "Cross-Examination Planner", "description": "Issue-driven cross-examination topics and impeachment planning.", "capabilities": ["cross_examination", "witnesses", "impeachment"]},
+    {"id": "devils_advocate", "name": "Devil's Advocate", "description": "Opposing-position stress testing and weakness detection.", "capabilities": ["risk_review", "opposing_arguments", "strategy"]},
+    {"id": "privilege_sentinel", "name": "Privilege Sentinel", "description": "Privilege, waiver, confidentiality, and disclosure risk warnings.", "capabilities": ["privilege", "confidentiality", "disclosure_risk"]},
+    {"id": "client_intake", "name": "Client Intake Assistant", "description": "Structured intake questions and missing-fact collection.", "capabilities": ["intake", "facts", "client_questions"]},
+    {"id": "enforcement_assistant", "name": "Enforcement Assistant", "description": "Post-resolution compliance, enforcement package, and retention workflow support.", "capabilities": ["enforcement", "compliance", "post_resolution"]},
 ]
 
 MODES = [
-    {"id": "fast", "label": "Fast"},
-    {"id": "balanced", "label": "Balanced"},
-    {"id": "deep", "label": "Deep Analysis"},
-    {"id": "private_local", "label": "Private Local"},
+    {"id": "fast", "label": "Fast", "description": "Short answers and quick triage.", "temperature": 0.2, "max_context_messages": 8},
+    {"id": "balanced", "label": "Balanced", "description": "Default balanced depth and speed.", "temperature": 0.3, "max_context_messages": 16},
+    {"id": "deep", "label": "Deep Analysis", "description": "Longer, structured analysis with more issue spotting.", "temperature": 0.1, "max_context_messages": 32},
+    {"id": "creative", "label": "Creative Drafting", "description": "More drafting alternatives while preserving legal safety gates.", "temperature": 0.6, "max_context_messages": 20},
+    {"id": "private_local", "label": "Private Local", "description": "Local/private provider preference; external providers disabled unless configured.", "temperature": 0.1, "max_context_messages": 12},
+]
+
+CHAT_TYPES = [
+    {"id": "general", "label": "General", "requires_matter": False, "description": "No automatic confidential matter access."},
+    {"id": "matter", "label": "Matter", "requires_matter": True, "description": "Scoped to an authorized matter."},
+    {"id": "research", "label": "Research", "requires_matter": False, "description": "Legal research and authority workflow."},
+    {"id": "drafting", "label": "Drafting", "requires_matter": False, "description": "Supervised drafting, rewriting, and editing."},
+    {"id": "agent", "label": "Agent Task", "requires_matter": False, "description": "Plan-first multi-step work; execution requires approval."},
+]
+
+TOOLS = [
+    {"id": "citation_verifier", "label": "Citation Verifier", "enabled": True, "risk": "medium"},
+    {"id": "deadline_service", "label": "Deadline Service", "enabled": True, "risk": "high"},
+    {"id": "evidence_linker", "label": "Evidence Linker", "enabled": True, "risk": "medium"},
+    {"id": "privilege_guard", "label": "Privilege Guard", "enabled": True, "risk": "high"},
+    {"id": "agent_planner", "label": "Agent Planner", "enabled": True, "risk": "high"},
 ]
 
 
 def _ensure() -> None:
     init_db()
     with get_connection() as conn:
-        conn.executescript(_CHAT_DDL)
+        for stmt in compat_schema_ddl(wrap_timestamp_defaults(_CHAT_DDL)):
+            conn.execute(stmt)
 
 
 def _id(prefix: str) -> str:
@@ -93,6 +115,10 @@ class AssistantReply:
     warnings: list[str] = field(default_factory=list)
     work_panel: Optional[dict[str, Any]] = None
     tool_activity: list[str] = field(default_factory=list)
+    provider: str = "safe_local"
+    model: str = "safe-orchestrator"
+    usage: dict[str, int] = field(default_factory=dict)
+    controls: dict[str, Any] = field(default_factory=dict)
 
     def to_meta(self) -> dict[str, Any]:
         return {
@@ -101,6 +127,10 @@ class AssistantReply:
             "warnings": self.warnings,
             "work_panel": self.work_panel,
             "tool_activity": self.tool_activity,
+            "provider": self.provider,
+            "model": self.model,
+            "usage": self.usage,
+            "controls": self.controls,
         }
 
 
@@ -108,8 +138,42 @@ class ConversationService:
     def list_specialists(self) -> list[dict[str, str]]:
         return list(SPECIALISTS)
 
-    def list_modes(self) -> list[dict[str, str]]:
+    def list_modes(self) -> list[dict[str, Any]]:
         return list(MODES)
+
+    def list_chat_types(self) -> list[dict[str, Any]]:
+        return list(CHAT_TYPES)
+
+    def list_tools(self) -> list[dict[str, Any]]:
+        return list(TOOLS)
+
+    def list_model_providers(self) -> list[dict[str, Any]]:
+        return get_model_provider_registry().list_providers()
+
+    def capabilities(self) -> dict[str, Any]:
+        return {
+            "product": "BC Legal AI Conversational Platform",
+            "court_ready_default": False,
+            "legal_advice": False,
+            "supports_streaming": True,
+            "supports_matter_scoping": True,
+            "supports_agent_plans": True,
+            "supports_settings": True,
+            "specialists": self.list_specialists(),
+            "modes": self.list_modes(),
+            "chat_types": self.list_chat_types(),
+            "tools": self.list_tools(),
+            "model_providers": self.list_model_providers(),
+            "default_model_provider": get_model_provider_registry().default_provider_id(),
+            "safety_gates": [
+                "matter_authorization",
+                "ethical_wall_deny_first",
+                "citation_fail_closed",
+                "deadline_human_confirmation_required",
+                "privilege_warning",
+                "no_autonomous_filing_or_service",
+            ],
+        }
 
     def create(
         self,
@@ -208,6 +272,7 @@ class ConversationService:
         meta: Optional[dict[str, Any]] = None,
     ) -> str:
         mid = _id("msg")
+        now = now_iso()
         with get_connection() as conn:
             conn.execute(
                 """
@@ -217,8 +282,8 @@ class ConversationService:
                 (mid, conversation_id, role, content, json.dumps(meta or {})),
             )
             conn.execute(
-                "UPDATE conversations SET updated_at = datetime('now') WHERE conversation_id = ?",
-                (conversation_id,),
+                "UPDATE conversations SET updated_at = ? WHERE conversation_id = ?",
+                (now, conversation_id),
             )
         return mid
 
@@ -229,6 +294,11 @@ class ConversationService:
         conversation_id: str,
         content: str,
         attachments: Optional[list[dict[str, Any]]] = None,
+        provider: str = "",
+        model: str = "",
+        tools: Optional[list[str]] = None,
+        response_format: str = "message",
+        temperature: Optional[float] = None,
     ) -> dict[str, Any]:
         conv = self.get(user, conversation_id)
         _assert_matter(user, conv.get("matter_id"))

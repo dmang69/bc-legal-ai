@@ -684,6 +684,11 @@ class ChatSendBody(BaseModel):
     attachments: list[dict[str, Any]] = Field(default_factory=list)
 
 
+@router.get("/chat/capabilities")
+def chat_capabilities() -> dict[str, Any]:
+    return get_conversation_service().capabilities()
+
+
 @router.get("/workspace/specialists")
 def workspace_specialists() -> dict[str, Any]:
     return {"specialists": get_conversation_service().list_specialists()}
@@ -692,6 +697,21 @@ def workspace_specialists() -> dict[str, Any]:
 @router.get("/workspace/modes")
 def workspace_modes() -> dict[str, Any]:
     return {"modes": get_conversation_service().list_modes()}
+
+
+@router.get("/workspace/chat-types")
+def workspace_chat_types() -> dict[str, Any]:
+    return {"chat_types": get_conversation_service().list_chat_types()}
+
+
+@router.get("/workspace/tools")
+def workspace_tools() -> dict[str, Any]:
+    return {"tools": get_conversation_service().list_tools()}
+
+
+@router.get("/workspace/model-providers")
+def workspace_model_providers() -> dict[str, Any]:
+    return {"providers": get_conversation_service().list_model_providers()}
 
 
 @router.post("/conversations")

@@ -155,8 +155,9 @@ def test_platform_register_and_matter_flow(client: TestClient):
         },
     )
     assert approved_manifest.status_code == 200
-    assert approved_manifest.json()["status"] == "APPROVED"
-    assert approved_manifest.json()["court_ready"] is True
+    assert approved_manifest.json()["status"] == "BLOCKED"
+    assert approved_manifest.json()["court_ready"] is False
+    assert approved_manifest.json()["blockers"]
 
     manifests = client.get(f"/v1/platform/matters/{mid}/exports/manifest", headers=headers)
     assert manifests.status_code == 200

@@ -367,20 +367,20 @@
 
 | Workstream | Status | % Complete |
 |------------|--------|------------|
-| A: PostgreSQL | In Progress | ~50% (SQL removed, Alembic pending) |
-| B: Unified Auth | Nearly Complete | ~90% (tests pending) |
+| A: PostgreSQL | **Nearly Complete** | ~90% (6 files fixed, Alembic pending) |
+| B: Unified Auth | Complete | 100% |
 | C: Ethical Walls | Complete | 100% |
 | D: Protected Ops | Complete | 100% |
 | E: Evidence Quarantine | Not Started | 0% |
 | F: Durable State | Not Started | 0% |
-| G: Audit Ledger | Not Started | 0% |
+| G: Audit Ledger | **In Progress** | ~60% (chain head locking added) |
 | H: Secure Sessions | Partial | ~30% (backend done, frontend pending) |
 | I: CORS/Health | Complete | 100% |
 | J: Build Reproducibility | Not Started | 0% |
 | K: Durable Queue | Not Started | 0% |
-| L: Deadline Integrity | Nearly Complete | ~80% (confirm endpoint pending) |
+| L: Deadline Integrity | Complete | 100% |
 | M: Citation Integrity | Partial | ~30% (court_ready=false, relabel pending) |
-| N: Drafting Errors | Not Started | 0% |
+| N: Drafting Errors | Complete | 100% |
 | O: Model Repair | Not Started | 0% |
 
-**Overall P0 Completion:** ~55%
+**Overall P0 Completion:** ~65%

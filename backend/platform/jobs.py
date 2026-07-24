@@ -1,4 +1,4 @@
-"""In-process job queue stub (M2 workers) — Redis later; SQLite table now."""
+"""In-process job queue stub (M2 workers) — Redis later; SQLite/Postgres compatible now."""
 
 from __future__ import annotations
 
@@ -7,8 +7,10 @@ import uuid
 from typing import Any, Callable, Optional
 
 from backend.db import get_connection, init_db
+from backend.db.helpers import compat_schema_ddl, now_iso, wrap_timestamp_defaults
 
-# Extend schema on first use
+# Extend schema on first use — uses only SQL syntax supported by both SQLite and PostgreSQL.
+# Avoided: executescript(), datetime('now'), INSERT OR REPLACE, INSERT OR IGNORE
 _JOBS_DDL = """
 CREATE TABLE IF NOT EXISTS background_jobs (
   job_id TEXT PRIMARY KEY,
@@ -17,7 +19,7 @@ CREATE TABLE IF NOT EXISTS background_jobs (
   payload TEXT NOT NULL DEFAULT '{}',
   status TEXT NOT NULL DEFAULT 'PENDING',
   result TEXT NOT NULL DEFAULT '',
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  created_at TEXT NOT NULL DEFAULT '',
   started_at TEXT,
   finished_at TEXT
 );
@@ -27,7 +29,8 @@ CREATE TABLE IF NOT EXISTS background_jobs (
 def _ensure() -> None:
     init_db()
     with get_connection() as conn:
-        conn.executescript(_JOBS_DDL)
+        for stmt in compat_schema_ddl(wrap_timestamp_defaults(_JOBS_DDL)):
+            conn.execute(stmt)
 
 
 def enqueue(job_type: str, payload: dict[str, Any], *, matter_id: str = "") -> str:
@@ -36,16 +39,17 @@ def enqueue(job_type: str, payload: dict[str, Any], *, matter_id: str = "") -> s
     with get_connection() as conn:
         conn.execute(
             """
-            INSERT INTO background_jobs (job_id, job_type, matter_id, payload, status)
-            VALUES (?, ?, ?, ?, 'PENDING')
+            INSERT INTO background_jobs (job_id, job_type, matter_id, payload, status, created_at)
+            VALUES (?, ?, ?, ?, 'PENDING', ?)
             """,
-            (job_id, job_type, matter_id, json.dumps(payload)),
+            (job_id, job_type, matter_id, json.dumps(payload), now_iso()),
         )
     return job_id
 
 
 def run_next(handlers: dict[str, Callable[[dict[str, Any]], dict[str, Any]]]) -> Optional[dict[str, Any]]:
     _ensure()
+    now = now_iso()
     with get_connection() as conn:
         row = conn.execute(
             """
@@ -57,8 +61,8 @@ def run_next(handlers: dict[str, Callable[[dict[str, Any]], dict[str, Any]]]) ->
             return None
         job_id = row["job_id"]
         conn.execute(
-            "UPDATE background_jobs SET status = 'RUNNING', started_at = datetime('now') WHERE job_id = ?",
-            (job_id,),
+            "UPDATE background_jobs SET status = 'RUNNING', started_at = ? WHERE job_id = ?",
+            (now, job_id),
         )
         payload = json.loads(row["payload"] or "{}")
         handler = handlers.get(row["job_type"])
@@ -68,19 +72,19 @@ def run_next(handlers: dict[str, Callable[[dict[str, Any]], dict[str, Any]]]) ->
             result = handler(payload)
             conn.execute(
                 """
-                UPDATE background_jobs SET status = 'DONE', result = ?, finished_at = datetime('now')
+                UPDATE background_jobs SET status = 'DONE', result = ?, finished_at = ?
                 WHERE job_id = ?
                 """,
-                (json.dumps(result), job_id),
+                (json.dumps(result), now_iso(), job_id),
             )
             return {"job_id": job_id, "status": "DONE", "result": result}
         except Exception as e:
             conn.execute(
                 """
-                UPDATE background_jobs SET status = 'FAILED', result = ?, finished_at = datetime('now')
+                UPDATE background_jobs SET status = 'FAILED', result = ?, finished_at = ?
                 WHERE job_id = ?
                 """,
-                (json.dumps({"error": str(e)}), job_id),
+                (json.dumps({"error": str(e)}), now_iso(), job_id),
             )
             return {"job_id": job_id, "status": "FAILED", "error": str(e)}
 
