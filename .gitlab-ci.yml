@@ -1,0 +1,202 @@
+# BC Legal AI Associate — GitLab CI/CD Pipeline
+# Project ID: 84788875
+# Self-hosted runner or GitLab.com SaaS
+
+stages:
+  - lint
+  - test
+  - security
+  - build
+  - deploy
+
+variables:
+  PYTHON_VERSION: "3.12"
+  IMAGE_TAG: $CI_COMMIT_SHORT_SHA
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: ""
+
+default:
+  image: python:${PYTHON_VERSION}-slim-bookworm
+  before_script:
+    - python -m pip install --upgrade pip
+    - pip install -e ".[dev]"
+  cache:
+    paths:
+      - .cache/pip/
+      - .venv/
+
+# ============================================================
+# LINT STAGE
+# ============================================================
+ruff-lint:
+  stage: lint
+  script:
+    - pip install ruff
+    - ruff check backend/ services/ agents/ middleware/
+    - ruff format --check backend/ services/ agents/ middleware/
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+
+# ============================================================
+# TEST STAGE
+# ============================================================
+test-sqlite:
+  stage: test
+  script:
+    - pytest tests/ -v --tb=short --cov=backend --cov-report=term --cov-report=xml
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+  coverage: '/TOTAL.*\s+(\d+%)$/'
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+
+test-postgres:
+  stage: test
+  image: docker:24.0.5
+  services:
+    - postgres:16
+  variables:
+    POSTGRES_DB: ala_test
+    POSTGRES_USER: ala
+    POSTGRES_PASSWORD: ala_test
+    ALA_POSTGRES_URL: postgresql://ala:ala_test@postgres:5432/ala_test
+  script:
+    - apk add --no-cache python3 py3-pip
+    - pip install -e ".[dev,postgres,pdf,ocr]"
+    - pytest tests/ -v --tb=short -k "postgres or integration"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+
+# ============================================================
+# SECURITY STAGE
+# ============================================================
+security-audit:
+  stage: security
+  script:
+    - pip install bandit safety
+    - bandit -r backend/ -f json -o bandit-report.json || true
+    - safety check --full-report || true
+  artifacts:
+    paths:
+      - bandit-report.json
+    when: always
+  allow_failure: true
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+
+dependency-scan:
+  stage: security
+  script:
+    - pip install pip-audit
+    - pip-audit --desc on --ignore-vuln PYSEC-2023-123 -r requirements.txt
+  allow_failure: true
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+
+# ============================================================
+# BUILD STAGE
+# ============================================================
+docker-build:
+  stage: build
+  image: docker:24.0.5
+  services:
+    - docker:24.0.5-dind
+  variables:
+    IMAGE_NAME: $CI_REGISTRY_IMAGE:$IMAGE_TAG
+    IMAGE_LATEST: $CI_REGISTRY_IMAGE:latest
+  script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login $CI_REGISTRY -u "$CI_REGISTRY_USER" --password-stdin
+    - docker build . --file Dockerfile --tag $IMAGE_NAME --tag $IMAGE_LATEST
+    - docker push $IMAGE_NAME
+    - docker push $IMAGE_LATEST
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+/
+
+sbom-generate:
+  stage: build
+  script:
+    - pip install cyclonedx-bom
+    - cyclonedx-py requirements.txt --format json -o bom.json
+  artifacts:
+    paths:
+      - bom.json
+    expire_in: 30 days
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+/
+
+# ============================================================
+# DEPLOY STAGE
+# ============================================================
+deploy-staging:
+  stage: deploy
+  image: alpine/helm:3.14
+  variables:
+    KUBECONFIG: $CI_PROJECT_DIR/kubeconfig
+  script:
+    - echo "Deploying to staging environment..."
+    - helm upgrade --install ala ./infra/k8s/helm \
+        --namespace ala-staging \
+        --create-namespace \
+        --set api.image.tag=$IMAGE_TAG \
+        --values ./infra/k8s/helm/values-staging.yaml \
+        --wait --timeout 5m
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop"
+  environment:
+    name: staging
+    url: https://staging.ala.example.com
+
+deploy-production:
+  stage: deploy
+  image: alpine/helm:3.14
+  variables:
+    KUBECONFIG: $CI_PROJECT_DIR/kubeconfig
+  script:
+    - echo "Deploying to production environment..."
+    - helm upgrade --install ala ./infra/k8s/helm \
+        --namespace ala \
+        --create-namespace \
+        --set api.image.tag=$IMAGE_TAG \
+        --values ./infra/k8s/helm/values-production.yaml \
+        --wait --timeout 10m
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+/
+  environment:
+    name: production
+    url: https://ala.example.com
+  when: manual
+  allow_failure: false
+
+# ============================================================
+# POST-MERGE / RELEASE
+# ============================================================
+release:
+  stage: deploy
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  script:
+    - echo "Creating GitLab release..."
+  release:
+    name: "BC Legal AI $CI_COMMIT_TAG"
+    description: "Release $CI_COMMIT_TAG — see CHANGELOG.md for details"
+    tag_name: $CI_COMMIT_TAG
+    assets:
+      links:
+        - name: "Container Image"
+          url: "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+/
+
+include:
+  - template: Security/SAST.gitlab-ci.yml
+  - template: Jobs/Secret-Detection.gitlab-ci.yml
+  - template: Jobs/Dependency-Scanning.gitlab-ci.yml

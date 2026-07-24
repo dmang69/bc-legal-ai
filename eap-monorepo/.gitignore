@@ -1,0 +1,40 @@
+# Env
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+.next/
+.turbo/
+.pnpm-store/
+
+# Build
+dist/
+build/
+out/
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Data
+*.db
+*.db-journal
+apps/api/uploads/
