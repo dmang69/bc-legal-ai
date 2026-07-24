@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BC Legal AI Workbench — Demo</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2129; --border:#30363d;
+    --text:#e6edf3; --muted:#8b949e; --accent:#4a9eff; --accent2:#2f81f7;
+    --ok:#3fb950; --warn:#d29922; --bad:#f85149; --tag:#238636;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;line-height:1.55}
+  .wrap{max-width:980px;margin:0 auto;padding:24px 16px 80px}
+  h1{font-size:1.6rem;margin-bottom:4px}
+  h2{font-size:1.15rem;margin:18px 0 8px;color:var(--accent)}
+  h3{font-size:1rem;margin:14px 0 6px}
+  .sub{color:var(--muted);margin-bottom:16px}
+  .disclaimer{background:#2d1a1a;border:1px solid #6e2c2c;border-radius:8px;padding:14px 16px;font-size:.9rem;margin-bottom:20px}
+  .disclaimer strong{color:#ff9b9b}
+  .tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:10px}
+  .tab-btn{background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 14px;cursor:pointer;font-size:.88rem}
+  .tab-btn.active{background:var(--accent2);border-color:var(--accent2);color:#fff}
+  .panel{display:none;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:20px}
+  .panel.active{display:block}
+  textarea,input[type=text]{width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:10px;font-size:.92rem;font-family:inherit}
+  textarea{min-height:120px;resize:vertical}
+  button.go{background:var(--accent2);color:#fff;border:none;border-radius:6px;padding:10px 22px;font-size:.95rem;cursor:pointer;margin-top:10px}
+  button.go:hover{background:var(--accent)}
+  .out{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:16px;margin-top:14px;font-size:.92rem;white-space:normal}
+  .out:empty{display:none}
+  .out h4{color:var(--accent);margin:10px 0 6px;font-size:.95rem}
+  .out ul{margin:4px 0 10px 20px}
+  .out li{margin:3px 0}
+  .fail{border-left:3px solid var(--warn);padding:8px 12px;background:#2a2416;border-radius:4px;margin-top:10px;font-size:.85rem;color:#e3c878}
+  .rej{border-left:3px solid var(--bad);padding:8px 12px;background:#2d1a1a;border-radius:4px;color:#ff9b9b}
+  table{border-collapse:collapse;width:100%;margin:10px 0;font-size:.9rem}
+  th,td{border:1px solid var(--border);padding:7px 10px;text-align:left}
+  th{background:var(--panel2);color:var(--accent)}
+  .tagchip{display:inline-block;background:var(--tag);color:#fff;border-radius:4px;padding:1px 7px;font-size:.75rem;font-weight:600;margin-right:6px;vertical-align:middle}
+  .tagchip.assume{background:#9e6a03}.tagchip.alleg{background:#8250df}.tagchip.rec{background:#1f6feb}
+  .tagchip.legal{background:#238636}.tagchip.fact{background:#6e7681}.tagchip.unc{background:#484f58}
+  .row{display:flex;gap:16px;flex-wrap:wrap;margin:10px 0}
+  .row label{display:flex;align-items:center;gap:8px;font-size:.9rem;color:var(--muted);cursor:pointer}
+  input[type=checkbox]{accent-color:var(--accent2);width:16px;height:16px}
+  select{background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:9px;font-size:.92rem;width:100%}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .g-item{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:12px}
+  .g-item h3{margin-top:0;color:var(--accent)}
+  .footer{margin-top:28px;padding-top:14px;border-top:1px solid var(--border);color:var(--muted);font-size:.85rem}
+  .deadline-big{font-size:1.3rem;color:var(--ok);font-weight:700}
+  .deadline-bad{font-size:1.1rem;color:var(--bad);font-weight:700}
+  code{background:#22282f;border-radius:4px;padding:1px 6px;font-size:.85em}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>⚖️ BC Legal AI Workbench — Demo</h1>
+  <p class="sub">Deterministic public demo · no model inference · no statute text from memory · everything runs <strong>in your browser</strong></p>
+
+  <div class="disclaimer">
+    <strong>Disclaimer:</strong> <strong>BC Legal AI Associate</strong> — legal research and drafting <strong>support</strong> only.
+    This is <strong>not</strong> a licensed lawyer, <strong>not legal advice</strong>, and does not create a solicitor–client
+    relationship. Do <strong>not</strong> enter confidential client or litigation details. This page performs
+    <strong>no model inference</strong>; all logic is deterministic and runs client-side. Verify all legislation on the official
+    <a href="https://www.bclaws.gov.bc.ca/" target="_blank" rel="noopener"><strong>BC Laws</strong></a> portal before filing or
+    reliance. Court-ready work requires a licensed supervising lawyer and human approval.
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button class="tab-btn active" data-t="triage">Matter triage</button>
+    <button class="tab-btn" data-t="jr">JR clock</button>
+    <button class="tab-btn" data-t="tagger">Analytical tagger</button>
+    <button class="tab-btn" data-t="guard">Design guardrails</button>
+    <button class="tab-btn" data-t="laws">Official legislation</button>
+    <button class="tab-btn" data-t="quiz">RTA pin self-check</button>
+    <button class="tab-btn" data-t="consent">Consent &amp; privilege</button>
+  </div>
+
+  <!-- TRIAGE -->
+  <div class="panel active" id="p-triage">
+    <p>Paste a <strong>non-confidential</strong> description of a tenancy or tribunal situation. The demo flags notice deadlines, routes the forum, and shows the analytical-tag discipline. No statute text is generated.</p>
+    <textarea id="triage-in" placeholder="e.g. I received a one month notice for cause on July 2 and want to dispute it; the arbitrator refused to hear my witness..."></textarea>
+    <button class="go" onclick="runTriage()">Run triage</button>
+    <div class="out" id="triage-out"></div>
+  </div>
+
+  <!-- JR CLOCK -->
+  <div class="panel" id="p-jr">
+    <p><strong>Correction #4 live:</strong> the ordinary clock is <strong>60 days from issuance of the final decision</strong> (ATA s.57(1)), subject to the <strong>s.57(2) extension power</strong>. When finality, date, or enabling Act is uncertain, alternatives are computed — never a single confident date.</p>
+    <label style="font-size:.9rem;color:var(--muted)">Issuance date of final decision (YYYY-MM-DD)</label>
+    <input type="text" id="jr-date" placeholder="2026-06-15" style="margin-top:4px">
+    <div class="row">
+      <label><input type="checkbox" id="jr-final" checked> Finality confirmed (final, not interim)</label>
+      <label><input type="checkbox" id="jr-act" checked> Enabling legislation confirmed (ATA s.57 applies)</label>
+    </div>
+    <div class="row">
+      <label><input type="checkbox" id="jr-review"> RTB review / correction / clarification pending</label>
+      <label><input type="checkbox" id="jr-ext"> Extension under ATA s.57(2) being considered</label>
+    </div>
+    <button class="go" onclick="runJr()">Calculate clock</button>
+    <div class="out" id="jr-out"></div>
+  </div>
+
+  <!-- TAGGER -->
+  <div class="panel" id="p-tagger">
+    <p>Paste a draft paragraph. The demo decomposes it into <strong>FACT / ALLEGATION / ASSUMPTION / LEGAL ARGUMENT / RECOMMENDATION</strong> candidates for human review.</p>
+    <textarea id="tag-in" placeholder="I think the landlord was wrong. He said I broke the lease. Section 47 applies..."></textarea>
+    <button class="go" onclick="runTagger()">Decompose</button>
+    <div class="out" id="tag-out"></div>
+  </div>
+
+  <!-- GUARDRAILS -->
+  <div class="panel" id="p-guard">
+    <h2>Locked design guardrails</h2>
+    <p style="margin-bottom:14px">These six corrections are <strong>locked into the product design</strong> and enforced across the private backend. They are displayed here so the design posture is auditable.</p>
+
+    <div class="g-item"><h3>1 · Consent is not privilege</h3>
+      Client consent <strong>authorizes specified data processing</strong>. It never automatically creates, waives, or determines solicitor–client or litigation privilege. Privilege analysis is a separate, human-supervised determination.</div>
+
+    <div class="g-item"><h3>2 · Consent withdrawal is not unconditional deletion</h3>
+      Under BC's <strong>PIPA</strong>, withdrawal of consent generally operates <strong>on reasonable notice</strong>, and processing may continue where authorized without consent or required by legal obligations. The engine distinguishes:
+      <ul style="margin:8px 0 0 20px">
+        <li><strong>Immediate:</strong> revocation of <em>future optional AI access</em> — takes effect right away.</li>
+        <li><strong>Separately assessed:</strong> retention schedules, <strong>legal holds</strong>, and evidentiary obligations — never auto-deleted by a consent toggle.</li>
+      </ul></div>
+
+    <div class="g-item"><h3>3 · Correct Supreme Court Civil Rules forms</h3>
+      <table>
+        <tr><th>Step</th><th>Form</th></tr>
+        <tr><td>Petition commencing judicial review</td><td><strong>Form 66</strong></td></tr>
+        <tr><td>Response to petition</td><td><strong>Form 67</strong></td></tr>
+        <tr><td>Interlocutory application (e.g., stay)</td><td><strong>Form 32</strong></td></tr>
+        <tr><td>Application response</td><td><strong>Form 33</strong></td></tr>
+        <tr><td>Affidavit</td><td><strong>Form 109</strong></td></tr>
+      </table></div>
+
+    <div class="g-item"><h3>4 · The JR clock is 60 days from issuance — with alternatives</h3>
+      The ordinary RTB judicial-review limitation is <strong>60 days from issuance of the final decision</strong> (ATA s.57(1)), subject to the <strong>extension power and statutory criteria in ATA s.57(2)</strong>. When finality, issuance date, or enabling legislation is uncertain, the engine <strong>must calculate and display alternative deadlines</strong>, never a single confident date. Try the <strong>JR clock</strong> tab.</div>
+
+    <div class="g-item"><h3>5 · Honest encryption claims</h3>
+      True end-to-end encryption is <strong>incompatible</strong> with server-side AI analysis of the same content. The architecture commits to one of two honest postures: <strong>on-device classification</strong> (content never leaves the device unencrypted), <em>or</em> <strong>controlled server-side decryption</strong> with explicit consent, disclosure, audit logging, and scoped access. It will never claim "inaccessible-to-server E2EE" while performing unrestricted server-side AI processing. <em>(This demo page itself is the first posture: everything runs in your browser.)</em></div>
+
+    <div class="g-item"><h3>6 · The RTB archive is not a complete corpus</h3>
+      The official RTB decision archive covers <strong>specific historical publication ranges and categories</strong>. Absence of a decision from the archive is <strong>never</strong> treated as proof that no decision exists. Search results are labelled as drawn from the <strong>published subset</strong>, and negative results are reported as "not found in the published subset" — not "does not exist."</div>
+  </div>
+
+  <!-- LAWS -->
+  <div class="panel" id="p-laws">
+    <h2>Official links (Government of BC / BC Laws / CanLII for cases only)</h2>
+    <ul id="laws-list" style="margin:10px 0 10px 20px"></ul>
+    <h3>Residential Tenancy Act — verified section map (re-check before filing)</h3>
+    <table>
+      <tr><th>Topic</th><th>Official section (BC Laws)</th></tr>
+      <tr><td>Cannot contract out of Act</td><td><strong>s. 5</strong></td></tr>
+      <tr><td>Enforce rights between landlord &amp; tenant</td><td><strong>s. 6</strong></td></tr>
+      <tr><td>Application / processing fees prohibited</td><td><strong>s. 15</strong></td></tr>
+      <tr><td>Deposit maximums (½ month each)</td><td><strong>s. 19</strong></td></tr>
+      <tr><td>Deposit prohibitions</td><td><strong>s. 20</strong></td></tr>
+      <tr><td>Acceleration term prohibited</td><td><strong>s. 22</strong></td></tr>
+      <tr><td>Quiet enjoyment</td><td><strong>s. 28</strong></td></tr>
+      <tr><td>Entry (24h notice; 8 a.m.–9 p.m.)</td><td><strong>s. 29</strong></td></tr>
+      <tr><td>Repair and maintain</td><td><strong>s. 32</strong></td></tr>
+      <tr><td>Emergency repairs</td><td><strong>s. 33</strong></td></tr>
+      <tr><td>Deposit return / double amount</td><td><strong>s. 38</strong></td></tr>
+      <tr><td>Rent increase timing</td><td><strong>s. 42</strong></td></tr>
+      <tr><td>Rent increase amount</td><td><strong>s. 43</strong></td></tr>
+    </table>
+    <p style="font-size:.88rem;color:var(--muted)">For court Books of Authorities: <strong>Print / Save PDF</strong> from the BC Laws page on the day of filing; re-check the "current to" line. <strong>Do not</strong> print statute text from CanLII for court packages.</p>
+  </div>
+
+  <!-- QUIZ -->
+  <div class="panel" id="p-quiz">
+    <p>Quick check of common <strong>wrong-memory</strong> pins. Always re-open BC Laws before a real filing.</p>
+    <select id="quiz-sel" onchange="runQuiz()">
+      <option value="contract">Cannot contract out of RTA</option>
+      <option value="quiet">Quiet enjoyment</option>
+      <option value="entry">Landlord entry notice</option>
+      <option value="deposit">Deposit return timeline</option>
+    </select>
+    <div class="out" id="quiz-out"></div>
+  </div>
+
+  <!-- CONSENT -->
+  <div class="panel" id="p-consent">
+    <h2>Consent &amp; privilege model (API surface — private backend, not this Space)</h2>
+    <p style="margin:8px 0"><code>uvicorn backend.api.main:app --port 8000</code></p>
+    <ul style="margin:10px 0 10px 20px">
+      <li><code>POST /v1/matters/{id}/consents</code> — purpose-specific grant</li>
+      <li><code>POST /v1/consents/evaluate-operation</code> — processing-basis evaluation</li>
+      <li><code>POST /v1/consents/{id}/withdraw</code> — blocks <em>future optional AI access</em> immediately; <strong>not</strong> a privilege waiver; <strong>not</strong> unconditional deletion (PIPA reasonable-notice model; retention / legal-hold / evidentiary obligations assessed separately)</li>
+    </ul>
+    <p><strong>Consent ≠ privilege.</strong> Sending content to any external model is a <strong>separate consent category</strong> with its own disclosure.</p>
+  </div>
+
+  <div class="footer">
+    <strong>Project:</strong> <a href="https://github.com/dmang69/bc-legal-ai" target="_blank" rel="noopener">GitHub — dmang69/bc-legal-ai</a> ·
+    <a href="https://huggingface.co/datasets/Dmang69/bc-legal-ai" target="_blank" rel="noopener">Dataset</a> ·
+    <a href="https://huggingface.co/Dmang69/bc-legal-ai-base" target="_blank" rel="noopener">Model card</a><br>
+    Published RTB decisions are a <strong>subset</strong> — absence from the archive is not proof that no decision exists.
+  </div>
+</div>
+
+<script>
+// ---------- tabs ----------
+document.getElementById('tabs').addEventListener('click', e=>{
+  if(!e.target.dataset.t) return;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  e.target.classList.add('active');
+  document.getElementById('p-'+e.target.dataset.t).classList.add('active');
+});
+
+const FAIL_CLOSED = '<div class="fail"><strong>Fail-closed note:</strong> this demo does not retrieve live law. Every section reference above must be re-verified on <strong>BC Laws</strong> (check the \u2018current to\u2019 line) before any reliance or filing.</div>';
+
+// ---------- public-demo PII screen ----------
+const PII = [
+  [/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/, 'email address'],
+  [/(\+?1[\s.\-]?)?\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4}\b/, 'phone number'],
+  [/\b[A-Za-z]\d[A-Za-z][\s\-]?\d[A-Za-z]\d\b/, 'postal code'],
+];
+function screenText(t){
+  for(const [re,label] of PII){ if(re.test(t)) return label; }
+  return null;
+}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ---------- triage ----------
+const NOTICE_RULES = [
+  {pats:[/\bten[\s\-]?day\b/,/\b10[\s\-]?day\b/,/\bnon[\s\-]?payment\b/], label:'Ten Day Notice (unpaid rent/utilities)', win:'<strong>5 days</strong> from service to pay in full <strong>or</strong> file a dispute (RTB).'},
+  {pats:[/\bone[\s\-]?month\b/,/\b1[\s\-]?month\b/,/\bfor cause\b/], label:'One Month Notice (cause)', win:'<strong>10 days</strong> from service to file a dispute.'},
+  {pats:[/\btwo[\s\-]?month\b/,/\b2[\s\-]?month\b/,/\blandlord'?s use\b/], label:"Two Month Notice (landlord's use of property)", win:'<strong>15 days</strong> from service to file a dispute.'},
+  {pats:[/\bfour[\s\-]?month\b/,/\b4[\s\-]?month\b/,/\brenoviction\b/,/\bdemolition\b/,/\brenovation\b/,/\bconversion\b/], label:'Four Month Notice (demolition / renovation / conversion)', win:'<strong>15 days</strong> from service to file a dispute. Renovation-based notices engage a tenant right of first refusal — verify current RTA text on BC Laws.'},
+];
+const FORUM_RULES = [
+  {pats:[/\bjudicial review\b/,/\border of possession\b/,/\bstay\b/,/\bunreasonable\b/,/\bprocedural fairness\b/,/\bvavilov\b/,/\bjrpa\b/,/\bpetition\b/], forum:'BC Supreme Court — Judicial Review (JRPA petition, Form 66)', note:'Ordinary clock: <strong>60 days from issuance of the final decision</strong> (ATA s.57(1)); extension possible under <strong>ATA s.57(2)</strong>. Petition = <strong>Form 66</strong>; a stay or other interlocutory application generally uses <strong>Form 32</strong>. Flag: <strong>[INDEPENDENT COUNSEL RECOMMENDED]</strong>.'},
+  {pats:[/\bdiscriminat/,/\bservice animal\b/,/\bdisabilit/,/\bfamily status\b/,/\bsource of income\b/,/\bharass/], forum:'BC Human Rights Tribunal (possible dual filing with RTB)', note:'One-year filing window from the last alleged discriminatory act. RTB and BCHRT remedies are complementary.'},
+  {pats:[/\bmanufactured home\b/,/\bmobile home\b/,/\bpark pad\b/,/\bmhpta\b/], forum:'RTB under the Manufactured Home Park Tenancy Act', note:'Pad tenancies follow a parallel framework with materially longer notice periods. Verify on BC Laws.'},
+  {pats:[/\bstrata\b/,/\bcondo\b/,/\bbylaw fine\b/], forum:'RTB (tenancy) with Strata Property Act overlay', note:'Strata obligations generally bind the owner, not the tenant; passing fines through may offend the RTA. Verify current RTA text.'},
+  {pats:[/\brent\b/,/\bevict/,/\bnotice\b/,/\bdeposit\b/,/\brepairs?\b/,/\bmold\b/,/\bmould\b/,/\blandlord\b/,/\btenant\b/,/\blease\b/,/\btenancy\b/,/\bentry\b/], forum:'Residential Tenancy Branch (RTB) — Residential Tenancy Act', note:'Standard RTB dispute resolution path. Evidence deadline is typically 14 days before hearing — confirm with the RTB.'},
+];
+
+function runTriage(){
+  const el = document.getElementById('triage-out');
+  const raw = document.getElementById('triage-in').value.trim();
+  if(!raw){ el.innerHTML = 'Describe the situation above (facts only — no names or confidential details).'; return; }
+  const pii = screenText(raw);
+  if(pii){ el.innerHTML = '<div class="rej"><strong>Rejected (public demo):</strong> input appears to contain a <strong>'+pii+'</strong>. This public demo accepts only non-confidential, de-identified, synthetic scenarios.</div>'; return; }
+  const text = raw.toLowerCase();
+  let h = '<h4>Triage result (demonstration output — not legal advice)</h4>';
+  h += '<h4>PROCEDURAL FLAGS</h4><ul>';
+  const hits = NOTICE_RULES.filter(r=>r.pats.some(p=>p.test(text)));
+  if(hits.length){
+    hits.forEach(r=>{ h += '<li><strong>'+r.label+'</strong> — dispute window: '+r.win+'</li>'; });
+    h += '<li>Deadlines run from the <strong>date of service</strong>; deemed-service rules can add days for mailed notices. Calendar the deadline <strong>today</strong>.</li>';
+  } else {
+    h += '<li>No standard notice type detected. If any notice was served, identify its form and service date before anything else.</li>';
+  }
+  h += '</ul><h4>FORUM ROUTING</h4><ul>';
+  const seen = new Set();
+  FORUM_RULES.forEach(f=>{
+    if(f.pats.some(p=>p.test(text)) && !seen.has(f.forum)){ seen.add(f.forum); h += '<li><strong>'+f.forum+'</strong> — '+f.note+'</li>'; }
+  });
+  if(!seen.size) h += '<li>No forum matched. More facts needed.</li>';
+  h += '</ul><h4>ANALYTICAL DISCIPLINE</h4><p>Separate and label: <strong>FACT · ALLEGATION · LEGAL ARGUMENT · INFERENCE · ASSUMPTION · PROCEDURAL HISTORY · RECOMMENDATION</strong>.</p>';
+  h += '<h4>ASSUMPTIONS REQUIRING VERIFICATION</h4><ul><li>Current statute text and section numbering on BC Laws (check the \u2018current to\u2019 line).</li><li>Whether the event date requires a <strong>historical / point-in-time</strong> version of the Act.</li><li>Service method and date for any notice (drives every deadline).</li></ul>';
+  h += FAIL_CLOSED;
+  el.innerHTML = h;
+}
+
+// ---------- JR clock ----------
+function runJr(){
+  const el = document.getElementById('jr-out');
+  const raw = document.getElementById('jr-date').value.trim();
+  const finality = document.getElementById('jr-final').checked;
+  const actKnown = document.getElementById('jr-act').checked;
+  const review = document.getElementById('jr-review').checked;
+  const ext = document.getElementById('jr-ext').checked;
+
+  let h = '<h4>JR limitation clock (demonstration — confirm with counsel)</h4><ul>';
+  let parsed = null;
+  if(raw){
+    if(/^\d{4}-\d{2}-\d{2}$/.test(raw)){
+      const d = new Date(raw+'T00:00:00');
+      if(!isNaN(d)) parsed = d;
+    }
+    if(!parsed) h += '<li><strong style="color:var(--bad)">Input error:</strong> <code>'+esc(raw)+'</code> is not a valid <code>YYYY-MM-DD</code> date.</li>';
+  }
+  const uncertain = !parsed || !finality || !actKnown || review;
+
+  if(parsed){
+    const primary = new Date(parsed); primary.setDate(primary.getDate()+60);
+    const iso = primary.toISOString().slice(0,10);
+    const today = new Date(); today.setHours(0,0,0,0);
+    const remaining = Math.round((primary - today)/86400000);
+    h += '<li><strong>Issuance date entered:</strong> '+raw+'</li>';
+    h += '<li><strong>Ordinary deadline (ATA s.57(1)):</strong> <span class="'+(remaining>=0?'deadline-big':'deadline-bad')+'">'+iso+'</span> (60 days from issuance of the final decision).</li>';
+    if(remaining>=0){ h += '<li><strong>Days remaining (from today):</strong> '+remaining+'</li>'; }
+    else { h += '<li><strong>Ordinary window appears expired</strong> ('+(-remaining)+' days past). An extension application under <strong>ATA s.57(2)</strong> with its statutory criteria becomes the operative route — counsel review is mandatory.</li>'; }
+  } else {
+    h += '<li><strong>No valid issuance date</strong> — the clock cannot be fixed. See alternatives.</li>';
+  }
+  h += '</ul><h4>Clock mode</h4><ul>';
+  if(uncertain){
+    h += '<li><strong>MODE: ALTERNATIVES REQUIRED</strong> — finality, issuance date, or enabling legislation is uncertain. The engine must not display a single confident date.</li>';
+  } else {
+    h += '<li><strong>MODE: ORDINARY</strong> — 60 days from issuance, subject to ATA s.57(2) extension power.</li>';
+  }
+  h += '</ul><h4>Alternatives the engine must calculate when uncertain</h4><ul>';
+  h += '<li><strong>Earliest-candidate rule:</strong> compute the deadline from the <em>earliest</em> plausible issuance date and file to the earliest deadline.</li>';
+  if(review) h += '<li><strong>RTB review/correction/clarification pending:</strong> the <em>final</em> decision for clock purposes may be the post-review decision — but never assume; preserve the original 60-day date in parallel.</li>';
+  if(!finality) h += '<li><strong>Finality unknown:</strong> confirm whether the decision is final or interlocutory; interim orders may engage different treatment.</li>';
+  if(!actKnown) h += '<li><strong>Enabling legislation unknown:</strong> confirm the tribunal\u2019s enabling Act adopts ATA s.57; a different limitation regime may apply.</li>';
+  if(ext) h += '<li><strong>Extension (ATA s.57(2)):</strong> the court <em>may</em> extend if satisfied there are serious grounds for relief, reasonable explanation for delay, and no substantial prejudice or hardship to affected persons — statutory criteria, not automatic.</li>';
+  h += '<li><strong>Deemed service / receipt rules</strong> never extend the <em>issuance</em>-based JR clock — do not conflate RTB dispute windows with the JR limitation period.</li>';
+  h += '</ul><h4>Correct court forms (correction #3)</h4><ul>';
+  h += '<li>Petition commencing JR: <strong>Form 66</strong> (Form 67 is the <em>response</em> to petition).</li>';
+  h += '<li>Stay / interlocutory application: <strong>Form 32</strong>; application response: <strong>Form 33</strong>.</li>';
+  h += '<li>Affidavits: <strong>Form 109</strong>.</li></ul>';
+  h += FAIL_CLOSED;
+  el.innerHTML = h;
+}
+
+// ---------- tagger ----------
+const TAG_RULES = [
+  ['ASSUMPTION','assume', [/\bi (think|believe|assume|guess)\b/,/\bprobably\b/,/\bmaybe\b/,/\bmust have\b/]],
+  ['ALLEGATION','alleg', [/\balleg/,/\bclaims?\b/,/\baccus/,/\bhe said\b/,/\bshe said\b/,/\bthey said\b/]],
+  ['RECOMMENDATION','rec', [/\bshould\b/,/\brecommend/,/\bnext step\b/,/\bi advise\b/]],
+  ['LEGAL ARGUMENT','legal', [/\bs\.\s?\d/,/\bsection \d/,/\bact\b/,/\bcharter\b/,/\bprecedent\b/,/\bvavilov\b/]],
+  ['FACT (candidate — needs exhibit)','fact', [/\b\d{4}-\d{2}-\d{2}\b/,/\b(january|february|march|april|may|june|july|august|september|october|november|december)\b/,/\$\s?\d/,/\bexhibit\b/,/\breceipt\b/,/\be-?transfer\b/]],
+];
+function runTagger(){
+  const el = document.getElementById('tag-out');
+  const raw = document.getElementById('tag-in').value.trim();
+  if(!raw){ el.innerHTML='Paste a paragraph above to see it decomposed into analytical tags.'; return; }
+  const pii = screenText(raw);
+  if(pii){ el.innerHTML = '<div class="rej"><strong>Rejected (public demo):</strong> input appears to contain a <strong>'+pii+'</strong>. This public demo accepts only non-confidential, de-identified, synthetic scenarios.</div>'; return; }
+  const protectedTxt = raw.replace(/\b(s|e\.g|i\.e|No|Nos|vs|v|c|paras?)\./g, '$1\u222F');
+  const sentences = protectedTxt.split(/(?<=[.!?])\s+/).map(s=>s.replaceAll('\u222F','.').trim()).filter(Boolean);
+  let h = '<h4>Tagged decomposition (heuristic demo — human review required)</h4><ol style="margin-left:20px">';
+  sentences.forEach(s=>{
+    const low = s.toLowerCase();
+    let tag='UNCLASSIFIED', cls='unc';
+    for(const [name,c,pats] of TAG_RULES){ if(pats.some(p=>p.test(low))){ tag=name; cls=c; break; } }
+    h += '<li style="margin:6px 0"><span class="tagchip '+cls+'">'+tag+'</span> '+esc(s)+'</li>';
+  });
+  h += '</ol><div class="fail">Candidates tagged FACT still require an exhibit or document anchor before they may be relied on as established fact.</div>';
+  el.innerHTML = h;
+}
+
+// ---------- laws list ----------
+const LAWS = [
+  ['Residential Tenancy Act, SBC 2002, c 78','https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/02078_01','Primary residential tenancy statute (BC Laws only).'],
+  ['Judicial Review Procedure Act, RSBC 1996, c 241','https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/96241_01','Judicial review applications in BC Supreme Court.'],
+  ['Administrative Tribunals Act, SBC 2004, c 45','https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/04045_01','s.57: 60-day JR time limit for tribunal decisions + extension power (s.57(2)).'],
+  ['Personal Information Protection Act, SBC 2003, c 63 (PIPA)','https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/03063_01','BC private-sector privacy law — consent, withdrawal on reasonable notice, retention.'],
+  ['Manufactured Home Park Tenancy Act, SBC 2002, c 77','https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/02077_01','Pad tenancies / manufactured home parks.'],
+  ['Supreme Court Civil Rules — Forms','https://www2.gov.bc.ca/gov/content/justice/courthouse-services/documents-forms-records/court-forms/sup-civil-forms','Official court forms: Form 66 (petition), Form 67 (response), Form 32/33 (application/response), Form 109 (affidavit).'],
+  ['BC Laws portal (home)','https://www.bclaws.gov.bc.ca/','Search all official BC enactments. Currency lines on each Act.'],
+  ['Residential Tenancy Branch (government)','https://www2.gov.bc.ca/gov/content/housing-tenancy/residential-tenancies','Forms, fees, policy guidelines — verify before filing.'],
+  ['CanLII (BC decisions)','https://www.canlii.org/en/bc/','RTB decisions (published subset) and BCSC/BCCA jurisprudence. Cases only — never statute text.'],
+  ['BC Human Rights Tribunal','https://www.bchrt.bc.ca/','Discrimination complaints (not a source for RTA text).'],
+];
+document.getElementById('laws-list').innerHTML = LAWS.map(([t,u,n])=>'<li style="margin:5px 0"><a href="'+u+'" target="_blank" rel="noopener"><strong>'+t+'</strong></a> — '+n+'</li>').join('');
+
+// ---------- quiz ----------
+const QUIZ = {
+  contract:'Official answer: <strong>s. 5</strong> (not s. 6).<br>s. 6 is about enforcing rights between landlord and tenant.<br>Verify: BC Laws RTA link in the Official legislation tab.',
+  quiet:'Official answer: <strong>s. 28</strong> (not s. 22).<br>s. 22 prohibits acceleration terms.<br>Verify: BC Laws RTA link in the Official legislation tab.',
+  entry:'Official answer: <strong>s. 29</strong> — at least 24 hours written notice; entry between <strong>8 a.m. and 9 p.m.</strong> unless tenant agrees (plus other listed exceptions).<br>Verify: BC Laws RTA link in the Official legislation tab.',
+  deposit:'Official answer: <strong>s. 38</strong> — generally within <strong>15 days</strong> after the later of tenancy end or written forwarding address; non-compliance can trigger <strong>double</strong> the deposit (s. 38(6)).<br>Verify full section on BC Laws before filing.',
+};
+function runQuiz(){ document.getElementById('quiz-out').innerHTML = QUIZ[document.getElementById('quiz-sel').value]; }
+runQuiz();
+</script>
+</body>
+</html>

@@ -1,25 +1,101 @@
 # BC Legal AI Associate
 
-**Human-supervised** legal research, evidence, drafting, and matter-support platform for British Columbia.
+[![GitHub](https://img.shields.io/badge/GitHub-dmang69%2Fbc--legal--ai-181717?logo=github)](https://github.com/dmang69/bc-legal-ai)
+[![HF Space](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Demo-yellow)](https://huggingface.co/spaces/Dmang69/bc-legal-ai-demo)
+[![HF Dataset](https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-bc--legal--ai-blue)](https://huggingface.co/datasets/Dmang69/bc-legal-ai)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-**Not a lawyer. Not legal advice.** No solicitor–client relationship is created.
+**Human-supervised** legal research, evidence, drafting, and matter-support platform for British Columbia residential tenancy, judicial review, and related administrative-law workflows.
+
+> **Not a lawyer. Not legal advice.** No solicitor–client relationship is created.  
+> Do **not** put confidential client or litigation files on public demos. Use synthetic data only.  
+> Verify all legislation on **[BC Laws](https://www.bclaws.gov.bc.ca/)** before any reliance or filing.
+
+---
+
+## Try the public demo
+
+| Surface | URL | What it is |
+|---------|-----|------------|
+| **Static demo (preferred)** | https://huggingface.co/spaces/Dmang69/bc-legal-ai-demo | Client-side triage, JR clock, analytical tagger, design guardrails |
+| Dataset | https://huggingface.co/datasets/Dmang69/bc-legal-ai | Skills, lexicon, synthetic fixtures |
+| Model card | https://huggingface.co/Dmang69/bc-legal-ai-base | Policy / RAG-first model documentation (not a runnable checkpoint alone) |
+| Legacy landing | https://huggingface.co/spaces/Dmang69/bc-legal-ai | Earlier static landing page |
+
+**Demo features**
+
+- **Matter triage** — notice-type deadline flags + forum routing (RTB / JR / BCHRT)
+- **JR limitation clock** — 60 days from issuance (ATA s.57(1)) with s.57(2) extension awareness and alternatives when finality/date/enabling Act is uncertain
+- **Analytical tagger** — FACT / ALLEGATION / ASSUMPTION / LEGAL ARGUMENT / RECOMMENDATION candidates
+- **Design guardrails panel** — the six locked corrections, displayed for auditability
+- **Official legislation links** — fail-closed routing to BC Laws, ATA, PIPA, SCCR forms
+- **RTA pin self-check** — common wrong-memory section pins
+
+All public-demo logic is **deterministic** and runs **client-side** when published as a static Space (no model inference; no confidential uploads).
+
+**Local preview of the static demo**
+
+```powershell
+start "" "D:\AI legal\hf-workspace\spaces\bc-legal-ai-demo-static\index.html"
+```
+
+Source: `hf-workspace/spaces/bc-legal-ai-demo-static/` (workspace root) and repo Gradio draft under `huggingface-space/`.
+
+---
+
+## Locked design guardrails
+
+These six corrections are **locked into product design** and must not be reverse-engineered out of demos or APIs.
+
+### 1. Consent is not privilege
+Client consent authorizes **specified data processing**. It never automatically creates, waives, or determines solicitor–client or litigation privilege. Privilege analysis is a separate, human-supervised determination.
+
+### 2. Consent withdrawal is not unconditional deletion
+Under BC **PIPA**, withdrawal generally operates on **reasonable notice**. Processing may continue where authorized without consent or required by legal obligations.  
+- **Immediate:** revoke future optional AI access  
+- **Separately assessed:** retention, legal hold, evidentiary obligations
+
+### 3. Correct Supreme Court Civil Rules forms
+| Step | Form |
+|------|------|
+| Petition commencing judicial review | **Form 66** |
+| Response to petition | **Form 67** |
+| Interlocutory application (e.g. stay) | **Form 32** |
+| Application response | **Form 33** |
+| Affidavit | **Form 109** |
+
+### 4. JR clock: 60 days from issuance — with alternatives
+Ordinary RTB judicial-review limitation: **60 days from issuance of the final decision** (ATA s.57(1)), subject to the extension power and criteria in **ATA s.57(2)**. When finality, issuance date, or enabling legislation is uncertain, the engine **must calculate alternatives** — never a single confident date alone.
+
+### 5. Honest encryption claims
+True end-to-end encryption **conflicts** with unrestricted server-side AI analysis of the same content. Choose one honest posture:  
+- **on-device classification**, or  
+- **controlled server-side decryption** with clear consent, disclosure, audit, and scope  
+
+Never claim both “server-inaccessible E2EE” and unrestricted server-side AI processing.
+
+### 6. The RTB decision archive is not a complete corpus
+The official archive covers **specific historical publication ranges and categories**. Absence from the archive is **never** proof that no decision exists. Negative results must be phrased as “not found in the published subset.”
+
+---
 
 ## Product description (target platform)
 
-**[`docs/PRODUCT_DESCRIPTION.md`](docs/PRODUCT_DESCRIPTION.md)** — integrated supervised practice platform  
-
-**[`docs/CONVERSATIONAL_WORKSPACE_SPEC.md`](docs/CONVERSATIONAL_WORKSPACE_SPEC.md)** — chat-first multi-agent workspace (primary UX)
+- **[`docs/PRODUCT_DESCRIPTION.md`](docs/PRODUCT_DESCRIPTION.md)** — integrated supervised practice platform  
+- **[`docs/CONVERSATIONAL_WORKSPACE_SPEC.md`](docs/CONVERSATIONAL_WORKSPACE_SPEC.md)** — chat-first multi-agent workspace (primary UX)
 
 The platform shell (web/desktop/mobile) is only the **container**. The product is a **conversational AI legal operating environment**: matter chats, research, drafting beside the conversation, specialist agents, evidence links, and human approvals — **not** autonomous legal practice.
 
 ## Current implementation status
 
-Honest maturity and gaps: **[`PRODUCT_STATUS.md`](PRODUCT_STATUS.md)**  
-Engineering roadmap: **[`docs/PHASE_4_MASTER_ENGINEERING_PROGRAM.md`](docs/PHASE_4_MASTER_ENGINEERING_PROGRAM.md)**  
-Installable clients: **[`docs/INSTALLABLE_CLIENT_STATUS.md`](docs/INSTALLABLE_CLIENT_STATUS.md)**  
-Section G project plan (WBS): **[`docs/SECTION_G_PROJECT_PLAN.md`](docs/SECTION_G_PROJECT_PLAN.md)**  
-M1 platform API: **[`docs/M1_PLATFORM_STATUS.md`](docs/M1_PLATFORM_STATUS.md)**  
-Data model (Postgres/pgvector): **[`docs/DATA_MODEL_AND_EVIDENCE_SCHEMA.md`](docs/DATA_MODEL_AND_EVIDENCE_SCHEMA.md)**
+| Resource | Path |
+|----------|------|
+| Honest maturity and gaps | [`PRODUCT_STATUS.md`](PRODUCT_STATUS.md) |
+| Engineering roadmap | [`docs/PHASE_4_MASTER_ENGINEERING_PROGRAM.md`](docs/PHASE_4_MASTER_ENGINEERING_PROGRAM.md) |
+| Installable clients | [`docs/INSTALLABLE_CLIENT_STATUS.md`](docs/INSTALLABLE_CLIENT_STATUS.md) |
+| Section G project plan (WBS) | [`docs/SECTION_G_PROJECT_PLAN.md`](docs/SECTION_G_PROJECT_PLAN.md) |
+| M1 platform API | [`docs/M1_PLATFORM_STATUS.md`](docs/M1_PLATFORM_STATUS.md) |
+| Data model (Postgres/pgvector) | [`docs/DATA_MODEL_AND_EVIDENCE_SCHEMA.md`](docs/DATA_MODEL_AND_EVIDENCE_SCHEMA.md) |
 
 | Today (approx.) | Target |
 |-----------------|--------|
@@ -49,9 +125,11 @@ powershell -ExecutionPolicy Bypass -File scripts\build_windows_installer.ps1
 
 ## Public surfaces
 
-- GitHub: https://github.com/dmang69/bc-legal-ai  
-- Hugging Face dataset: https://huggingface.co/datasets/Dmang69/bc-legal-ai  
-- Hugging Face Space (static landing): https://huggingface.co/spaces/Dmang69/bc-legal-ai  
+- **GitHub:** https://github.com/dmang69/bc-legal-ai  
+- **Hugging Face dataset:** https://huggingface.co/datasets/Dmang69/bc-legal-ai  
+- **Hugging Face Space (static demo):** https://huggingface.co/spaces/Dmang69/bc-legal-ai-demo  
+- **Hugging Face Space (legacy landing):** https://huggingface.co/spaces/Dmang69/bc-legal-ai  
+- **Model documentation:** https://huggingface.co/Dmang69/bc-legal-ai-base  
 
 Do **not** put confidential client files on public demos. Use synthetic data only.
 

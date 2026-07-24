@@ -1,0 +1,43 @@
+---
+title: BC Legal AI Associate — Demo
+emoji: ⚖️
+colorFrom: blue
+colorTo: gray
+sdk: static
+pinned: false
+license: mit
+short_description: Deterministic BC tenancy/JR triage demo — not legal advice
+---
+
+# BC Legal AI Associate — public demo (static, client-side)
+
+Deterministic demonstration for the **BC Legal AI Associate** project. No model
+inference. No statute text from memory. All logic runs **in the visitor's
+browser** (on-device — consistent with design correction #5). Features:
+
+- **Matter triage** — notice-type deadline flags + forum routing
+- **JR limitation clock** — 60 days from issuance (ATA s.57(1)) with s.57(2)
+  extension awareness and alternatives mode when finality/date/Act is uncertain
+- **Analytical tagger** — FACT / ALLEGATION / ASSUMPTION / LEGAL ARGUMENT /
+  RECOMMENDATION decomposition
+- **Design guardrails** — the six locked corrections, displayed for auditability
+- **Official legislation** — fail-closed links to BC Laws, ATA, PIPA, court forms
+- **RTA pin self-check** — common wrong-memory section pins
+
+**Not a lawyer. Not legal advice.** Do not enter confidential client details.
+
+## Locked design guardrails (encoded in this demo)
+
+1. **Consent is not privilege** — consent authorizes specified processing; it never creates, waives, or determines privilege.
+2. **Consent withdrawal ≠ unconditional deletion** — under BC PIPA, withdrawal operates on reasonable notice; retention, legal-hold, and evidentiary obligations are assessed separately. Future optional AI access can be revoked immediately.
+3. **Form 66** commences a petition (Form 67 is the response); interlocutory applications use **Form 32** (Form 33 response); affidavits **Form 109**.
+4. **JR clock: 60 days from issuance** of the final decision (ATA s.57(1)), with the **s.57(2)** extension power; alternatives are calculated when finality, date, or enabling Act is uncertain.
+5. **Honest encryption**: on-device classification *or* controlled server-side decryption with consent and disclosure — never both claims at once. (This static demo is the on-device posture.)
+6. **The RTB decision archive is a published subset**, not a complete corpus; absence from the archive is never proof that no decision exists.
+
+## Links
+
+- **GitHub:** https://github.com/dmang69/bc-legal-ai
+- **Dataset:** https://huggingface.co/datasets/Dmang69/bc-legal-ai
+- **Model documentation:** https://huggingface.co/Dmang69/bc-legal-ai-base
+- **BC Laws (official statute text):** https://www.bclaws.gov.bc.ca/
