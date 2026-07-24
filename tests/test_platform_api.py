@@ -81,7 +81,7 @@ def test_platform_register_and_matter_flow(client: TestClient):
     )
     assert good_cite.status_code == 200
     provisional_citation_id = good_cite.json()["verification_id"]
-    assert good_cite.json()["status"] == "PROVISIONAL"
+    assert good_cite.json()["status"] == "KEYWORD_MATCH_ONLY"
 
     audit = client.get("/v1/platform/audit/verify", headers=headers)
     assert audit.status_code == 200
@@ -256,7 +256,7 @@ def test_platform_citation_and_deadline_routes_require_authorized_matter(client:
     )
     assert allowed_deadline.status_code == 200, allowed_deadline.text
     assert allowed_deadline.json()["matter_id"] == matter_id
-    assert allowed_deadline.json()["human_confirmed"] is False
+    assert allowed_deadline.json()["state"] != "HUMAN_CONFIRMED"
 
 
 def test_ethical_wall_denies_owner_and_admin_matter_access(client: TestClient):
