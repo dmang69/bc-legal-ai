@@ -49,6 +49,36 @@ async def resolve_current_user(
 CurrentUser = Annotated[UserInfo, Depends(resolve_current_user)]
 
 
+def require_matter_access(
+    user: UserInfo,
+    matter_id: str,
+    *,
+    min_level: str = "read",
+) -> str:
+    """Require deny-first access to an org-scoped matter.
+
+    Ethical walls and revoked memberships are enforced inside the identity
+    service before owner/admin role grants are considered.
+    """
+    if not matter_id:
+        raise HTTPException(status_code=400, detail="matter_id required")
+    if not get_identity_service().can_access_matter(user, matter_id, min_level=min_level):
+        raise HTTPException(status_code=403, detail="Matter access denied")
+    return matter_id
+
+
+def require_optional_matter_access(
+    user: UserInfo,
+    matter_id: str = "",
+    *,
+    min_level: str = "read",
+) -> str:
+    """Require matter access when a matter_id is supplied."""
+    if matter_id:
+        return require_matter_access(user, matter_id, min_level=min_level)
+    return ""
+
+
 async def resolve_bearer_token(
     authorization: Annotated[Optional[str], Header()] = None,
 ) -> str:

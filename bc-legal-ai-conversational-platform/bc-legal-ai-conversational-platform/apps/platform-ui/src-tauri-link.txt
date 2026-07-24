@@ -1,0 +1,3 @@
+The Tauri project is stored at ../desktop-mobile/src-tauri.
+For local development, either move/symlink src-tauri into this folder or run the Tauri CLI with the configuration path supported by your workspace tooling.
+A future monorepo task should normalize this into one package-manager workspace.

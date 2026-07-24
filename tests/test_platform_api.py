@@ -67,6 +67,7 @@ def test_platform_register_and_matter_flow(client: TestClient):
 
     cite = client.post(
         "/v1/platform/citations/verify",
+        headers=headers,
         json={"citation_text": "RTA s.56 retaliation", "expected_topic": "retaliatory_eviction"},
     )
     assert cite.status_code == 200
@@ -75,6 +76,7 @@ def test_platform_register_and_matter_flow(client: TestClient):
 
     good_cite = client.post(
         "/v1/platform/citations/verify",
+        headers=headers,
         json={"citation_text": "RTA s.32", "matter_id": mid, "expected_topic": "repair"},
     )
     assert good_cite.status_code == 200
@@ -122,7 +124,7 @@ def test_platform_register_and_matter_flow(client: TestClient):
     assert body["citations"]
     assert any(c["status"] == "REJECTED" for c in body["citations"])
 
-    citation_audit = client.get(f"/v1/platform/citations/audit?matter_id={mid}")
+    citation_audit = client.get(f"/v1/platform/citations/audit?matter_id={mid}", headers=headers)
     assert citation_audit.status_code == 200
     audited = citation_audit.json()["citations"]
     assert audited
@@ -182,6 +184,131 @@ def test_platform_register_and_matter_flow(client: TestClient):
     convs = client.get(f"/v1/platform/workspace/conversations?matter_id={mid}", headers=headers)
     assert convs.status_code == 200
     assert any(item["conversation_id"] == cid for item in convs.json()["conversations"])
+
+
+def test_platform_citation_and_deadline_routes_require_authorized_matter(client: TestClient):
+    owner = client.post(
+        "/v1/platform/auth/register",
+        json={
+            "org_name": "Auth Firm",
+            "email": "owner@synthetic.invalid",
+            "password": "securepass99",
+            "display_name": "Owner User",
+        },
+    )
+    assert owner.status_code == 200, owner.text
+    owner_headers = {"Authorization": f"Bearer {owner.json()['token']}"}
+    matter = client.post(
+        "/v1/platform/matters",
+        headers=owner_headers,
+        json={"title": "Protected matter", "synthetic": True},
+    )
+    assert matter.status_code == 200, matter.text
+    matter_id = matter.json()["matter_id"]
+
+    other = client.post(
+        "/v1/platform/auth/register",
+        json={
+            "org_name": "Other Firm",
+            "email": "other-auth@synthetic.invalid",
+            "password": "securepass99",
+            "display_name": "Other User",
+        },
+    )
+    assert other.status_code == 200, other.text
+    other_headers = {"Authorization": f"Bearer {other.json()['token']}"}
+
+    no_auth_cite = client.post(
+        "/v1/platform/citations/verify",
+        json={"citation_text": "RTA s.32", "matter_id": matter_id},
+    )
+    assert no_auth_cite.status_code == 401
+
+    cross_org_cite = client.post(
+        "/v1/platform/citations/verify",
+        headers=other_headers,
+        json={"citation_text": "RTA s.32", "matter_id": matter_id},
+    )
+    assert cross_org_cite.status_code == 403
+
+    cross_org_audit = client.get(
+        f"/v1/platform/citations/audit?matter_id={matter_id}", headers=other_headers
+    )
+    assert cross_org_audit.status_code == 403
+
+    no_auth_deadline = client.post(
+        "/v1/platform/deadlines/calculate",
+        json={"matter_id": matter_id, "label": "response", "window_days": 2},
+    )
+    assert no_auth_deadline.status_code == 401
+
+    cross_org_deadline = client.post(
+        "/v1/platform/deadlines/calculate",
+        headers=other_headers,
+        json={"matter_id": matter_id, "label": "response", "window_days": 2},
+    )
+    assert cross_org_deadline.status_code == 403
+
+    allowed_deadline = client.post(
+        "/v1/platform/deadlines/calculate",
+        headers=owner_headers,
+        json={"matter_id": matter_id, "label": "response", "window_days": 2},
+    )
+    assert allowed_deadline.status_code == 200, allowed_deadline.text
+    assert allowed_deadline.json()["matter_id"] == matter_id
+    assert allowed_deadline.json()["human_confirmed"] is False
+
+
+def test_ethical_wall_denies_owner_and_admin_matter_access(client: TestClient):
+    from backend.db import get_connection
+    from backend.identity import get_identity_service
+
+    created = client.post(
+        "/v1/platform/auth/register",
+        json={
+            "org_name": "Wall Firm",
+            "email": "wall-owner@synthetic.invalid",
+            "password": "securepass99",
+            "display_name": "Walled Owner",
+        },
+    )
+    assert created.status_code == 200, created.text
+    headers = {"Authorization": f"Bearer {created.json()['token']}"}
+    user_id = created.json()["user"]["user_id"]
+
+    matter = client.post(
+        "/v1/platform/matters",
+        headers=headers,
+        json={"title": "Ethical wall matter", "synthetic": True},
+    )
+    assert matter.status_code == 200, matter.text
+    matter_id = matter.json()["matter_id"]
+
+    with get_connection() as conn:
+        conn.execute("UPDATE users SET role = 'admin' WHERE user_id = ?", (user_id,))
+    get_identity_service().grant_matter_access(
+        matter_id=matter_id,
+        user_id=user_id,
+        access_level="ethical_wall",
+        granted_by="conflicts",
+    )
+
+    denied_matter = client.get(f"/v1/platform/matters/{matter_id}", headers=headers)
+    assert denied_matter.status_code == 403
+
+    denied_cite = client.post(
+        "/v1/platform/citations/verify",
+        headers=headers,
+        json={"citation_text": "RTA s.32", "matter_id": matter_id},
+    )
+    assert denied_cite.status_code == 403
+
+    denied_deadline = client.post(
+        "/v1/platform/deadlines/calculate",
+        headers=headers,
+        json={"matter_id": matter_id, "label": "response", "window_days": 2},
+    )
+    assert denied_deadline.status_code == 403
 
 
 def test_workspace_analyze_blocks_identifiers_in_public_demo(client: TestClient, monkeypatch):

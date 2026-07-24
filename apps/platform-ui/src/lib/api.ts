@@ -103,6 +103,8 @@ export type CitationVerification = {
   court_ready?: boolean;
 };
 
+import type { DeveloperBlueprint, ExecutiveBrief, ProductBlueprint } from "../product/types";
+
 export type WorkspaceAnalysis = {
   message: string;
   mode: string;
@@ -161,4 +163,16 @@ export function analyzeWorkspaceMessage(body: {
     body: JSON.stringify(body),
     auth: false,
   });
+}
+
+export function getProductBlueprint(): Promise<ProductBlueprint> {
+  return api("/v1/platform/product/blueprint", { auth: false });
+}
+
+export function getExecutiveBrief(): Promise<ExecutiveBrief> {
+  return api("/v1/platform/product/executive-brief", { auth: false });
+}
+
+export function getDeveloperBlueprint(): Promise<DeveloperBlueprint> {
+  return api("/v1/platform/product/developer-blueprint", { auth: false });
 }

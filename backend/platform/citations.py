@@ -1,4 +1,16 @@
-"""Citation verification (M3 foundation) — fail-closed registry lookup."""
+"""Citation verification (M3 foundation) — fail-closed registry lookup.
+
+IMPORTANT: This is NOT full citation verification. It performs keyword matching
+against three known statute identifiers and returns a source URL. It does NOT:
+- Retrieve the cited section text
+- Validate quotation or paraphrase alignment
+- Establish a pinpoint span
+- Determine currency or version of the law
+- Check case treatment or binding weight
+
+The `court_ready` field is always False. This function should not be described
+as full citation verification.
+"""
 
 from __future__ import annotations
 
@@ -78,8 +90,14 @@ def verify_citation(
 ) -> dict[str, Any]:
     """
     Fail-closed citation check.
-    REJECTED if s.56 + retaliation topic; otherwise provisional VERIFIED_OFFICIAL_LINK only
-    when act keywords match known registry (pinpoint still requires human/BC Laws).
+
+    Returns KEYWORD_MATCH_ONLY when act keywords match known registry.
+    Returns REJECTED for known incorrect mappings (e.g., s.56 + retaliation).
+    Returns UNVERIFIED for unrecognized citations.
+
+    This is NOT full citation verification. Section retrieval, pinpoint,
+    quotation verification, and currency checking are NOT implemented.
+    court_ready is always False.
     """
     text = (citation_text or "").strip()
     low = text.lower()
@@ -108,15 +126,17 @@ def verify_citation(
     else:
         for key, meta in _OFFICIAL_PINS.items():
             if key in low or meta["act"].lower() in low:
-                status = "PROVISIONAL"
+                status = "KEYWORD_MATCH_ONLY"
                 source_id = meta["source_id"]
                 url = meta["url"]
                 authority_type = meta["authority_type"]
                 jurisdiction = meta["jurisdiction"]
                 currency_date = meta["currency_date"]
                 reasons.append(
-                    f"Matched known official source registry for {meta['act']}. "
-                    "Pinpoint and quotation must still be verified on BC Laws before court-ready use."
+                    f"Keyword match against official source registry for {meta['act']}. "
+                    "This is NOT full citation verification. Section retrieval, pinpoint validation, "
+                    "quotation verification, and currency checking are NOT yet implemented. "
+                    "Must verify on BC Laws before any court-ready use."
                 )
                 break
         if status == "UNVERIFIED":

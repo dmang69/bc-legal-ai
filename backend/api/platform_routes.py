@@ -10,7 +10,12 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-from backend.api.dependencies import CurrentUser, RawBearerToken
+from backend.api.dependencies import (
+    CurrentUser,
+    RawBearerToken,
+    require_matter_access,
+    require_optional_matter_access,
+)
 from backend.api.public_demo import (
     enforce_public_text,
     is_public_demo,
@@ -450,21 +455,43 @@ def add_proposition(
 
 
 @router.post("/citations/verify")
-def citations_verify(body: CitationBody) -> dict[str, Any]:
-    return verify_citation(
+def citations_verify(
+    body: CitationBody,
+    current_user: CurrentUser,
+) -> dict[str, Any]:
+    """Verify a citation. Requires authentication and matter authorization."""
+    matter_id = require_optional_matter_access(current_user, body.matter_id)
+    result = verify_citation(
         body.citation_text,
-        matter_id=body.matter_id,
+        matter_id=matter_id,
         expected_topic=body.expected_topic,
     )
+    get_audit_ledger().append(
+        actor_id=current_user.user_id,
+        action="citation.verify",
+        org_id=current_user.org_id,
+        matter_id=matter_id,
+        resource_type="citation",
+        detail={"citation_text": body.citation_text, "status": result.get("status")},
+    )
+    return result
 
 
 @router.get("/knowledge/sources")
-def knowledge_sources() -> dict[str, Any]:
+def knowledge_sources(
+    current_user: CurrentUser,
+) -> dict[str, Any]:
+    """List knowledge sources. Requires authentication."""
     return {"sources": list_knowledge_sources()}
 
 
 @router.get("/citations/audit")
-def citations_audit(matter_id: str = "") -> dict[str, Any]:
+def citations_audit(
+    current_user: CurrentUser,
+    matter_id: str = "",
+) -> dict[str, Any]:
+    """Get citation audit history. Requires authentication and matter authorization."""
+    matter_id = require_optional_matter_access(current_user, matter_id)
     return {"matter_id": matter_id, "citations": list_citation_audit(matter_id)}
 
 
@@ -480,25 +507,42 @@ class DeadlineBody(BaseModel):
     start_date: Optional[str] = None
     service_method: Optional[str] = None
     window_days: Optional[int] = None
-    human_confirmed: bool = False
     synthetic: bool = True
     statutory_basis: str = ""
 
 
 @router.post("/deadlines/calculate")
-def platform_deadline(body: DeadlineBody) -> dict[str, Any]:
+def platform_deadline(
+    body: DeadlineBody,
+    current_user: CurrentUser,
+) -> dict[str, Any]:
+    """Calculate a provisional deadline. Requires authentication and matter authorization.
+    human_confirmed cannot be supplied by the caller — must be a separate authenticated approval event."""
     from backend.platform.deadlines_engine import calculate_matter_deadline
 
-    return calculate_matter_deadline(
-        matter_id=body.matter_id,
+    matter_id = require_matter_access(current_user, body.matter_id)
+
+    # human_confirmed is always False from API — must be approved via separate endpoint
+    result = calculate_matter_deadline(
+        matter_id=matter_id,
         label=body.label,
         start_date=body.start_date,
         service_method=body.service_method,
         window_days=body.window_days,
-        human_confirmed=body.human_confirmed,
+        human_confirmed=False,
         synthetic=body.synthetic,
         statutory_basis=body.statutory_basis,
     )
+    # Write audit event
+    get_audit_ledger().append(
+        actor_id=current_user.user_id,
+        action="deadline.calculate",
+        org_id=current_user.org_id,
+        matter_id=matter_id,
+        resource_type="deadline",
+        detail={"label": body.label, "state": result.get("state", "")},
+    )
+    return result
 
 
 class ConsentBody(BaseModel):
@@ -727,3 +771,4 @@ def send_message_stream(
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
     return StreamingResponse(gen(), media_type="text/event-stream")
+

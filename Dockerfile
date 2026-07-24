@@ -23,8 +23,9 @@ COPY agents ./agents
 COPY legal_knowledge ./legal_knowledge
 COPY config ./config
 
+# Install project package with all extras (consistent with CI)
 RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir "fastapi>=0.115" "uvicorn[standard]>=0.30" "pydantic>=2" "httpx>=0.27" \
+    && pip install --no-cache-dir -e ".[dev,postgres,pdf,ocr]" \
     && chown -R appuser:appuser /app
 
 USER appuser

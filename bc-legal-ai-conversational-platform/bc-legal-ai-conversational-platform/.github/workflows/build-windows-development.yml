@@ -1,0 +1,30 @@
+name: Build Windows development installer
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install frontend dependencies
+        working-directory: apps/platform-ui
+        run: npm install
+      - name: Place Tauri project beside frontend
+        shell: pwsh
+        run: Copy-Item -Recurse apps/desktop-mobile/src-tauri apps/platform-ui/src-tauri
+      - name: Build unsigned development installer
+        working-directory: apps/platform-ui
+        run: npm run tauri:build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bc-legal-ai-windows-development
+          path: apps/platform-ui/src-tauri/target/release/bundle/**

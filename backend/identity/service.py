@@ -127,6 +127,7 @@ class IdentityService:
         hours: int = 12,
     ) -> SessionInfo:
         email_n = email.strip().lower()
+        now = datetime.now(timezone.utc)
         with get_connection() as conn:
             row = conn.execute(
                 "SELECT * FROM users WHERE email = ?", (email_n,)
@@ -138,7 +139,7 @@ class IdentityService:
             user = _row_user(row)
             token = new_token()
             session_id = _uid("sess")
-            expires = datetime.now(timezone.utc) + timedelta(hours=hours)
+            expires = now + timedelta(hours=hours)
             expires_s = expires.isoformat()
             conn.execute(
                 """
@@ -157,8 +158,8 @@ class IdentityService:
                 ),
             )
             conn.execute(
-                "UPDATE users SET last_login_at = datetime('now') WHERE user_id = ?",
-                (user.user_id,),
+                "UPDATE users SET last_login_at = ? WHERE user_id = ?",
+                (now.isoformat(), user.user_id),
             )
         return SessionInfo(
             session_id=session_id,
@@ -194,8 +195,8 @@ class IdentityService:
         th = hash_token(token)
         with get_connection() as conn:
             conn.execute(
-                "UPDATE sessions SET revoked_at = datetime('now') WHERE token_hash = ?",
-                (th,),
+                "UPDATE sessions SET revoked_at = ? WHERE token_hash = ?",
+                (datetime.now(timezone.utc).isoformat(), th),
             )
 
     def grant_matter_access(
@@ -209,9 +210,13 @@ class IdentityService:
         with get_connection() as conn:
             conn.execute(
                 """
-                INSERT OR REPLACE INTO matter_members
+                INSERT INTO matter_members
                 (matter_id, user_id, access_level, granted_by, revoked_at)
                 VALUES (?, ?, ?, ?, NULL)
+                ON CONFLICT(matter_id, user_id) DO UPDATE SET
+                  access_level = excluded.access_level,
+                  granted_by = excluded.granted_by,
+                  revoked_at = NULL
                 """,
                 (matter_id, user_id, access_level, granted_by),
             )
@@ -219,6 +224,14 @@ class IdentityService:
     def can_access_matter(
         self, user: UserInfo, matter_id: str, *, min_level: str = "read"
     ) -> bool:
+        """Deny-first authorization: ethical wall check takes priority over all roles.
+
+        Authorization order:
+        1. Validate matter exists and belongs to user's org.
+        2. Check explicit denial, revocation, or ethical-wall membership.
+        3. Deny regardless of role if an explicit denial exists.
+        4. Apply role-based access only when no explicit denial exists.
+        """
         order = {"read": 1, "write": 2, "admin": 3, "ethical_wall": 0}
         with get_connection() as conn:
             m = conn.execute(
@@ -228,19 +241,30 @@ class IdentityService:
                 return False
             if m["org_id"] and m["org_id"] != user.org_id:
                 return False
-            if user.role in ("owner", "admin"):
-                return True
+
+            # Check for explicit denial (ethical_wall or revoked) FIRST — overrides all roles
             mem = conn.execute(
                 """
-                SELECT access_level FROM matter_members
-                WHERE matter_id = ? AND user_id = ? AND revoked_at IS NULL
+                SELECT access_level, revoked_at FROM matter_members
+                WHERE matter_id = ? AND user_id = ?
                 """,
                 (matter_id, user.user_id),
             ).fetchone()
+
+            # Explicit denial: ethical wall or revoked membership
+            if mem:
+                if mem["access_level"] == "ethical_wall":
+                    return False  # Ethical wall blocks ALL roles, including owner/admin
+                if mem["revoked_at"] is not None:
+                    return False  # Revoked membership blocks all access
+
+            # No explicit denial found — apply role-based access
+            if user.role in ("owner", "admin"):
+                return True
+
+            # Non-owner/admin must have an active granted membership
             if not mem:
-                return False
-            if mem["access_level"] == "ethical_wall":
-                return False
+                return False  # No membership record at all
             return order.get(mem["access_level"], 0) >= order.get(min_level, 1)
 
 

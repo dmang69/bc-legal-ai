@@ -14,6 +14,7 @@ Not legal advice. Do not expose to the public internet with client data.
 
 from __future__ import annotations
 
+import os
 import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -25,6 +26,7 @@ from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from backend.api.dependencies import CurrentUser, require_matter_access
 from backend.api.platform_routes import router as platform_router
 from backend.api.public_demo import (
     assert_public_deployment_safe,
@@ -34,6 +36,7 @@ from backend.api.public_demo import (
     reject_if_public_demo,
 )
 from backend.api.state import hitl, post_resolution
+from backend.audit import get_audit_ledger
 from backend.db import get_db_backend, init_db
 from services.deadlines.jr_clock import JrClockRequest, calculate_jr_clock
 from services.deadlines.states import calculate_deadline
@@ -74,11 +77,33 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+def _cors_origins() -> list[str]:
+    """Environment-specific CORS allowlist. Fail on wildcard outside dev."""
+    mode = os.environ.get("APP_MODE", "development").strip().lower()
+    if mode == "development":
+        return ["*"]  # Allow all for local development only
+    raw = os.environ.get("CORS_ORIGINS", "").strip()
+    if raw:
+        return [o.strip() for o in raw.split(",") if o.strip()]
+    # Safe default for non-dev: no external origins
+    return ["http://localhost:8000", "http://127.0.0.1:8000"]
+
+
+_cors = _cors_origins()
+_mode = os.environ.get("APP_MODE", "development").strip().lower()
+if len(_cors) == 1 and _cors[0] == "*" and _mode != "development":
+    raise RuntimeError(
+        "Wildcard CORS (*) is forbidden outside APP_MODE=development. "
+        "Set CORS_ORIGINS environment variable to a comma-separated allowlist."
+    )
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=_cors,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-CSRF-Token", "X-Requested-With"],
+    expose_headers=["Content-Disposition", "X-Request-Id"],
 )
 
 app.include_router(platform_router)
@@ -134,6 +159,7 @@ def icons(name: str):
 
 @app.get("/health")
 def health() -> dict[str, Any]:
+    """Legacy health endpoint — returns status based on deployment safety."""
     try:
         db = get_db_backend()
     except Exception:
@@ -147,6 +173,38 @@ def health() -> dict[str, Any]:
         "app_mode": safety["app_mode"],
         "db_backend": db,
         "public_deployment": safety,
+    }
+
+
+@app.get("/health/live")
+def health_live() -> dict[str, Any]:
+    """Liveness probe: process is alive."""
+    return {"status": "ok"}
+
+
+@app.get("/health/ready")
+def health_ready() -> dict[str, Any]:
+    """Readiness probe: checks database and other dependencies."""
+    issues: list[str] = []
+    try:
+        db = get_db_backend()
+        if db == "unknown":
+            issues.append("database_backend_unknown")
+    except Exception as e:
+        issues.append(f"database_unreachable: {e}")
+        db = "error"
+
+    safety = public_deployment_safety()
+    if not safety["safe"]:
+        for v in safety.get("violations", []):
+            issues.append(f"deployment_violation: {v}")
+
+    healthy = len(issues) == 0
+    return {
+        "status": "ok" if healthy else "unhealthy",
+        "db_backend": db,
+        "issues": issues,
+        "public_demo": is_public_demo(),
     }
 
 
@@ -186,7 +244,11 @@ class EvaluateBody(BaseModel):
 
 
 @app.post("/v1/matters/{matter_id}/consents")
-def grant_consent(matter_id: str, body: ConsentGrantBody) -> dict[str, Any]:
+def grant_consent(
+    matter_id: str,
+    body: ConsentGrantBody,
+    current_user: CurrentUser,
+) -> dict[str, Any]:
     try:
         rec = hitl.consents.grant(
             matter_id=matter_id,
@@ -199,11 +261,21 @@ def grant_consent(matter_id: str, body: ConsentGrantBody) -> dict[str, Any]:
         )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+    get_audit_ledger().append(
+        actor_id=current_user.user_id,
+        action="consent.grant",
+        org_id=current_user.org_id,
+        matter_id=matter_id,
+        resource_type="consent",
+    )
     return rec.to_dict()
 
 
 @app.get("/v1/matters/{matter_id}/consents")
-def list_consents(matter_id: str) -> dict[str, Any]:
+def list_consents(
+    matter_id: str,
+    current_user: CurrentUser,
+) -> dict[str, Any]:
     return {
         "matter_id": matter_id,
         "state": hitl.consents.current_state(matter_id),
@@ -212,15 +284,28 @@ def list_consents(matter_id: str) -> dict[str, Any]:
 
 
 @app.post("/v1/consents/{consent_id}/withdraw")
-def withdraw_consent(consent_id: str, reason: str = "client_withdrawal") -> dict[str, Any]:
+def withdraw_consent(
+    consent_id: str,
+    current_user: CurrentUser,
+    reason: str = "client_withdrawal",
+) -> dict[str, Any]:
     rec = hitl.consents.withdraw(consent_id, reason=reason)
     if not rec:
         raise HTTPException(status_code=404, detail="Consent not found or already withdrawn")
+    get_audit_ledger().append(
+        actor_id=current_user.user_id,
+        action="consent.withdraw",
+        resource_type="consent",
+        resource_id=consent_id,
+    )
     return rec.to_dict()
 
 
 @app.post("/v1/consents/evaluate-operation")
-def evaluate_operation(body: EvaluateBody) -> dict[str, Any]:
+def evaluate_operation(
+    body: EvaluateBody,
+    current_user: CurrentUser,
+) -> dict[str, Any]:
     try:
         dest = ModelDestination(body.model_destination)
     except ValueError as e:
@@ -247,7 +332,11 @@ class ExceptionBody(BaseModel):
 
 
 @app.post("/v1/matters/{matter_id}/exceptions")
-def emit_exception(matter_id: str, body: ExceptionBody) -> dict[str, Any]:
+def emit_exception(
+    matter_id: str,
+    body: ExceptionBody,
+    current_user: CurrentUser,
+) -> dict[str, Any]:
     try:
         kind = ExceptionKind(body.category)
     except ValueError:
@@ -261,11 +350,20 @@ def emit_exception(matter_id: str, body: ExceptionBody) -> dict[str, Any]:
         task_id=body.task_id,
         affected_artifacts=body.affected_artifacts,
     )
+    get_audit_ledger().append(
+        actor_id=current_user.user_id,
+        action="exception.emit",
+        matter_id=matter_id,
+        resource_type="exception",
+    )
     return ev.to_dict()
 
 
 @app.get("/v1/matters/{matter_id}/exceptions")
-def list_exceptions(matter_id: str) -> dict[str, Any]:
+def list_exceptions(
+    matter_id: str,
+    current_user: CurrentUser,
+) -> dict[str, Any]:
     return {
         "matter_id": matter_id,
         "export_frozen": hitl.exceptions.export_frozen(matter_id),
@@ -274,20 +372,31 @@ def list_exceptions(matter_id: str) -> dict[str, Any]:
 
 
 class ResolveBody(BaseModel):
-    human_id: str
     reason: str
 
 
 @app.post("/v1/exceptions/{exception_id}/resolve")
-def resolve_exception(exception_id: str, body: ResolveBody) -> dict[str, Any]:
+def resolve_exception(
+    exception_id: str,
+    body: ResolveBody,
+    current_user: CurrentUser,
+) -> dict[str, Any]:
+    """Resolve an exception. Actor identity derived from authenticated session, not request body."""
     try:
         ev = hitl.exceptions.resolve(
-            exception_id, human_id=body.human_id, reason=body.reason
+            exception_id, human_id=current_user.user_id, reason=body.reason
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     if not ev:
         raise HTTPException(status_code=404, detail="Exception not found")
+    get_audit_ledger().append(
+        actor_id=current_user.user_id,
+        action="exception.resolve",
+        resource_type="exception",
+        resource_id=exception_id,
+        detail={"reason": body.reason},
+    )
     return ev.to_dict()
 
 
@@ -303,7 +412,11 @@ class FreezeBody(BaseModel):
 
 
 @app.post("/v1/matters/{matter_id}/productions/freeze")
-def freeze_production(matter_id: str, body: FreezeBody) -> dict[str, Any]:
+def freeze_production(
+    matter_id: str,
+    body: FreezeBody,
+    current_user: CurrentUser,
+) -> dict[str, Any]:
     try:
         reject_if_public_demo("court-ready production freeze")
     except PermissionError as e:
@@ -323,49 +436,78 @@ def freeze_production(matter_id: str, body: FreezeBody) -> dict[str, Any]:
         derivative_texts=body.derivative_texts,
         recipient=body.recipient,
     )
+    get_audit_ledger().append(
+        actor_id=current_user.user_id,
+        action="production.freeze",
+        matter_id=matter_id,
+        resource_type="production",
+    )
     return pkg.to_dict()
 
 
 class ReviewBody(BaseModel):
-    reviewer_id: str
     notes: str = ""
 
 
 @app.post("/v1/productions/{production_id}/review")
-def review_production(production_id: str, body: ReviewBody) -> dict[str, Any]:
+def review_production(
+    production_id: str,
+    body: ReviewBody,
+    current_user: CurrentUser,
+) -> dict[str, Any]:
+    """Review a production. Actor identity derived from authenticated session."""
     try:
         pkg = hitl.productions.mark_reviewed(
-            production_id, reviewer_id=body.reviewer_id, notes=body.notes
+            production_id, reviewer_id=current_user.user_id, notes=body.notes
         )
     except (KeyError, ValueError) as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+    get_audit_ledger().append(
+        actor_id=current_user.user_id,
+        action="production.review",
+        resource_type="production",
+        resource_id=production_id,
+    )
     return pkg.to_dict()
 
 
 class ApproveBody(BaseModel):
-    approver_id: str
     notes: str = ""
     same_person_override: bool = False
     same_person_override_reason: str = ""
 
 
 @app.post("/v1/productions/{production_id}/approve")
-def approve_production(production_id: str, body: ApproveBody) -> dict[str, Any]:
+def approve_production(
+    production_id: str,
+    body: ApproveBody,
+    current_user: CurrentUser,
+) -> dict[str, Any]:
+    """Approve a production. Approver identity derived from authenticated session."""
     try:
         pkg = hitl.productions.approve(
             production_id,
-            approver_id=body.approver_id,
+            approver_id=current_user.user_id,
             notes=body.notes,
             same_person_override=body.same_person_override,
             same_person_override_reason=body.same_person_override_reason,
         )
     except (KeyError, ValueError, PermissionError) as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+    get_audit_ledger().append(
+        actor_id=current_user.user_id,
+        action="production.approve",
+        resource_type="production",
+        resource_id=production_id,
+    )
     return pkg.to_dict()
 
 
 @app.post("/v1/productions/{production_id}/release")
-def release_production(production_id: str) -> dict[str, Any]:
+def release_production(
+    production_id: str,
+    current_user: CurrentUser,
+) -> dict[str, Any]:
     try:
         reject_if_public_demo("court-ready document export/release")
     except PermissionError as e:
@@ -374,6 +516,12 @@ def release_production(production_id: str) -> dict[str, Any]:
         pkg = hitl.productions.release(production_id)
     except (KeyError, PermissionError, ValueError) as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+    get_audit_ledger().append(
+        actor_id=current_user.user_id,
+        action="production.release",
+        resource_type="production",
+        resource_id=production_id,
+    )
     return pkg.to_dict()
 
 
@@ -386,19 +534,30 @@ class JrClockBody(BaseModel):
     finality_known: bool = True
     enabling_act_known: bool = True
     extension_sought: bool = False
-    human_confirmed: bool = False
 
 
 @app.post("/v1/deadlines/jr-clock")
-def jr_clock(body: JrClockBody) -> dict[str, Any]:
+def jr_clock(
+    body: JrClockBody,
+    current_user: CurrentUser,
+) -> dict[str, Any]:
+    """Calculate JR clock. Requires authentication and matter authorization; human_confirmed removed."""
+    matter_id = require_matter_access(current_user, body.matter_id)
+    get_audit_ledger().append(
+        actor_id=current_user.user_id,
+        action="deadline.jr_clock",
+        org_id=current_user.org_id,
+        matter_id=matter_id,
+        resource_type="deadline",
+    )
     return calculate_jr_clock(
         JrClockRequest(
-            matter_id=body.matter_id,
+            matter_id=matter_id,
             issuance_date=body.issuance_date,
             finality_known=body.finality_known,
             enabling_act_known=body.enabling_act_known,
             extension_sought=body.extension_sought,
-            human_confirmed=body.human_confirmed,
+            human_confirmed=False,  # Must be a separate authenticated approval event
         )
     ).to_dict()
 
@@ -409,21 +568,31 @@ class DeadlineBody(BaseModel):
     start_date: Optional[str] = None
     service_method: Optional[str] = None
     window_days: Optional[int] = None
-    human_confirmed: bool = False
     synthetic: bool = False
     statutory_basis: str = ""
 
 
 @app.post("/v1/deadlines/calculate")
-def deadline_calculate(body: DeadlineBody) -> dict[str, Any]:
-    """Fail-closed provisional deadline (only HUMAN_CONFIRMED is definitive)."""
+def deadline_calculate(
+    body: DeadlineBody,
+    current_user: CurrentUser,
+) -> dict[str, Any]:
+    """Fail-closed provisional deadline. Requires matter authorization."""
+    matter_id = require_matter_access(current_user, body.matter_id)
+    get_audit_ledger().append(
+        actor_id=current_user.user_id,
+        action="deadline.calculate",
+        org_id=current_user.org_id,
+        matter_id=matter_id,
+        resource_type="deadline",
+    )
     return calculate_deadline(
-        matter_id=body.matter_id,
+        matter_id=matter_id,
         label=body.label,
         start_date=body.start_date,
         service_method=body.service_method,
         window_days=body.window_days,
-        human_confirmed=body.human_confirmed,
+        human_confirmed=False,  # Must be a separate authenticated approval event
         synthetic=body.synthetic,
         statutory_basis=body.statutory_basis,
     ).to_dict()
@@ -443,7 +612,11 @@ class DecisionIngestBody(BaseModel):
 
 
 @app.post("/v1/matters/{matter_id}/post-resolution/ingest")
-def ingest_decision(matter_id: str, body: DecisionIngestBody) -> dict[str, Any]:
+def ingest_decision(
+    matter_id: str,
+    body: DecisionIngestBody,
+    current_user: CurrentUser,
+) -> dict[str, Any]:
     """Full 4-4 entry: parse decision → clocks → compliance seed → optional JR."""
     try:
         reject_if_public_demo("persistent post-resolution ingest")
@@ -491,11 +664,20 @@ def ingest_decision(matter_id: str, body: DecisionIngestBody) -> dict[str, Any]:
             )
             result["stay"] = stay.to_dict()
 
+    get_audit_ledger().append(
+        actor_id=current_user.user_id,
+        action="post_resolution.ingest",
+        matter_id=matter_id,
+        resource_type="post_resolution",
+    )
     return result
 
 
 @app.get("/v1/matters/{matter_id}/post-resolution")
-def get_post_resolution(matter_id: str) -> dict[str, Any]:
+def get_post_resolution(
+    matter_id: str,
+    current_user: CurrentUser,
+) -> dict[str, Any]:
     rec = post_resolution.outcomes.get(matter_id)
     return {
         "matter_id": matter_id,
@@ -525,7 +707,11 @@ class EnforcementBody(BaseModel):
 
 
 @app.post("/v1/matters/{matter_id}/post-resolution/enforcement")
-def build_enforcement(matter_id: str, body: EnforcementBody) -> dict[str, Any]:
+def build_enforcement(
+    matter_id: str,
+    body: EnforcementBody,
+    current_user: CurrentUser,
+) -> dict[str, Any]:
     packer = post_resolution.enforcement
     try:
         pt = PackageType(body.package_type)
@@ -539,6 +725,12 @@ def build_enforcement(matter_id: str, body: EnforcementBody) -> dict[str, Any]:
         pkg = packer.build_provincial_court_monetary(matter_id, amount=body.amount)
     else:
         pkg = packer.build_garnishment(matter_id)
+    get_audit_ledger().append(
+        actor_id=current_user.user_id,
+        action="post_resolution.enforcement",
+        matter_id=matter_id,
+        resource_type="enforcement",
+    )
     return pkg.to_dict()
 
 
@@ -549,12 +741,22 @@ class CloseMatterBody(BaseModel):
 
 
 @app.post("/v1/matters/{matter_id}/post-resolution/close")
-def close_matter(matter_id: str, body: CloseMatterBody) -> dict[str, Any]:
+def close_matter(
+    matter_id: str,
+    body: CloseMatterBody,
+    current_user: CurrentUser,
+) -> dict[str, Any]:
     plan = post_resolution.retention.close_matter(
         matter_id=matter_id,
         closed_on=body.closed_on,
         final_summary=body.final_summary,
         object_refs=body.object_refs or None,
+    )
+    get_audit_ledger().append(
+        actor_id=current_user.user_id,
+        action="post_resolution.close",
+        matter_id=matter_id,
+        resource_type="post_resolution",
     )
     return plan.to_dict()
 
@@ -563,7 +765,9 @@ def close_matter(matter_id: str, body: CloseMatterBody) -> dict[str, Any]:
 
 
 @app.get("/v1/knowledge/sources")
-def knowledge_sources() -> dict[str, Any]:
+def knowledge_sources(
+    current_user: CurrentUser,
+) -> dict[str, Any]:
     from knowledgebase.source_registry import SourceRegistry
 
     reg = SourceRegistry()
@@ -571,8 +775,18 @@ def knowledge_sources() -> dict[str, Any]:
 
 
 @app.post("/v1/knowledge/citations/verify")
-def verify_cite(body: dict[str, str]) -> dict[str, Any]:
+def verify_cite(
+    body: dict[str, str],
+    current_user: CurrentUser,
+) -> dict[str, Any]:
     from knowledgebase.citation_verifier import verify_citation
 
     raw = body.get("citation") or body.get("raw") or ""
-    return verify_citation(raw).to_dict()
+    result = verify_citation(raw).to_dict()
+    get_audit_ledger().append(
+        actor_id=current_user.user_id,
+        action="knowledge.citation.verify",
+        resource_type="citation",
+        detail={"citation_text": raw, "status": result.get("status")},
+    )
+    return result
