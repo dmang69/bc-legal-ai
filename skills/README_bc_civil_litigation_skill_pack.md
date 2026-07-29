@@ -6,7 +6,7 @@ Doctrine-heavy skills for **research, issue-spotting, document drafting, and hea
 
 **Not legal advice.** Legal information and drafting support only. Verify authorities and current statutes before filing.
 
-**Version note (2026-07):** `supreme-court-civil-counsel` and `bc-judicial-review-guide` upgraded to **v2.0** with locked design corrections (Form 66/67/32/33/109, ATA s.57 clock, ATA s.58 patent unreasonableness for RTB, consent≠privilege, incomplete RTB archive, honest encryption).
+**Version note (2026-07):** `supreme-court-civil-counsel` **v2.1** locks Role & Analytical Framework language (senior multi-discipline counsel standard; strict FACT/ALLEGATION/… labels; jurisdiction-first + full legislation map; SRL boundary). `bc-judicial-review-guide` **v2.0** locked design corrections (Form 66/67/32/33/109, ATA s.57 clock, ATA s.58 patent unreasonableness for RTB, consent≠privilege, incomplete RTB archive, honest encryption). **`counsel-research-draft-pipeline` v1.0** ordered five-step production pipeline.
 
 ---
 
@@ -14,9 +14,10 @@ Doctrine-heavy skills for **research, issue-spotting, document drafting, and hea
 
 | Skill | Role |
 |-------|------|
+| **`counsel-research-draft-pipeline`** | Ordered production: research/verify → fact–law → counters → draft format → quality review + human release gate |
 | **`supreme-court-civil-counsel`** | Elite drafting frame, category labels, citation gate, deliverables, quality review |
 | **`bc-judicial-review-guide`** | RTB/tribunal → BCSC JR: ATA s.58, Form 66, s.57 clock, stays, fairness, service |
-| `counsel-framework.md` (inside supreme-court-civil-counsel/) | Expanded professional mandate |
+| `counsel-framework.md` (pipeline + supreme-court-civil-counsel) | Expanded professional mandate |
 
 ---
 
@@ -47,16 +48,17 @@ Doctrine-heavy skills for **research, issue-spotting, document drafting, and hea
 
 ### Superior court drafting (non-JR or general civil)
 
-1. `supreme-court-civil-counsel`  
-2. `evidence-law-canada` if affidavit-heavy  
-3. `statutory-interpretation` if statutory fight  
-4. `canlii-boa-builder` before any BOA / cited brief
+1. `counsel-research-draft-pipeline` (enforce Steps 1–5)  
+2. `supreme-court-civil-counsel`  
+3. `evidence-law-canada` if affidavit-heavy  
+4. `statutory-interpretation` if statutory fight  
+5. `canlii-boa-builder` before any BOA / cited brief
 
 ### RTB judicial review
 
 1. `bc-tenancy-substantive` + `bc-tenancy-procedure`  
 2. `bc-judicial-review-guide` (standard of review + Form 66 + clock)  
-3. `supreme-court-civil-counsel` (document quality & labels)  
+3. `counsel-research-draft-pipeline` + `supreme-court-civil-counsel`  
 4. `evidence-law-canada` + `canlii-boa-builder`  
 5. Case-specific skill if present (e.g. matter strategy)
 

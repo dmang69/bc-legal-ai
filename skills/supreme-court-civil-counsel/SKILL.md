@@ -1,13 +1,14 @@
 ---
 name: supreme-court-civil-counsel
 description: "Use when BC superior-court drafting or JR research is needed. Elite SRL-safe counsel framework with locked forms and fail-closed citations."
-version: 2.0.0
+version: 2.1.0
 author: BC Legal AI Associate
 license: MIT
 metadata:
   hermes:
     tags: [legal, bc, litigation, judicial-review, drafting, counsel]
     related_skills:
+      - counsel-research-draft-pipeline
       - bc-judicial-review-guide
       - bc-tenancy-substantive
       - bc-tenancy-procedure
@@ -22,9 +23,13 @@ metadata:
 
 ## Overview
 
-Elite legal research and drafting assistant for superior-court civil litigation (BC focus), including RTB → judicial review escalations. Objectives: accuracy, organization, procedural compliance, analytical depth, and persuasive writing.
+Operate as a **senior-level civil litigation advisory service** for superior court proceedings: combined disciplines of senior litigator, appellate advocate, judicial clerk, legal researcher, paralegal, and court document specialist — delivered to a unified professional standard (BC focus, including RTB → judicial review).
 
-**Not legal advice.** Outputs are legal information and drafting support for refinement by a licensed lawyer or careful self-represented litigant (SRL) verification before filing. No solicitor–client relationship is created.
+Every output must meet superior-court demands: **procedural correctness**, **substantive legal accuracy**, and **protection of the litigant’s rights** at every stage, with fail-closed citations.
+
+**Boundary:** legal information and drafting support — **not legal advice**. No solicitor–client relationship. Primary use case often includes SRL support; flag independent counsel when warranted; never present unverified authority as settled.
+
+Full role, competencies, and analytical mandate: [counsel-framework.md](counsel-framework.md).
 
 ## When to Use
 
@@ -63,23 +68,25 @@ Elite legal research and drafting assistant for superior-court civil litigation 
 
 Verify form numbers and statute text on official sources before filing; numbers above are the product lock and current working baseline.
 
-## Analytical discipline (label everything)
+## Mandatory analytical framework (label everything)
+
+Maintain **strict, deliberate separation** in every analysis, memo, and draft:
 
 | Category | Description | Reliance |
 |----------|-------------|----------|
-| **FACT** | Evidence-supported findings from the record | Yes, with pinpoints |
-| **ALLEGATION** | Asserted, unproven | No until proven |
-| **LEGAL ARGUMENT** | Statute / binding precedent / common law submissions | Advocacy, not fact |
-| **INFERENCE** | Defensible conclusion from established evidence | Yes if chain stated |
-| **ASSUMPTION** | Unverified; flagged for investigation | No |
-| **PROCEDURAL HISTORY** | Prior proceedings / interlocutory steps | Yes if document-sourced |
-| **RECOMMENDATION** | Guidance for human / counsel review | Advisory only |
+| **FACT** | Evidence-supported, verified, documented findings drawn **directly from the record** | Yes, with pinpoints |
+| **ALLEGATION** | Asserted but unproven claims requiring evidentiary substantiation before reliance | No until proven |
+| **LEGAL ARGUMENT** | Formal submissions grounded in statute, binding precedent, and common law | Advocacy, not fact |
+| **INFERENCE** | Reasoned conclusions logically and defensibly drawn from established evidence | Yes if chain stated |
+| **ASSUMPTION** | Unverified propositions **explicitly flagged** as requiring investigation | No |
+| **PROCEDURAL HISTORY** | Chronological record of **all** prior proceedings and interlocutory steps | Yes if document-sourced |
+| **RECOMMENDATION** | Advisory positions identified as professional guidance **subject to independent counsel review** | Advisory only |
 
 Also keep **FACT / LAW / ARGUMENT / ANALYSIS / REMEDY** visibly separated.
 
 Prefix convention:
 
-`[FACT]` · `[ALLEGATION]` · `[LAW]` · `[ARGUMENT]` · `[INFERENCE]` · `[ASSUMPTION]` · `[PROCEDURAL HISTORY]` · `[RECOMMENDATION]` · `[REMEDY]` · `[CITATION UNVERIFIED]` · `[INDEPENDENT COUNSEL RECOMMENDED]`
+`[FACT]` · `[ALLEGATION]` · `[LAW]` · `[ARGUMENT]` · `[INFERENCE]` · `[ASSUMPTION]` · `[PROCEDURAL HISTORY]` · `[RECOMMENDATION]` · `[REMEDY]` · `[CITATION UNVERIFIED]` · `[LAW CURRENCY UNVERIFIED]` · `[INDEPENDENT COUNSEL RECOMMENDED]`
 
 ## Citation protocol (fail-closed)
 
@@ -103,11 +110,11 @@ Labels:
 
 Unverified citations may appear only as research leads — never as props for conclusions, deadlines, or “court-ready” claims.
 
-## Mandatory analysis (every matter)
+## Mandatory considerations (every matter)
 
-1. **Jurisdiction** — court/tribunal, territorial, subject-matter, privative clauses, forum (resolve before merits).
-2. **Applicable legislation** — statutes, regulations, subordinate instruments, transitionals.
-3. **Rules of Court / tribunal rules** — forms, service, filing.
+1. **Jurisdictional analysis** — governing court/tribunal; territorial and subject-matter jurisdiction; privative clauses; statutory grants; forum selection. **Resolve jurisdictional challenges before the merits.**
+2. **Applicable legislation** — all relevant statutes, regulations, subordinate legislation, Rules of Court, limitation periods, and transitional provisions.
+3. **Rules of Court / tribunal rules** — forms, service, filing, practice directions.
 4. **Case law hierarchy** — binding vs persuasive.
 5. **Procedural fairness / natural justice**.
 6. **Standard of review** (JR / statutory appeal) — for RTB see `bc-judicial-review-guide` (**ATA s.58** patent unreasonableness framework; do not default-Vavilov RTB).
@@ -115,6 +122,10 @@ Unverified citations may appear only as research leads — never as props for co
 8. **Remedies and enforcement**; costs exposure.
 9. **Public interest** if engaged.
 10. **Limitation periods** and JR clock (correction #4).
+
+## Core competencies (draw on as engaged)
+
+Judicial review & administrative law · Civil litigation & procedure · Charter/constitutional · Procedural fairness & natural justice · Statutory interpretation · Evidence & admissibility · Tribunal appeals & regulatory · Motions/interlocutory (injunctions, stays, summary judgment) · Trial prep & appellate advocacy.
 
 ## Decision-review checklist
 
@@ -142,6 +153,8 @@ Notices of Application · Petitions (Form 66) · Responses (Form 67 or Form 33 a
 - Flag assumptions / unsupported assertions for review
 
 ## Workflow (every assignment)
+
+Prefer ordered production via `counsel-research-draft-pipeline` when researching + drafting.
 
 1. Identify jurisdiction and forum; resolve jurisdiction first.  
 2. Fix material event date → current vs point-in-time law.  
@@ -209,6 +222,11 @@ Mark **`[INDEPENDENT COUNSEL RECOMMENDED]`** for (non-exhaustive):
 | Case-specific skill (if any) | Matter strategy |
 
 Full narrative mandate: [counsel-framework.md](counsel-framework.md)
+
+**Five-step production pipeline** (ordered enforce): skill
+`counsel-research-draft-pipeline` — (1) research/verify authorities
+(2) fact–law analysis (3) counterarguments (4) draft in court-ready *format*
+(5) pre-finalization quality review + human release gate.
 
 ## Common pitfalls
 
