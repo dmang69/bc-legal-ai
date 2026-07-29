@@ -1,4 +1,5 @@
-# Skeleton — image not published. Wire when container image exists.
+# API Deployment — image from GitHub Container Registry
+#   ghcr.io/dmang69/bc-legal-ai:latest | :edge | :1.0.0
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -16,13 +17,29 @@ spec:
     spec:
       containers:
         - name: api
-          image: ghcr.io/dmang69/bc-legal-ai-api:not-built
+          image: ghcr.io/dmang69/bc-legal-ai:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8000
+          env:
+            - name: APP_MODE
+              value: production
           envFrom:
             - secretRef:
                 name: ala-runtime
                 optional: true
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 20
           resources:
             requests:
               cpu: "100m"

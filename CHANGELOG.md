@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### GHCR distribution
+
+- Workflow `publish-ghcr.yml`: build → smoke → push to `ghcr.io/dmang69/bc-legal-ai`
+- Tags: `latest` (on version tags), `edge` (main), semver, `sha-*`
+- `docker-compose.ghcr.yml` for pull-only runs
+- Docs: `docs/GHCR.md`; K8s image points at GHCR
+
 ## v1.0.0 — 2026-07-28
 
 ### Production readiness milestone

@@ -1,0 +1,47 @@
+# Production-oriented compose overlay
+# Usage:
+#   cp .env.production.example .env.production   # edit secrets
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.production up --build -d
+#
+# Put TLS in front (Caddy/nginx/cloud LB). Do not expose Postgres publicly.
+
+services:
+  api:
+    restart: unless-stopped
+    environment:
+      APP_MODE: ${APP_MODE:-production}
+      ALA_POSTGRES_URL: ${ALA_POSTGRES_URL}
+      ALA_PG_POOL: ${ALA_PG_POOL:-1}
+      ALA_PG_POOL_MIN: ${ALA_PG_POOL_MIN:-2}
+      ALA_PG_POOL_MAX: ${ALA_PG_POOL_MAX:-20}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      ALA_COOKIE_SECURE: ${ALA_COOKIE_SECURE:-1}
+      ALA_COOKIE_SAMESITE: ${ALA_COOKIE_SAMESITE:-lax}
+      ALA_MODEL_PROVIDER: ${ALA_MODEL_PROVIDER:-safe_local}
+      ALA_ALLOW_EXTERNAL_LLM: ${ALA_ALLOW_EXTERNAL_LLM:-0}
+      ALA_WEB_RESEARCH: ${ALA_WEB_RESEARCH:-0}
+      ALA_RATE_LIMIT_DISABLED: "0"
+      ALA_REDIS_URL: ${ALA_REDIS_URL:-redis://redis:6379/0}
+    # Uncomment for multi-worker (Postgres only):
+    # command: ["uvicorn", "backend.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+    ports:
+      - "${API_PUBLISH_PORT:-8000}:8000"
+
+  postgres:
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ala}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-ala}
+    # Do not publish Postgres on the host in production (override base compose).
+    ports: []
+    volumes:
+      - ala_pg:/var/lib/postgresql/data
+
+  redis:
+    restart: unless-stopped
+    ports: []
+
+  minio:
+    profiles: ["object-store"]
+    restart: unless-stopped

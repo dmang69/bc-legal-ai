@@ -1,0 +1,134 @@
+# Publish API image to GitHub Container Registry (GHCR)
+#
+# Triggers:
+#   - push of tags v*  → version tags (1.0.0, 1.0, latest if highest)
+#   - push to main     → :edge (rolling)
+#   - workflow_dispatch → manual rebuild/push of chosen ref
+#
+# Image: ghcr.io/<owner>/<repo>  (e.g. ghcr.io/dmang69/bc-legal-ai)
+# Requires: packages:write (GITHUB_TOKEN). Package visibility set in GitHub UI.
+
+name: Publish GHCR
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'apps/platform-ui/**'
+      - 'huggingface*/**'
+  workflow_dispatch:
+    inputs:
+      tag_extra:
+        description: 'Optional extra image tag (e.g. stable)'
+        required: false
+        default: ''
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  publish:
+    name: Build, smoke, push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+    outputs:
+      image: ${{ steps.meta.outputs.tags }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Image name (lowercase required by GHCR)
+        id: image
+        run: |
+          OWNER_REPO="${{ github.repository }}"
+          echo "name=${OWNER_REPO,,}" >> "$GITHUB_OUTPUT"
+          echo "Will publish: ghcr.io/${OWNER_REPO,,}"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}
+          flavor: |
+            latest=false
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha,prefix=sha-,format=short
+            type=raw,value=edge,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+            type=raw,value=${{ inputs.tag_extra }},enable=${{ inputs.tag_extra != '' }}
+
+      - name: Build image (load for smoke)
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          load: true
+          tags: ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:ci-smoke
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Smoke test image before push
+        run: |
+          docker run -d --name ala-ghcr-smoke -p 8000:8000 \
+            -e APP_MODE=development \
+            -e ALA_RATE_LIMIT_DISABLED=1 \
+            ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:ci-smoke
+          for i in $(seq 1 40); do
+            curl -sf http://127.0.0.1:8000/health/live && break
+            sleep 1
+          done
+          curl -sf http://127.0.0.1:8000/health
+          python scripts/production_smoke.py --base http://127.0.0.1:8000
+          docker stop ala-ghcr-smoke
+          docker rm ala-ghcr-smoke
+
+      - name: Build and push to GHCR
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: true
+          sbom: true
+
+      - name: Summary
+        run: |
+          {
+            echo "## GHCR image published"
+            echo ""
+            echo "\`\`\`"
+            echo "${{ steps.meta.outputs.tags }}"
+            echo "\`\`\`"
+            echo ""
+            echo "### Quick start"
+            echo "\`\`\`bash"
+            echo "docker pull ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:latest"
+            echo "docker run --rm -p 8000:8000 ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:latest"
+            echo "\`\`\`"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -38,6 +38,18 @@ python scripts/production_smoke.py --base http://127.0.0.1:8000
 
 ## Docker (API)
 
+### End users — pull from GHCR (preferred)
+
+```bash
+docker run --rm -p 8000:8000 \
+  -e APP_MODE=development \
+  ghcr.io/dmang69/bc-legal-ai:latest
+```
+
+See [`docs/GHCR.md`](GHCR.md).
+
+### Maintainers — local build
+
 ```bash
 docker build -t bc-legal-ai:1.0.0 .
 docker run --rm -p 8000:8000 \
@@ -74,6 +86,25 @@ Scaffold manifests live under `infra/k8s/`. Treat as starting point:
 2. Set `APP_MODE=production`, `ALA_POSTGRES_URL`, `CORS_ORIGINS`, `ALA_COOKIE_SECURE=1`.  
 3. Probe `/health/live` and `/health/ready`.  
 4. Do not run multiple replicas against SQLite.
+
+## Cloud deploy (recommended path)
+
+Full runbook: **[`docs/CLOUD_DEPLOY.md`](CLOUD_DEPLOY.md)**
+
+| Piece | How |
+|-------|-----|
+| Secrets | `.env.production` from `.env.production.example` |
+| Postgres | `ALA_POSTGRES_URL` (compose service or managed DB) |
+| CORS | `CORS_ORIGINS=https://app.example.com` |
+| TLS | Reverse proxy → API; static UI on app host |
+| UI build | `VITE_API_BASE_URL=https://api.example.com` |
+| Helper | `scripts/cloud-deploy.ps1` |
+| Overlay | `docker-compose.prod.yml` |
+
+```powershell
+# Docker Desktop must be running
+.\scripts\cloud-deploy.ps1 -PublicApiUrl https://api.example.com -PublicUiUrl https://app.example.com
+```
 
 ## Cloud checklist (Azure / AWS / GCP / VPS)
 

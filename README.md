@@ -14,6 +14,24 @@
 **Release:** [v1.0.0](releases/v1.0.0.md) — production-ready **infrastructure** (builds, CI, Docker, auth, health, env docs).  
 Still fail-closed for court-ready AI and real-client unsupervised use. See [docs/PRODUCTION_READINESS.md](docs/PRODUCTION_READINESS.md).
 
+### Run with Docker (GHCR) — recommended for users
+
+```bash
+docker run --rm -p 8000:8000 \
+  -e APP_MODE=development \
+  ghcr.io/dmang69/bc-legal-ai:latest
+```
+
+→ http://127.0.0.1:8000/docs  
+
+| Tag | Use |
+|-----|-----|
+| `latest` | Latest versioned release |
+| `edge` | Latest `main` build |
+| `1.0.0` | Pin a release |
+
+Details: [`docs/GHCR.md`](docs/GHCR.md) · Compose pull: `docker compose -f docker-compose.ghcr.yml up`
+
 ---
 
 ## Install (v1.0)
@@ -60,11 +78,20 @@ npm run build
 ### Docker
 
 ```bash
+# Ensure Docker Desktop / engine is running first
 docker build -t bc-legal-ai:1.0.0 .
-docker run --rm -p 8000:8000 -e APP_MODE=development bc-legal-ai:1.0.0
-# stack with Postgres:
+docker run --rm -p 8000:8000 -e APP_MODE=development -e ALA_RATE_LIMIT_DISABLED=1 bc-legal-ai:1.0.0
+python scripts/production_smoke.py --base http://127.0.0.1:8000
+
+# Dev stack with Postgres:
 docker compose up --build
+
+# Production-style (secrets in .env.production):
+# cp .env.production.example .env.production   # edit passwords + CORS_ORIGINS
+# .\scripts\cloud-deploy.ps1 -PublicApiUrl https://api.example.com -PublicUiUrl https://app.example.com
 ```
+
+Cloud runbook: [`docs/CLOUD_DEPLOY.md`](docs/CLOUD_DEPLOY.md)
 
 ### Smoke test
 
