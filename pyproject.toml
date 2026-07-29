@@ -45,6 +45,9 @@ all = [
 testpaths = ["tests"]
 pythonpath = ["."]
 filterwarnings = ["ignore::DeprecationWarning"]
+markers = [
+  "postgres_required: tests that require ALA_POSTGRES_URL (run in CI test-postgres job)",
+]
 
 [tool.ruff]
 line-length = 100

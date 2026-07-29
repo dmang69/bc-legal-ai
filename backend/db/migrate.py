@@ -412,25 +412,11 @@ def _apply_sqlite_migrations(conn) -> None:
 def apply_migrations() -> None:
     """Apply schema migrations for the current database backend.
 
-    SQLite: executes individual CREATE TABLE statements (no executescript).
-    PostgreSQL: runs SQL files from architecture/contracts/sql/.
+    Both SQLite and PostgreSQL use the same portable DDL in
+    ``SQLITE_CREATE_TABLES`` so application SQL (``?`` params, ISO timestamps)
+    works on either backend. Richer Postgres-only files under
+    ``architecture/contracts/sql/`` remain reference schemas for future RLS/pgvector
+    and are *not* required for the M1 app path.
     """
-    backend = get_db_backend()
-    if backend == "sqlite":
-        with get_connection() as conn:
-            _apply_sqlite_migrations(conn)
-        return
-
-    # Postgres: run SQL files individually (no executescript)
     with get_connection() as conn:
-        for name in ("phase3_core.sql", "m1_platform.sql"):
-            path = _SQL_DIR / name
-            if not path.is_file():
-                continue
-            sql = path.read_text(encoding="utf-8")
-            # Execute each statement individually
-            for statement in sql.split(";"):
-                stmt = statement.strip()
-                if stmt:
-                    conn.execute(stmt)  # type: ignore[attr-defined]
-        conn.commit()
+        _apply_sqlite_migrations(conn)

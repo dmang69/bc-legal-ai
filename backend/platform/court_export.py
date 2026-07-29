@@ -161,9 +161,34 @@ def build_court_package(
             blockers=[str(e)],
         )
 
+    # Form 66 petition scaffold (always court_ready=false inside; package may still ship)
+    form66_name = ""
+    form66_bytes = b""
+    form66_meta: dict[str, Any] = {}
+    try:
+        from backend.platform.form66 import form66_from_matter
+        from backend.platform.matters import get_matter_store
+
+        matter = get_matter_store().get_matter(user, matter_id)
+        f66 = form66_from_matter(
+            user=user,
+            matter_id=matter_id,
+            matter_title=str(matter.get("title") or ""),
+            client_label=str(matter.get("client_label") or ""),
+        )
+        if f66.ok:
+            form66_name = f66.filename or "Form66_Petition_scaffold.docx"
+            form66_bytes = f66.docx_bytes
+            form66_meta = f66.to_dict()
+    except Exception as e:
+        form66_meta = {"ok": False, "error": str(e), "form_number": "66", "court_ready": False}
+
     zbuf = io.BytesIO()
     with zipfile.ZipFile(zbuf, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         zf.writestr("export_summary.docx", docx_bytes)
+        if form66_bytes:
+            zf.writestr(f"forms/{form66_name}", form66_bytes)
+            zf.writestr("forms/form66_meta.json", json.dumps(form66_meta, indent=2))
         zf.writestr(
             "manifest.json",
             json.dumps(
@@ -175,7 +200,11 @@ def build_court_package(
                     "document_ids": manifest.get("document_ids"),
                     "citation_ids": manifest.get("citation_ids"),
                     "approvals": manifest.get("approvals"),
-                    "disclaimer": "Not legal advice. Human lawyer must verify before filing.",
+                    "form66_scaffold": form66_meta,
+                    "disclaimer": (
+                        "Not legal advice. Human lawyer must verify before filing. "
+                        "Form 66 scaffold is not a completed pleading."
+                    ),
                 },
                 indent=2,
             ),
@@ -184,6 +213,7 @@ def build_court_package(
             "README.txt",
             "BC Legal AI Associate court package\n"
             "NOT LEGAL ADVICE. Verify legislation on BC Laws.\n"
+            "forms/ contains Form 66 petition SCAFFOLD (Form 66 ≠ Form 67).\n"
             f"manifest={manifest_id} matter={matter_id}\n",
         )
 

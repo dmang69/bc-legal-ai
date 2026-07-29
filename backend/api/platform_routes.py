@@ -800,6 +800,46 @@ def draft_form_66(
         raise HTTPException(status_code=403, detail=str(e)) from e
 
 
+@router.get("/matters/{matter_id}/drafts/form-66.docx")
+def draft_form_66_docx(
+    matter_id: str,
+    current_user: CurrentUser,
+) -> Response:
+    """Download Form 66 petition scaffold as DOCX (never court-ready by itself)."""
+    try:
+        from backend.platform.form66 import form66_from_matter
+        from backend.platform.matters import get_matter_store
+
+        matter = get_matter_store().get_matter(current_user, matter_id)
+        result = form66_from_matter(
+            user=current_user,
+            matter_id=matter_id,
+            matter_title=str(matter.get("title") or ""),
+            client_label=str(matter.get("client_label") or ""),
+        )
+    except AuthError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+    if not result.ok:
+        raise HTTPException(status_code=500, detail=result.error or "Form 66 build failed")
+    get_audit_ledger().append(
+        actor_id=current_user.user_id,
+        action="draft.form66_docx",
+        org_id=current_user.org_id,
+        matter_id=matter_id,
+        resource_type="draft",
+        resource_id="form66",
+    )
+    return Response(
+        content=result.docx_bytes,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={
+            "Content-Disposition": f'attachment; filename="{result.filename}"',
+            "X-Court-Ready": "false",
+            "X-Form-Number": "66",
+        },
+    )
+
+
 @router.get("/matters/{matter_id}/drafts/form-67")
 def draft_form_67(
     matter_id: str,

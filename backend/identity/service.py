@@ -184,8 +184,13 @@ class IdentityService:
                 raise AuthError("Invalid session")
             if row["revoked_at"]:
                 raise AuthError("Session revoked")
-            # naive ISO compare works for our stored format
-            if row["expires_at"] < datetime.now(timezone.utc).isoformat():
+            # Normalize timestamptz (Postgres) or ISO string (SQLite) for compare
+            exp = row["expires_at"]
+            if hasattr(exp, "isoformat"):
+                exp_s = exp.isoformat()
+            else:
+                exp_s = str(exp)
+            if exp_s < datetime.now(timezone.utc).isoformat():
                 raise AuthError("Session expired")
             if row["status"] != "ACTIVE":
                 raise AuthError("Account not active")

@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## v0.3.1-alpha — 2026-07-28
+
+### Postgres integration + Form 66
+
+- **Postgres CI:** `test-postgres` job runs `tests/test_postgres_integration.py` against `pgvector/pgvector:pg16`
+- **Unified migrations:** portable DDL applied for both SQLite and Postgres (app SQL paths align)
+- **Form 66 scaffold:** `backend/platform/form66.py` — Parts 1–4 DOCX (orders, facts, legal basis, materials)
+- **API:** `GET /v1/platform/matters/{id}/drafts/form-66.docx` (`X-Form-Number: 66`, never court-ready alone)
+- **Court package:** embeds Form 66 under `forms/` when export manifest is APPROVED
+- Session expiry compare handles Postgres `timestamptz` objects
+
 ## v0.3.0-alpha — 2026-07-28
 
 ### Production track foundations

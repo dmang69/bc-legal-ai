@@ -86,10 +86,33 @@ Without OCR packages, empty pages are marked `needs_ocr: true` (fail-closed, no 
 
 **Human-gated:** code-signing certificate, Apple notarization, store listings. CI must not embed private keys.
 
+## Form 66 scaffolding (v0.3.1)
+
+| Item | Status |
+|------|--------|
+| Structured Form 66 DOCX (Parts 1–4) | `backend/platform/form66.py` |
+| `GET …/drafts/form-66.docx` | Download scaffold; `X-Court-Ready: false` |
+| Court package embeds `forms/Form66_*.docx` | After APPROVED export manifest |
+| Form 66 ≠ Form 67 locked | Captioned in scaffold + README |
+
+## Postgres integration tests (CI)
+
+| Item | Status |
+|------|--------|
+| `tests/test_postgres_integration.py` | Auth, isolation, Form 66, JR clock, audit |
+| CI job `test-postgres` | `pgvector/pgvector:pg16` service + `ALA_POSTGRES_URL` |
+| Shared portable DDL for SQLite + Postgres | `apply_migrations()` uses same tables |
+
+```bash
+# Local Postgres (example)
+export ALA_POSTGRES_URL=postgresql://ala:ala_test@localhost:5432/ala_test
+pytest tests/test_postgres_integration.py -v
+```
+
 ## Verification
 
 ```bash
-pytest tests/ -q
+pytest tests/ -q -m "not postgres_required"
 python scripts/scan_confidential.py .
 APP_MODE=public_demo python scripts/validate_deployment_readiness.py
 ```
