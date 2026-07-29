@@ -11,6 +11,79 @@
 > Do **not** put confidential client or litigation files on public demos. Use synthetic data only.  
 > Verify all legislation on **[BC Laws](https://www.bclaws.gov.bc.ca/)** before any reliance or filing.
 
+**Release:** [v1.0.0](releases/v1.0.0.md) — production-ready **infrastructure** (builds, CI, Docker, auth, health, env docs).  
+Still fail-closed for court-ready AI and real-client unsupervised use. See [docs/PRODUCTION_READINESS.md](docs/PRODUCTION_READINESS.md).
+
+---
+
+## Install (v1.0)
+
+### Prerequisites
+
+- Python **3.11+** (CI uses 3.12)
+- Node **20+** (platform-ui)
+- Optional: Docker, Postgres, Ollama
+
+### Backend
+
+```bash
+python -m venv .venv
+# Windows: .venv\Scripts\activate
+pip install -e ".[dev,export,pdf]"
+# optional multi-user: pip install -e ".[postgres]"
+cp .env.example .env
+# edit APP_MODE=development
+uvicorn backend.api.main:app --reload --port 8000
+```
+
+- API docs: http://127.0.0.1:8000/docs  
+- Health: http://127.0.0.1:8000/health  
+
+### Frontend (platform-ui)
+
+```bash
+cd apps/platform-ui
+npm ci
+npm run dev
+# http://127.0.0.1:1420  (proxies /v1 → API)
+```
+
+Production UI build:
+
+```bash
+cd apps/platform-ui
+# set VITE_API_BASE_URL=https://api.example.com
+npm run build
+# publish dist/
+```
+
+### Docker
+
+```bash
+docker build -t bc-legal-ai:1.0.0 .
+docker run --rm -p 8000:8000 -e APP_MODE=development bc-legal-ai:1.0.0
+# stack with Postgres:
+docker compose up --build
+```
+
+### Smoke test
+
+```bash
+# with API running:
+python scripts/production_smoke.py --base http://127.0.0.1:8000
+pytest tests/ -q -m "not postgres_required"
+```
+
+### Environment & deploy docs
+
+| Doc | Purpose |
+|-----|---------|
+| [`.env.example`](.env.example) | Variable template |
+| [`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md) | Full env reference |
+| [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Docker / cloud / K8s |
+| [`docs/SECURITY_REVIEW_V1.md`](docs/SECURITY_REVIEW_V1.md) | Security baseline |
+| [`docs/ENTERPRISE_AI_SUITE.md`](docs/ENTERPRISE_AI_SUITE.md) | AI providers & tools |
+
 ---
 
 ## Try the public demo
@@ -120,9 +193,9 @@ The platform shell (web/desktop/mobile) is only the **container**. The product i
 | Auth, matter ACL, audit, quarantine, fail-closed citations (partial) | Full M1–M8 gates |
 | Unsigned Windows installers (local) | Signed multi-platform releases |
 
-**Release track:** v0.4.0-alpha — **Enterprise AI suite** (multi-turn chat, Ollama, productivity tools, code assist, arena, bounded web research) on the supervised legal platform.  
-See [`docs/ENTERPRISE_AI_SUITE.md`](docs/ENTERPRISE_AI_SUITE.md) and [`docs/PRODUCTION_TRACKS_V03.md`](docs/PRODUCTION_TRACKS_V03.md).  
-This is **not** production certification for real-client data and **not** a lawyer.
+**Release:** **v1.0.0** — deployable stack + enterprise AI suite on the supervised legal workbench.  
+See [`docs/PRODUCTION_READINESS.md`](docs/PRODUCTION_READINESS.md), [`docs/ENTERPRISE_AI_SUITE.md`](docs/ENTERPRISE_AI_SUITE.md).  
+**Not** unsupervised legal practice; **not** a lawyer.
 
 ## Quick start (local)
 

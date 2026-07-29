@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## v1.0.0 — 2026-07-28
+
+### Production readiness milestone
+
+- Complete env template + `docs/ENVIRONMENT.md`, `DEPLOYMENT.md`, `PRODUCTION_READINESS.md`, `SECURITY_REVIEW_V1.md`
+- `scripts/production_smoke.py` — health, auth, matter, chat, logout
+- Hardened `Dockerfile` (non-root, slim runtime deps, healthcheck)
+- `docker-compose.yml` — Postgres health dependency; removed conflicting SQL init mount
+- CI: fail lint on ruff errors; frontend typecheck/build; API smoke in CI; Docker smoke with production_smoke
+- README install/deploy section for v1.0
+
 ## v0.4.1-alpha — 2026-07-28
 
 ### Platform UI chat shell + org admin

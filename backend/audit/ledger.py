@@ -8,7 +8,7 @@ import uuid
 from dataclasses import dataclass
 from typing import Any, Optional
 
-from backend.db import get_connection, init_db, get_db_backend
+from backend.db import get_connection, init_db
 
 GENESIS = "0" * 64
 

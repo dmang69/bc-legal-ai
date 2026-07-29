@@ -12,7 +12,6 @@ like `datetime('now')` which are SQLite-specific.
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any
 
 
 def now_iso() -> str:

@@ -14,9 +14,9 @@ from __future__ import annotations
 import hashlib
 import os
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
-from backend.platform.pdf_extract import ExtractResult, ExtractedPage, extract_pdf_bytes
+from backend.platform.pdf_extract import ExtractResult, extract_pdf_bytes
 
 
 @dataclass

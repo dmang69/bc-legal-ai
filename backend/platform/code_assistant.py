@@ -7,7 +7,7 @@ and documentation drafts. Optional LLM enhancement via model providers.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 
 LANG_HINTS = {

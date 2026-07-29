@@ -9,7 +9,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from pathlib import Path
 
-from backend.db.connection import get_connection, get_db_backend
+from backend.db.connection import get_connection
 
 
 def _now_iso() -> str:

@@ -10,7 +10,6 @@ import json
 import zipfile
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any, Optional
 
 from backend.db import get_connection, init_db

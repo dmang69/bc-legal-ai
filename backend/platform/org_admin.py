@@ -9,9 +9,9 @@ from __future__ import annotations
 import json
 import os
 import uuid
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any
 
 from backend.db import get_connection, init_db
 from backend.db.helpers import now_iso

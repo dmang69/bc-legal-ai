@@ -11,10 +11,9 @@ All responses should be passed through ai_safety.enforce_output_safety by caller
 
 from __future__ import annotations
 
-import json
 import os
 from dataclasses import dataclass, field
-from typing import Any, Iterator, Optional, Protocol
+from typing import Any, Optional, Protocol
 
 
 @dataclass(frozen=True)

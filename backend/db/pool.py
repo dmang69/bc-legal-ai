@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import os
 import threading
-from typing import Any, Optional
+from typing import Any
 
 _pool: Any = None
 _pool_lock = threading.Lock()
