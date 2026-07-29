@@ -28,17 +28,34 @@ function setLang(code) {
   document.documentElement.lang = code === "zh-Hans" ? "zh-Hans" : code;
 }
 
+/** Cookie session helpers (HttpOnly ala_session + X-CSRF-Token). Prefer over localStorage. */
+function getCsrf() {
+  const m = document.cookie.match(/(?:^|;\s*)ala_csrf=([^;]+)/);
+  return m ? decodeURIComponent(m[1]) : "";
+}
+
+async function apiFetch(path, options = {}) {
+  const headers = Object.assign({}, options.headers || {});
+  const method = (options.method || "GET").toUpperCase();
+  if (method !== "GET" && method !== "HEAD") {
+    const csrf = getCsrf();
+    if (csrf) headers["X-CSRF-Token"] = csrf;
+  }
+  return fetch(path, Object.assign({}, options, { credentials: "include", headers }));
+}
+
 async function checkApi() {
   const el = document.getElementById("api-status");
   const dash = document.getElementById("dash-empty");
   try {
-    const r = await fetch("/health", { cache: "no-store" });
+    const r = await fetch("/health", { cache: "no-store", credentials: "include" });
     if (!r.ok) throw new Error(String(r.status));
     const j = await r.json();
-    if (el) el.textContent = `API: ${j.status} · phase ${j.phase || "?"} · ${j.mode || ""}`;
+    if (el)
+      el.textContent = `API: ${j.status} · phase ${j.phase || "?"} · ${j.mode || ""} · db ${j.db_backend || "?"} · session ${j.session_auth || "bearer"}`;
     if (dash) {
       dash.textContent =
-        "API connected. Use /docs for Phase 3–4 / 4-4 endpoints (consent, JR clock, post-resolution).";
+        "API connected. Auth: HttpOnly cookie + CSRF (or Bearer). See /docs for platform routes.";
     }
   } catch {
     if (el) el.textContent = "API: offline — start launcher or uvicorn backend.api.main:app";

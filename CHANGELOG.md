@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+## v0.3.0-alpha — 2026-07-28
+
+### Production track foundations
+
+- **Postgres multi-worker:** `CompatCursor` `?`→`%s`, optional `psycopg_pool`, SQLite WAL, `/health.multi_worker`
+- **Cookie sessions:** HttpOnly `ala_session` + CSRF double-submit; Bearer still supported; logout clears cookies
+- **OCR:** `backend/platform/ocr.py` native+OCR pipeline; API `…/documents/pdf-extract`
+- **Official law:** BC Laws fetcher (host allowlist, currency line, snapshots); never auto `court_ready`
+- **Court export:** ZIP package (DOCX summary + manifest) only after APPROVED export manifest
+- **Signed installers:** `scripts/sign_windows_installer.ps1` + `docs/SIGNING_AND_DISTRIBUTION.md` (certs human-gated)
+- Docs: `docs/PRODUCTION_TRACKS_V03.md`
+
 ## v0.2.0-alpha — 2026-07-28
 
 ### Monorepo archive

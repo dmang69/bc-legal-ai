@@ -219,6 +219,8 @@ def test_platform_citation_and_deadline_routes_require_authorized_matter(client:
     assert other.status_code == 200, other.text
     other_headers = {"Authorization": f"Bearer {other.json()['token']}"}
 
+    # Clear session cookies so this is truly anonymous (not CSRF-blocked cookie auth).
+    client.cookies.clear()
     no_auth_cite = client.post(
         "/v1/platform/citations/verify",
         json={"citation_text": "RTA s.32", "matter_id": matter_id},

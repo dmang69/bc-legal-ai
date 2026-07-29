@@ -12,27 +12,27 @@ from __future__ import annotations
 
 from typing import Annotated, Optional
 
-from fastapi import Depends, Header, HTTPException
+from fastapi import Depends, Header, HTTPException, Request
 
+from backend.api.session_cookies import (
+    extract_session_token,
+    require_csrf_if_cookie_session,
+)
 from backend.identity import AuthError, UserInfo, get_identity_service
 
 
 async def resolve_current_user(
+    request: Request,
     authorization: Annotated[Optional[str], Header()] = None,
 ) -> UserInfo:
-    """Extract and validate the bearer token from the Authorization header.
+    """Resolve user from Authorization: Bearer or HttpOnly session cookie.
 
-    Returns:
-        UserInfo: The authenticated user.
-
-    Raises:
-        HTTPException 401: If the token is missing, malformed, expired, or revoked.
+    Cookie-authenticated mutating requests also require CSRF header.
     """
-    if not authorization or not authorization.lower().startswith("bearer "):
-        raise HTTPException(status_code=401, detail="Bearer token required")
-    token = authorization.split(" ", 1)[1].strip()
+    require_csrf_if_cookie_session(request, authorization)
+    token = extract_session_token(request, authorization=authorization)
     if not token:
-        raise HTTPException(status_code=401, detail="Bearer token required")
+        raise HTTPException(status_code=401, detail="Bearer token or session cookie required")
     try:
         return get_identity_service().resolve_token(token)
     except AuthError as e:
@@ -40,12 +40,6 @@ async def resolve_current_user(
 
 
 # Reusable Annotated type alias for dependency injection.
-# Inject into any FastAPI route handler that requires authentication:
-#
-#   @router.get("/matters")
-#   def list_matters(current_user: CurrentUser):
-#       ...
-#
 CurrentUser = Annotated[UserInfo, Depends(resolve_current_user)]
 
 
@@ -55,11 +49,7 @@ def require_matter_access(
     *,
     min_level: str = "read",
 ) -> str:
-    """Require deny-first access to an org-scoped matter.
-
-    Ethical walls and revoked memberships are enforced inside the identity
-    service before owner/admin role grants are considered.
-    """
+    """Require deny-first access to an org-scoped matter."""
     if not matter_id:
         raise HTTPException(status_code=400, detail="matter_id required")
     if not get_identity_service().can_access_matter(user, matter_id, min_level=min_level):
@@ -80,27 +70,14 @@ def require_optional_matter_access(
 
 
 async def resolve_bearer_token(
+    request: Request,
     authorization: Annotated[Optional[str], Header()] = None,
 ) -> str:
-    """Extract the raw bearer token string from the Authorization header.
-
-    This is useful for operations like session revocation where the raw
-    token string is needed rather than just the resolved UserInfo.
-
-    Returns:
-        str: The raw bearer token string.
-
-    Raises:
-        HTTPException 401: If the token is missing or malformed.
-    """
-    if not authorization or not authorization.lower().startswith("bearer "):
-        raise HTTPException(status_code=401, detail="Bearer token required")
-    token = authorization.split(" ", 1)[1].strip()
+    """Raw session token from bearer header or cookie (for logout/revoke)."""
+    token = extract_session_token(request, authorization=authorization)
     if not token:
-        raise HTTPException(status_code=401, detail="Bearer token required")
+        raise HTTPException(status_code=401, detail="Bearer token or session cookie required")
     return token
 
 
-# Annotated type alias for the raw bearer token string.
 RawBearerToken = Annotated[str, Depends(resolve_bearer_token)]
-

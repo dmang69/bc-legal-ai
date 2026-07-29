@@ -54,3 +54,4 @@ if (Test-Path $bundle) {
 }
 
 Write-Host "Done. Publish artifacts from releases\windows\ to GitHub Releases when signed." -ForegroundColor Cyan
+Write-Host "To sign (requires org cert): scripts\sign_windows_installer.ps1 — see docs\SIGNING_AND_DISTRIBUTION.md" -ForegroundColor Yellow

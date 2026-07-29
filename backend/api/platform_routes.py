@@ -6,9 +6,10 @@ import json
 import re
 from typing import Any, Optional
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
+from starlette.responses import JSONResponse
 
 from backend.api.dependencies import (
     CurrentUser,
@@ -21,6 +22,7 @@ from backend.api.rate_limit import (
     auth_register_rule,
     maybe_enforce_rate_limit,
 )
+from backend.api.session_cookies import clear_session_cookies, json_with_session
 from backend.api.public_demo import (
     enforce_public_text,
     is_public_demo,
@@ -300,7 +302,7 @@ def platform_status() -> dict[str, Any]:
 
 
 @router.post("/auth/register")
-def register(request: Request, body: RegisterOrgBody) -> dict[str, Any]:
+def register(request: Request, body: RegisterOrgBody) -> JSONResponse:
     # Per-IP limit (stops org-farming); email alone is weak because attackers rotate.
     maybe_enforce_rate_limit(request, auth_register_rule())
     try:
@@ -327,11 +329,12 @@ def register(request: Request, body: RegisterOrgBody) -> dict[str, Any]:
         resource_type="user",
         resource_id=user.user_id,
     )
-    return session.to_dict()
+    # Body still includes token for API clients; HttpOnly cookie set for browsers.
+    return json_with_session(session.to_dict(), token=session.token)
 
 
 @router.post("/auth/login")
-def login(request: Request, body: LoginBody) -> dict[str, Any]:
+def login(request: Request, body: LoginBody) -> JSONResponse:
     # Per-IP and per-email sliding windows (credential stuffing / password spray).
     maybe_enforce_rate_limit(request, auth_login_rule())
     maybe_enforce_rate_limit(request, auth_login_rule(), extra_key=body.email.lower())
@@ -346,7 +349,7 @@ def login(request: Request, body: LoginBody) -> dict[str, Any]:
         resource_type="session",
         resource_id=session.session_id,
     )
-    return session.to_dict()
+    return json_with_session(session.to_dict(), token=session.token)
 
 
 @router.get("/auth/me")
@@ -355,10 +358,12 @@ def me(current_user: CurrentUser) -> dict[str, Any]:
 
 
 @router.post("/auth/logout")
-def logout(raw_token: RawBearerToken) -> dict[str, str]:
-    """Revoke the current session by invalidating its bearer token."""
+def logout(raw_token: RawBearerToken) -> JSONResponse:
+    """Revoke session and clear HttpOnly cookies."""
     get_identity_service().revoke_session(raw_token)
-    return {"status": "ok"}
+    resp = JSONResponse(content={"status": "ok"})
+    clear_session_cookies(resp)
+    return resp
 
 
 @router.post("/matters")
@@ -654,6 +659,134 @@ def list_manifests(
         return {"manifests": list_export_manifests(current_user, matter_id)}
     except AuthError as e:
         raise HTTPException(status_code=403, detail=str(e)) from e
+
+
+@router.post("/matters/{matter_id}/exports/{manifest_id}/package")
+def build_export_package(
+    matter_id: str,
+    manifest_id: str,
+    current_user: CurrentUser,
+) -> Response:
+    """ZIP court package (DOCX summary + manifest JSON). Requires APPROVED manifest."""
+    try:
+        reject_if_public_demo("court-ready export package")
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+    from backend.platform.court_export import build_court_package
+
+    try:
+        result = build_court_package(
+            user=current_user, matter_id=matter_id, manifest_id=manifest_id
+        )
+    except AuthError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+    if not result.ok:
+        raise HTTPException(
+            status_code=400,
+            detail={"error": result.error or "blocked", "blockers": result.blockers},
+        )
+    get_audit_ledger().append(
+        actor_id=current_user.user_id,
+        action="export.package",
+        org_id=current_user.org_id,
+        matter_id=matter_id,
+        resource_type="export_manifest",
+        resource_id=manifest_id,
+    )
+    return Response(
+        content=result.package_bytes,
+        media_type=result.media_type,
+        headers={
+            "Content-Disposition": f'attachment; filename="{result.filename}"',
+            "X-Court-Ready": "true",
+        },
+    )
+
+
+class PdfExtractBody(BaseModel):
+    """Base64 PDF bytes for native extract + optional OCR."""
+
+    filename: str = "upload.pdf"
+    content_base64: str = Field(min_length=1)
+    force_ocr: bool = False
+
+
+@router.post("/matters/{matter_id}/documents/pdf-extract")
+def pdf_extract_route(
+    matter_id: str,
+    body: PdfExtractBody,
+    current_user: CurrentUser,
+) -> dict[str, Any]:
+    """Extract text from PDF (pypdf); mark pages needing OCR; run OCR if available."""
+    require_matter_access(current_user, matter_id, min_level="write")
+    import base64
+
+    try:
+        raw = base64.b64decode(body.content_base64, validate=False)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid base64: {e}") from e
+    from backend.platform.ocr import extract_with_ocr
+
+    result = extract_with_ocr(raw, force_ocr=body.force_ocr)
+    get_audit_ledger().append(
+        actor_id=current_user.user_id,
+        action="document.pdf_extract",
+        org_id=current_user.org_id,
+        matter_id=matter_id,
+        resource_type="document",
+        resource_id=body.filename,
+    )
+    return {
+        "matter_id": matter_id,
+        "filename": body.filename,
+        **result.to_dict(),
+        "court_ready": False,
+    }
+
+
+class LawFetchBody(BaseModel):
+    source_key: str = "RTA"
+    url: str = ""
+    persist: bool = True
+
+
+@router.post("/knowledge/bc-laws/fetch")
+def fetch_bc_laws_route(
+    body: LawFetchBody,
+    current_user: CurrentUser,
+) -> dict[str, Any]:
+    """Fetch official BC Laws HTML; never court_ready without human currency check."""
+    try:
+        reject_if_public_demo("live BC Laws network fetch")
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+    from knowledgebase.updater.bc_laws_fetcher import fetch_bc_laws
+
+    result = fetch_bc_laws(
+        body.source_key,
+        url=body.url or None,
+        persist=body.persist,
+    )
+    get_audit_ledger().append(
+        actor_id=current_user.user_id,
+        action="knowledge.bc_laws_fetch",
+        org_id=current_user.org_id,
+        resource_type="knowledge_source",
+        resource_id=body.source_key,
+    )
+    return result.to_dict()
+
+
+@router.get("/knowledge/bc-laws/catalog")
+def bc_laws_catalog(current_user: CurrentUser) -> dict[str, Any]:
+    from knowledgebase.updater.bc_laws_fetcher import KNOWN_STATUTES
+
+    return {
+        "statutes": KNOWN_STATUTES,
+        "statute_source": "BC Laws only",
+        "court_ready": False,
+        "note": "Fetch records currency line; human must re-verify before filing.",
+    }
 
 
 @router.get("/matters/{matter_id}/drafts/form-66")

@@ -7,11 +7,19 @@ services:
     build: .
     ports:
       - "8000:8000"
+    # Multi-worker: prefer command with --workers when using Postgres only.
+    # command: ["uvicorn", "backend.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
     environment:
       APP_MODE: development
       ALA_POSTGRES_URL: postgresql://ala:ala_dev_change_me@postgres:5432/ala
+      ALA_PG_POOL: "1"
+      ALA_PG_POOL_MIN: "1"
+      ALA_PG_POOL_MAX: "10"
       ALA_REDIS_URL: redis://redis:6379/0
       ALA_S3_ENDPOINT: http://minio:9000
+      # Cookie sessions (Secure off in development)
+      ALA_COOKIE_SECURE: "0"
+      ALA_COOKIE_SAMESITE: lax
     depends_on:
       - postgres
       - redis

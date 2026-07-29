@@ -168,6 +168,15 @@ def health() -> dict[str, Any]:
     except Exception:
         db = "unknown"
     safety = public_deployment_safety()
+    try:
+        from backend.db.connection import multi_worker_ready
+        from backend.platform.ocr import ocr_engine_available
+
+        mw = multi_worker_ready()
+        ocr_ok = ocr_engine_available()
+    except Exception:
+        mw = {"backend": db}
+        ocr_ok = False
     return {
         "status": "ok" if safety["safe"] else "unsafe",
         "phase": "m1-platform",
@@ -175,6 +184,9 @@ def health() -> dict[str, Any]:
         "platform": "api+static-client",
         "app_mode": safety["app_mode"],
         "db_backend": db,
+        "multi_worker": mw,
+        "ocr_available": ocr_ok,
+        "session_auth": "bearer_or_httponly_cookie",
         "public_deployment": safety,
     }
 

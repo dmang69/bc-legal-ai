@@ -120,8 +120,9 @@ The platform shell (web/desktop/mobile) is only the **container**. The product i
 | Auth, matter ACL, audit, quarantine, fail-closed citations (partial) | Full M1–M8 gates |
 | Unsigned Windows installers (local) | Signed multi-platform releases |
 
-**Release:** [`v0.2.0-alpha`](releases/v0.2.0-alpha.md) (2026-07-28) — monorepo archive + P0 auth/rate-limit/headers.  
-**Verified local gates:** full `pytest` suite green; confidential-data scan green; public-demo deployment readiness green. This is **not** production certification for real-client data.
+**Release track:** v0.3.0-alpha foundations — Postgres multi-worker hooks, HttpOnly cookie sessions, OCR path, BC Laws fetch, court package export, installer signing scripts.  
+See [`docs/PRODUCTION_TRACKS_V03.md`](docs/PRODUCTION_TRACKS_V03.md).  
+This is **not** production certification for real-client data.
 
 ## Quick start (local)
 
