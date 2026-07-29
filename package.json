@@ -5,9 +5,10 @@
   "packageManager": "pnpm@9.15.0",
   "description": "BC Legal AI Associate — canonical monorepo (backend + platform-ui)",
   "scripts": {
+    "dev": "npm run dev --prefix apps/platform-ui",
     "dev:api": "uvicorn backend.api.main:app --reload --host 127.0.0.1 --port 8000",
-    "dev:ui": "pnpm --filter platform-ui dev",
-    "build:ui": "pnpm --filter platform-ui build",
+    "dev:ui": "npm run dev --prefix apps/platform-ui",
+    "build:ui": "npm run build --prefix apps/platform-ui",
     "test:api": "python -m pytest tests -q",
     "scan:confidential": "python scripts/scan_confidential.py ."
   },
