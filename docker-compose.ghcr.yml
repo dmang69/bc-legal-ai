@@ -1,0 +1,26 @@
+# Run the published GHCR image (no local build required).
+# Usage:
+#   docker compose -f docker-compose.ghcr.yml up
+#
+# Override image tag:
+#   IMAGE_TAG=1.0.0 docker compose -f docker-compose.ghcr.yml up
+
+services:
+  api:
+    image: ghcr.io/dmang69/bc-legal-ai:${IMAGE_TAG:-latest}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    environment:
+      APP_MODE: ${APP_MODE:-development}
+      ALA_RATE_LIMIT_DISABLED: ${ALA_RATE_LIMIT_DISABLED:-0}
+      # Optional multi-user:
+      # ALA_POSTGRES_URL: postgresql://ala:…@db:5432/ala
+      # CORS_ORIGINS: https://app.example.com
+      # ALA_COOKIE_SECURE: "1"
+    pull_policy: always
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/live')"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s

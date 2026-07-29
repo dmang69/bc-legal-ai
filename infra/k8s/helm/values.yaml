@@ -5,7 +5,7 @@ replicaCount: 2
 
 api:
   image:
-    repository: ghcr.io/dmang69/bc-legal-ai-api
+    repository: ghcr.io/dmang69/bc-legal-ai
     tag: latest
     pullPolicy: Always
   port: 8000

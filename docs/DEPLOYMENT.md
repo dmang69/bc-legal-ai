@@ -38,6 +38,18 @@ python scripts/production_smoke.py --base http://127.0.0.1:8000
 
 ## Docker (API)
 
+### End users — pull from GHCR (preferred)
+
+```bash
+docker run --rm -p 8000:8000 \
+  -e APP_MODE=development \
+  ghcr.io/dmang69/bc-legal-ai:latest
+```
+
+See [`docs/GHCR.md`](GHCR.md).
+
+### Maintainers — local build
+
 ```bash
 docker build -t bc-legal-ai:1.0.0 .
 docker run --rm -p 8000:8000 \

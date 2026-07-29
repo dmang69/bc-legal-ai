@@ -14,6 +14,24 @@
 **Release:** [v1.0.0](releases/v1.0.0.md) — production-ready **infrastructure** (builds, CI, Docker, auth, health, env docs).  
 Still fail-closed for court-ready AI and real-client unsupervised use. See [docs/PRODUCTION_READINESS.md](docs/PRODUCTION_READINESS.md).
 
+### Run with Docker (GHCR) — recommended for users
+
+```bash
+docker run --rm -p 8000:8000 \
+  -e APP_MODE=development \
+  ghcr.io/dmang69/bc-legal-ai:latest
+```
+
+→ http://127.0.0.1:8000/docs  
+
+| Tag | Use |
+|-----|-----|
+| `latest` | Latest versioned release |
+| `edge` | Latest `main` build |
+| `1.0.0` | Pin a release |
+
+Details: [`docs/GHCR.md`](docs/GHCR.md) · Compose pull: `docker compose -f docker-compose.ghcr.yml up`
+
 ---
 
 ## Install (v1.0)
