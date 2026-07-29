@@ -6,7 +6,7 @@ import json
 import re
 from typing import Any, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
@@ -15,6 +15,11 @@ from backend.api.dependencies import (
     RawBearerToken,
     require_matter_access,
     require_optional_matter_access,
+)
+from backend.api.rate_limit import (
+    auth_login_rule,
+    auth_register_rule,
+    maybe_enforce_rate_limit,
 )
 from backend.api.public_demo import (
     enforce_public_text,
@@ -295,7 +300,9 @@ def platform_status() -> dict[str, Any]:
 
 
 @router.post("/auth/register")
-def register(body: RegisterOrgBody) -> dict[str, Any]:
+def register(request: Request, body: RegisterOrgBody) -> dict[str, Any]:
+    # Per-IP limit (stops org-farming); email alone is weak because attackers rotate.
+    maybe_enforce_rate_limit(request, auth_register_rule())
     try:
         reject_if_public_demo("user registration with persistence")
     except PermissionError as e:
@@ -324,7 +331,10 @@ def register(body: RegisterOrgBody) -> dict[str, Any]:
 
 
 @router.post("/auth/login")
-def login(body: LoginBody) -> dict[str, Any]:
+def login(request: Request, body: LoginBody) -> dict[str, Any]:
+    # Per-IP and per-email sliding windows (credential stuffing / password spray).
+    maybe_enforce_rate_limit(request, auth_login_rule())
+    maybe_enforce_rate_limit(request, auth_login_rule(), extra_key=body.email.lower())
     try:
         session = get_identity_service().login(email=body.email, password=body.password)
     except AuthError as e:

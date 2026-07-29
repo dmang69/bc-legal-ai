@@ -14,15 +14,21 @@
 
 ### Do **not** use as the BC Legal product entrypoint
 
-| Path | What it is |
-|------|------------|
-| `apps/api/` | Generic “Enterprise AI Platform” sample (separate product experiment) |
-| `apps/web/` | Next.js shell for EAP sample |
-| `eap-monorepo/` | Duplicate monorepo tree — do not expand |
-| `enterprise_ai_platform/` | Parallel scaffold — do not expand |
-| `huggingface*/` | Public demo packaging — parked |
+Non-canonical samples were **moved** to `archive/non-canonical/` in v0.2.0-alpha (history preserved).
+
+| Former path | Archive path | What it was |
+|-------------|--------------|-------------|
+| `apps/api/` | `archive/non-canonical/apps-api/` | EAP FastAPI sample |
+| `apps/web/` | `archive/non-canonical/apps-web/` | EAP Next.js shell |
+| `eap-monorepo/` | `archive/non-canonical/eap-monorepo/` | Duplicate monorepo sample |
+| `enterprise_ai_platform/` | `archive/non-canonical/enterprise_ai_platform/` | Parallel enterprise scaffold |
+| `bc-legal-ai-conversational-platform/` | `archive/non-canonical/bc-legal-ai-conversational-platform/` | Nested packaging experiment |
+| root `*.zip` skill blobs | `archive/non-canonical/zips/` | Redundant zips (source in `skills/`) |
+| `huggingface*/` (still at root) | — | Public demo packaging — parked, not product API |
 
 If you are unsure which code to edit for the AI lawyer: **`backend/` + `skills/` + `services/`**.
+
+See [`archive/non-canonical/README.md`](../archive/non-canonical/README.md).
 
 ---
 
@@ -78,11 +84,11 @@ Edit counsel behavior by editing skills under `skills/` — especially:
 
 ---
 
-## Cleanup policy (incremental)
+## Cleanup policy
 
-1. **Now:** document canonical path (this file); stop adding features under `apps/api`, `eap-monorepo`, `enterprise_ai_platform`.  
-2. **Next:** optional move/archive of those trees to `archive/` once no scripts reference them.  
-3. **Do not delete** without checking CI and imports.
+1. **Done (v0.2.0-alpha):** non-canonical trees moved to `archive/non-canonical/`.  
+2. **Do not expand** archived trees for product features.  
+3. Root `package.json` scripts point at `backend/` and `apps/platform-ui` only.
 
 ---
 

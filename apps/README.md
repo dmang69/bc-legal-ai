@@ -8,9 +8,9 @@
 | `desktop/` | Interim Python launcher only |
 | `tauri/` | Redirect → `desktop-mobile` |
 | `mobile/` | Legacy Capacitor notes — do not expand |
-| `api/`, `web/` | **Not canonical** for BC Legal AI — EAP sample trees; see `docs/CANONICAL_STACK.md` |
+| ~~`api/`~~, ~~`web/`~~ | **Archived** → `archive/non-canonical/apps-api` and `apps-web` |
 
-**Product chat API lives in** [`../backend/`](../backend/) (uvicorn `backend.api.main:app`), not `apps/api`.
+**Product chat API lives in** [`../backend/`](../backend/) (`uvicorn backend.api.main:app`).
 
 Shared packages: [`../packages/README.md`](../packages/README.md)  
 Strategy: [`../docs/SECTION_G_PLATFORM_AND_DISTRIBUTION.md`](../docs/SECTION_G_PLATFORM_AND_DISTRIBUTION.md)  

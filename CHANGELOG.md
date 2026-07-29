@@ -2,12 +2,28 @@
 
 ## Unreleased
 
-### Repo finalize (2026-07-28)
+## v0.2.0-alpha — 2026-07-28
 
-- Phase 3/4 HTTP tests updated for bearer auth after route hardening; anonymous HITL routes return 401
-- Confidential scanner green: removed accidental nested tree, synthetic demo placeholders, allowlist for public UI/docs paths
-- Restored `infra/secrets/*.example` scaffold (never commit real secrets)
-- Verified: `197 passed` pytest, confidential scan OK, deployment-readiness OK (public demo)
+### Monorepo archive
+
+- Moved non-canonical trees to `archive/non-canonical/`:
+  `eap-monorepo`, `enterprise_ai_platform`, `apps/api`→`apps-api`, `apps/web`→`apps-web`,
+  `bc-legal-ai-conversational-platform`, root skill zip blobs
+- Root `package.json` is now `bc-legal-ai` with scripts for `backend/` + platform-ui
+- Documented archive policy in `archive/non-canonical/README.md` and `docs/CANONICAL_STACK.md`
+
+### P0 security hardening
+
+- Legacy HITL / post-resolution matter routes enforce `require_matter_access` (deny cross-org)
+- In-process sliding-window rate limits on `/auth/login` and `/auth/register`
+- Security headers middleware: CSP, X-Frame-Options DENY, nosniff, Referrer-Policy
+- Tests: ethical wall, cross-matter authz, rate limit 429, security headers
+
+### Repo finalize (prior same-day commit)
+
+- Phase 3/4 HTTP tests for bearer auth; anonymous HITL routes return 401
+- Confidential scanner green; deployment-readiness OK (public demo)
+- Release notes: `releases/v0.2.0-alpha.md`
 
 ### Data model v1.0 (controlling)
 

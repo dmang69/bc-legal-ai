@@ -35,6 +35,7 @@ from backend.api.public_demo import (
     public_deployment_safety,
     reject_if_public_demo,
 )
+from backend.api.security_headers import SecurityHeadersMiddleware
 from backend.api.state import hitl, post_resolution
 from backend.audit import get_audit_ledger
 from backend.db import get_db_backend, init_db
@@ -105,6 +106,8 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type", "X-CSRF-Token", "X-Requested-With"],
     expose_headers=["Content-Disposition", "X-Request-Id"],
 )
+# Outer security headers on all responses (after CORS so preflight still works).
+app.add_middleware(SecurityHeadersMiddleware)
 
 app.include_router(platform_router)
 
@@ -249,6 +252,7 @@ def grant_consent(
     body: ConsentGrantBody,
     current_user: CurrentUser,
 ) -> dict[str, Any]:
+    matter_id = require_matter_access(current_user, matter_id, min_level="write")
     try:
         rec = hitl.consents.grant(
             matter_id=matter_id,
@@ -276,6 +280,7 @@ def list_consents(
     matter_id: str,
     current_user: CurrentUser,
 ) -> dict[str, Any]:
+    matter_id = require_matter_access(current_user, matter_id)
     return {
         "matter_id": matter_id,
         "state": hitl.consents.current_state(matter_id),
@@ -306,12 +311,13 @@ def evaluate_operation(
     body: EvaluateBody,
     current_user: CurrentUser,
 ) -> dict[str, Any]:
+    matter_id = require_matter_access(current_user, body.matter_id)
     try:
         dest = ModelDestination(body.model_destination)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     decision = hitl.authorize_processing(
-        matter_id=body.matter_id,
+        matter_id=matter_id,
         subject_id=body.subject_id,
         categories=body.data_categories,
         purpose=body.purpose,
@@ -337,6 +343,7 @@ def emit_exception(
     body: ExceptionBody,
     current_user: CurrentUser,
 ) -> dict[str, Any]:
+    matter_id = require_matter_access(current_user, matter_id, min_level="write")
     try:
         kind = ExceptionKind(body.category)
     except ValueError:
@@ -364,6 +371,7 @@ def list_exceptions(
     matter_id: str,
     current_user: CurrentUser,
 ) -> dict[str, Any]:
+    matter_id = require_matter_access(current_user, matter_id)
     return {
         "matter_id": matter_id,
         "export_frozen": hitl.exceptions.export_frozen(matter_id),
@@ -417,6 +425,7 @@ def freeze_production(
     body: FreezeBody,
     current_user: CurrentUser,
 ) -> dict[str, Any]:
+    matter_id = require_matter_access(current_user, matter_id, min_level="write")
     try:
         reject_if_public_demo("court-ready production freeze")
     except PermissionError as e:
@@ -618,6 +627,7 @@ def ingest_decision(
     current_user: CurrentUser,
 ) -> dict[str, Any]:
     """Full 4-4 entry: parse decision → clocks → compliance seed → optional JR."""
+    matter_id = require_matter_access(current_user, matter_id, min_level="write")
     try:
         reject_if_public_demo("persistent post-resolution ingest")
     except PermissionError as e:
@@ -678,6 +688,7 @@ def get_post_resolution(
     matter_id: str,
     current_user: CurrentUser,
 ) -> dict[str, Any]:
+    matter_id = require_matter_access(current_user, matter_id)
     rec = post_resolution.outcomes.get(matter_id)
     return {
         "matter_id": matter_id,
@@ -712,6 +723,7 @@ def build_enforcement(
     body: EnforcementBody,
     current_user: CurrentUser,
 ) -> dict[str, Any]:
+    matter_id = require_matter_access(current_user, matter_id, min_level="write")
     packer = post_resolution.enforcement
     try:
         pt = PackageType(body.package_type)
@@ -746,6 +758,7 @@ def close_matter(
     body: CloseMatterBody,
     current_user: CurrentUser,
 ) -> dict[str, Any]:
+    matter_id = require_matter_access(current_user, matter_id, min_level="admin")
     plan = post_resolution.retention.close_matter(
         matter_id=matter_id,
         closed_on=body.closed_on,

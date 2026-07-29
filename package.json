@@ -1,17 +1,15 @@
 {
-  "name": "enterprise-ai-platform",
-  "version": "0.2.0",
+  "name": "bc-legal-ai",
+  "version": "0.2.0-alpha",
   "private": true,
   "packageManager": "pnpm@9.15.0",
+  "description": "BC Legal AI Associate — canonical monorepo (backend + platform-ui)",
   "scripts": {
-    "dev": "docker compose -f docker-compose.yml up",
-    "dev:web": "pnpm --filter web dev",
-    "dev:api": "cd apps/api && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
-    "build": "pnpm --filter web build",
-    "test:api": "cd apps/api && pytest",
-    "lint:web": "pnpm --filter web lint",
-    "migrate": "cd apps/api && alembic upgrade head",
-    "migrate:create": "cd apps/api && alembic revision --autogenerate -m"
+    "dev:api": "uvicorn backend.api.main:app --reload --host 127.0.0.1 --port 8000",
+    "dev:ui": "pnpm --filter platform-ui dev",
+    "build:ui": "pnpm --filter platform-ui build",
+    "test:api": "python -m pytest tests -q",
+    "scan:confidential": "python scripts/scan_confidential.py ."
   },
   "engines": {
     "node": ">=20.0.0",

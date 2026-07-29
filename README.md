@@ -120,12 +120,13 @@ The platform shell (web/desktop/mobile) is only the **container**. The product i
 | Auth, matter ACL, audit, quarantine, fail-closed citations (partial) | Full M1–M8 gates |
 | Unsigned Windows installers (local) | Signed multi-platform releases |
 
-**Verified local gates (2026-07-28):** full `pytest` suite green; confidential-data scan green; public-demo deployment readiness green. This is **not** production certification for real-client data.
+**Release:** [`v0.2.0-alpha`](releases/v0.2.0-alpha.md) (2026-07-28) — monorepo archive + P0 auth/rate-limit/headers.  
+**Verified local gates:** full `pytest` suite green; confidential-data scan green; public-demo deployment readiness green. This is **not** production certification for real-client data.
 
 ## Quick start (local)
 
 **Canonical stack:** API = `backend/` · skills = `skills/` · services = `services/`.  
-See [`docs/CANONICAL_STACK.md`](docs/CANONICAL_STACK.md). Do not use `apps/api` or `eap-monorepo` as the product entrypoint.
+See [`docs/CANONICAL_STACK.md`](docs/CANONICAL_STACK.md). Non-canonical samples live under [`archive/non-canonical/`](archive/non-canonical/) — do not use them as the product entrypoint.
 
 ```bash
 pip install -r requirements.txt
