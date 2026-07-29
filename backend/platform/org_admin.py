@@ -20,8 +20,8 @@ from backend.identity import AuthError, UserInfo
 _DDL = """
 CREATE TABLE IF NOT EXISTS org_ai_settings (
   org_id TEXT PRIMARY KEY,
-  allowed_providers_json TEXT NOT NULL DEFAULT '["safe_local","ollama"]',
-  default_provider TEXT NOT NULL DEFAULT 'safe_local',
+  allowed_providers_json TEXT NOT NULL DEFAULT '["puter","kimi","safe_local","ollama"]',
+  default_provider TEXT NOT NULL DEFAULT 'puter',
   daily_request_quota INTEGER NOT NULL DEFAULT 500,
   monthly_token_budget INTEGER NOT NULL DEFAULT 2000000,
   allow_external_llm INTEGER NOT NULL DEFAULT 0,
@@ -56,6 +56,8 @@ CREATE TABLE IF NOT EXISTS org_ai_daily (
 
 # Rough public list prices (USD / 1M tokens) for telemetry estimates only
 _COST_PER_MTOK = {
+    "puter": (0.0, 0.0),  # user-pays via Puter account; org telemetry cost stays 0
+    "kimi": (0.0, 0.0),  # Puter user-pays; server Moonshot billed separately if keyed
     "safe_local": (0.0, 0.0),
     "ollama": (0.0, 0.0),
     "openai": (2.5, 10.0),
@@ -87,8 +89,10 @@ def _require_settings_admin(user: UserInfo) -> None:
 @dataclass
 class OrgAiSettings:
     org_id: str
-    allowed_providers: list[str] = field(default_factory=lambda: ["safe_local", "ollama"])
-    default_provider: str = "safe_local"
+    allowed_providers: list[str] = field(
+        default_factory=lambda: ["puter", "kimi", "safe_local", "ollama"]
+    )
+    default_provider: str = "puter"
     daily_request_quota: int = 500
     monthly_token_budget: int = 2_000_000
     allow_external_llm: bool = False
@@ -140,7 +144,7 @@ def get_settings(org_id: str) -> OrgAiSettings:
     return OrgAiSettings(
         org_id=org_id,
         allowed_providers=json.loads(row["allowed_providers_json"] or "[]"),
-        default_provider=row["default_provider"] or "safe_local",
+        default_provider=row["default_provider"] or "puter",
         daily_request_quota=int(row["daily_request_quota"] or 500),
         monthly_token_budget=int(row["monthly_token_budget"] or 2_000_000),
         allow_external_llm=bool(row["allow_external_llm"]),

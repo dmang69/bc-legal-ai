@@ -9,17 +9,21 @@ interface WorkPanelProps {
   onPanelChange: (panel: WorkPanel) => void;
   workPayload?: Record<string, unknown> | null;
   arenaResult?: Record<string, unknown> | null;
+  openClawResult?: Record<string, unknown> | null;
   orgSettings?: OrgAiSettings | null;
   telemetry?: Record<string, unknown> | null;
   providers?: ProviderOption[];
   onSaveSettings?: (patch: Partial<OrgAiSettings>) => void;
   onRefreshTelemetry?: () => void;
+  onRunOpenClaw?: () => void;
+  onRunArenaPreset?: (preset: string) => void;
 }
 
 const panels: Array<{ id: WorkPanel; label: string }> = [
   { id: "tools", label: "Tools" },
   { id: "sources", label: "Sources" },
-  { id: "arena", label: "Arena" },
+  { id: "arena", label: "Arena AI" },
+  { id: "openclaw", label: "OpenClaw" },
   { id: "admin", label: "Admin" },
   { id: "agents", label: "Agents" },
   { id: "draft", label: "Draft" },
@@ -33,17 +37,28 @@ export function WorkPanel({
   onPanelChange,
   workPayload,
   arenaResult,
+  openClawResult,
   orgSettings,
   telemetry,
   providers = [],
   onSaveSettings,
   onRefreshTelemetry,
+  onRunOpenClaw,
+  onRunArenaPreset,
 }: WorkPanelProps) {
   const selectedAgent = agents.find((a) => a.id === selectedAgentId) ?? agents[0];
   const runs = (arenaResult?.runs as Array<Record<string, unknown>>) || [];
   const ranking = (arenaResult?.ranking as Array<Record<string, unknown>>) || [];
   const daily = (telemetry?.daily as Array<Record<string, unknown>>) || [];
   const byProvider = (telemetry?.by_provider as Array<Record<string, unknown>>) || [];
+  const clawSteps =
+    (openClawResult?.steps as Array<Record<string, unknown>>) ||
+    (workPayload?.steps as Array<Record<string, unknown>>) ||
+    [];
+  const clawPlan =
+    (openClawResult?.plan as Array<Record<string, unknown>>) ||
+    (workPayload?.plan as Array<Record<string, unknown>>) ||
+    [];
 
   return (
     <aside className="work-panel">
@@ -122,24 +137,45 @@ export function WorkPanel({
 
         {activePanel === "arena" && (
           <>
-            <h2>Model arena</h2>
-            <p className="muted">Side-by-side comparison · local heuristic scores (not LMSYS Elo).</p>
+            <h2>Arena AI</h2>
+            <p className="muted">
+              Multi-model comparison · legal-aware heuristics (not LMSYS Elo) · Puter/Kimi client runs merge.
+            </p>
+            <div className="panel-card">
+              <strong>Presets</strong>
+              <div className="slash-bar" style={{ marginTop: 8 }}>
+                {["legal_core", "kimi_focus", "private", "frontier"].map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    className="slash-chip"
+                    onClick={() => onRunArenaPreset?.(p)}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </div>
             {ranking.length > 0 && (
               <div className="quality-card">
                 <strong>Ranking</strong>
                 {ranking.map((r) => (
                   <div key={String(r.provider)}>
-                    <span>{String(r.provider)}</span>
+                    <span>
+                      {String(r.provider)}
+                      {r.source ? ` · ${String(r.source)}` : ""}
+                    </span>
                     <b>{String(r.overall ?? "")}</b>
                   </div>
                 ))}
               </div>
             )}
             {runs.map((run) => (
-              <div className="panel-card" key={`${run.provider}-${run.model}`}>
+              <div className="panel-card" key={`${run.provider}-${run.model}-${run.source}`}>
                 <div className="panel-card-heading">
                   <span className="verified-dot" />
                   {String(run.provider)} / {String(run.model)}
+                  {run.source ? ` · ${String(run.source)}` : ""}
                 </div>
                 <p className="clamp">{String(run.content || "").slice(0, 420)}</p>
                 <pre className="json-block">{JSON.stringify(run.scores || {}, null, 2)}</pre>
@@ -147,7 +183,71 @@ export function WorkPanel({
             ))}
             {runs.length === 0 && (
               <div className="panel-card">
-                <p>Click <strong>Arena</strong> in the slash bar to compare providers on the current prompt.</p>
+                <p>
+                  Click <strong>Arena</strong> in the slash bar or a preset above to compare
+                  Puter, Kimi, safe_local, and more.
+                </p>
+              </div>
+            )}
+          </>
+        )}
+
+        {activePanel === "openclaw" && (
+          <>
+            <h2>OpenClaw</h2>
+            <p className="muted">
+              Agent harness inspired by{" "}
+              <a href="https://openclaw.ai/" target="_blank" rel="noreferrer">
+                openclaw.ai
+              </a>
+              : multi-step plans, tool plugins, memory, HITL gates. No autonomous filing.
+            </p>
+            <div className="panel-card">
+              <button type="button" className="slash-chip accent" onClick={() => onRunOpenClaw?.()}>
+                Run OpenClaw on current input
+              </button>
+              <p className="muted tiny" style={{ marginTop: 8 }}>
+                Or type <code>/claw your goal…</code> in chat.
+              </p>
+            </div>
+            {(openClawResult || workPayload?.view === "openclaw") && (
+              <>
+                <div className="quality-card">
+                  <strong>Status</strong>
+                  <div>
+                    {String(
+                      openClawResult?.status || workPayload?.status || "—",
+                    )}{" "}
+                    · run {String(openClawResult?.run_id || workPayload?.run_id || "")}
+                  </div>
+                </div>
+                {clawPlan.length > 0 && (
+                  <div className="panel-card">
+                    <strong>Plan</strong>
+                    <ol>
+                      {clawPlan.map((p, i) => (
+                        <li key={i}>
+                          {String(p.title || p.tool_id)}{" "}
+                          <span className="muted">({String(p.tool_id)})</span>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                )}
+                {clawSteps.map((s, i) => (
+                  <div className="panel-card" key={i}>
+                    <div className="panel-card-heading">
+                      <span className="verified-dot" />
+                      {String(s.title || s.tool_id)} · {String(s.status)}
+                    </div>
+                    <p className="clamp">{String(s.output || "").slice(0, 360)}</p>
+                  </div>
+                ))}
+              </>
+            )}
+            {!openClawResult && workPayload?.view !== "openclaw" && (
+              <div className="panel-card">
+                <p>No OpenClaw run yet. Plans tools, loads skills, JR clock, citations, memory.</p>
               </div>
             )}
           </>

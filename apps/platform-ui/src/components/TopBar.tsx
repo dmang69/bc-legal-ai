@@ -8,11 +8,13 @@ interface TopBarProps {
   modes: Array<{ id: string; label: string }>;
   providers: ProviderOption[];
   providerId: string;
+  modelId: string;
   health: string;
   quotaLine: string;
   onMatterChange: (matterId: string) => void;
   onModeChange: (mode: ReasoningMode) => void;
   onProviderChange: (id: string) => void;
+  onModelChange: (id: string) => void;
   onNewMatter: () => void;
 }
 
@@ -24,13 +26,18 @@ export function TopBar({
   modes,
   providers,
   providerId,
+  modelId,
   health,
   quotaLine,
   onMatterChange,
   onModeChange,
   onProviderChange,
+  onModelChange,
   onNewMatter,
 }: TopBarProps) {
+  const activeProvider = providers.find((p) => p.id === providerId);
+  const models = activeProvider?.models || [];
+
   return (
     <header className="topbar">
       <div className="matter-selector-wrap">
@@ -67,12 +74,30 @@ export function TopBar({
             {providers.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
+                {p.id === "puter" ? " · AI base" : ""}
                 {p.local ? " · local" : ""}
+                {p.user_pays ? " · user-pays" : ""}
                 {!p.configured ? " · setup" : ""}
               </option>
             ))}
           </select>
         </div>
+        {models.length > 0 ? (
+          <div className="mode-control">
+            <label htmlFor="model-select">Model</label>
+            <select
+              id="model-select"
+              value={modelId || models[0]}
+              onChange={(e) => onModelChange(e.target.value)}
+            >
+              {models.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
         <div className="mode-control">
           <label htmlFor="mode-select">Mode</label>
           <select

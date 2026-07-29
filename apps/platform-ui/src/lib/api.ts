@@ -184,8 +184,12 @@ export type ProviderMeta = {
   configured: boolean;
   external_network?: boolean;
   local?: boolean;
+  client_side?: boolean;
+  user_pays?: boolean;
   models?: string[];
+  default_model?: string;
   family?: string;
+  docs?: string;
 };
 
 export function listModelProviders(): Promise<{ providers: ProviderMeta[] }> {
@@ -247,6 +251,8 @@ export function sendMessage(
     provider?: string;
     model?: string;
     temperature?: number;
+    /** Puter browser path: output of puter.ai.chat(); server safety-gates + persists. */
+    client_content?: string;
   },
 ): Promise<{
   user_message_id: string;
@@ -279,14 +285,86 @@ export function summarize(text: string): Promise<{ content: string; ok: boolean 
   });
 }
 
-export function arenaCompare(prompt: string, providers: string[]): Promise<{
-  runs: Array<{ provider: string; model: string; content: string; scores: Record<string, number> }>;
-  ranking: Array<{ provider: string; overall?: number }>;
-  winner?: { provider: string; overall?: number };
+export function arenaCompare(
+  prompt: string,
+  providers: string[],
+  opts?: {
+    preset?: string;
+    mode?: string;
+    client_runs?: Array<{
+      provider: string;
+      model?: string;
+      content: string;
+      latency_ms?: number;
+    }>;
+    models?: Record<string, string>;
+  },
+): Promise<{
+  runs: Array<{
+    provider: string;
+    model: string;
+    content: string;
+    scores: Record<string, number>;
+    source?: string;
+  }>;
+  ranking: Array<{ provider: string; overall?: number; source?: string }>;
+  winner?: { provider: string; overall?: number; source?: string };
+  score_dimensions?: string[];
+  arena_ai?: boolean;
+  note?: string;
 }> {
   return api("/v1/platform/ai/arena", {
     method: "POST",
-    body: JSON.stringify({ prompt, providers }),
+    body: JSON.stringify({
+      prompt,
+      providers,
+      preset: opts?.preset || "",
+      mode: opts?.mode || "balanced",
+      client_runs: opts?.client_runs || [],
+      models: opts?.models || {},
+    }),
+  });
+}
+
+export function arenaPresets(): Promise<{
+  presets: Array<{ id: string; label: string; description?: string; providers: string[] }>;
+}> {
+  return api("/v1/platform/ai/arena/presets");
+}
+
+export function openClawCapabilities(): Promise<Record<string, unknown>> {
+  return api("/v1/platform/ai/openclaw/capabilities");
+}
+
+export function openClawTools(): Promise<{ tools: Array<Record<string, unknown>> }> {
+  return api("/v1/platform/ai/openclaw/tools");
+}
+
+export function openClawMemory(): Promise<{
+  memory: Array<Record<string, unknown>>;
+  runs: Array<Record<string, unknown>>;
+}> {
+  return api("/v1/platform/ai/openclaw/memory");
+}
+
+export function openClawRun(body: {
+  goal: string;
+  auto_approve?: boolean;
+  execute?: boolean;
+  max_steps?: number;
+}): Promise<{
+  run_id: string;
+  ok: boolean;
+  status: string;
+  summary: string;
+  plan: Array<Record<string, string>>;
+  steps: Array<Record<string, unknown>>;
+  warnings?: string[];
+  court_ready?: boolean;
+}> {
+  return api("/v1/platform/ai/openclaw/run", {
+    method: "POST",
+    body: JSON.stringify(body),
   });
 }
 

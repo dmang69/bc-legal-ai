@@ -6,6 +6,7 @@ export type WorkPanel =
   | "sources"
   | "tools"
   | "arena"
+  | "openclaw"
   | "admin"
   | "evidence"
   | "draft"
@@ -76,5 +77,8 @@ export interface ProviderOption {
   name: string;
   configured: boolean;
   local?: boolean;
+  client_side?: boolean;
+  user_pays?: boolean;
   models?: string[];
+  default_model?: string;
 }

@@ -59,13 +59,43 @@ Then set package visibility to **Public** under GitHub → Packages for anonymou
 |------|----------------|
 | **Matters & auth** | Register/login, org isolation, matter ACL, ethical walls, hash-chained audit |
 | **Conversational workspace** | Multi-turn chat, specialists, modes, streaming, skill-grounded JR/RTB support |
-| **Enterprise AI suite** | Ollama / OpenAI-compatible / Anthropic gateways, summarize, email, code assist, arena |
+| **Enterprise AI suite** | **Puter** AI base + **OpenClaw** agents + **Kimi** long-context + **Arena AI** comparison; Ollama / OpenAI / Anthropic fallbacks |
 | **Legal tooling** | JR clock (ATA s.57), citation fail-closed gates, Form 66 scaffold, BC Laws fetch path |
-| **Platform UI** | Live chat shell — providers, slash-tools, work panel, org admin (quotas / telemetry) |
+| **Platform UI** | Live chat shell — Puter default, model picker, slash-tools, work panel, org admin |
 | **Ops** | Docker, Compose, GHCR publish, CI, portable SQLite + Postgres schema |
 
 Architecture entrypoint: **`backend/`** + **`skills/`** + **`services/`**  
 Canonical path: [docs/CANONICAL_STACK.md](docs/CANONICAL_STACK.md)
+
+---
+
+## AI suite (four pillars)
+
+Default AI base is **[Puter](https://developer.puter.com/ai/)** (browser Puter.js, user-pays, no server API keys). Three complementary pillars expand agent, long-context, and multi-model workflows — all under legal fail-closed gates.
+
+| Pillar | Role | Entry points |
+|--------|------|----------------|
+| **Puter** | AI base — 500+ models via `puter.ai.chat()`, user-pays in the browser | Provider `puter` · [Puter AI docs](https://developer.puter.com/ai/) |
+| **OpenClaw** | Multi-step agent harness: plans, tool plugins, session memory, human approval for high-risk tools | Chat `/claw …` · `POST /v1/platform/ai/openclaw/run` · [openclaw.ai](https://openclaw.ai/) (inspired by) |
+| **Kimi** | Moonshot long-context / deep analysis (`moonshotai/kimi-k2.5` via Puter) | Provider `kimi` · optional `MOONSHOT_API_KEY` + `ALA_ALLOW_EXTERNAL_LLM=1` |
+| **Arena AI** | Side-by-side model comparison with legal-aware heuristic scores (not LMSYS Elo) | Slash **Arena AI** · presets `legal_core`, `kimi_focus`, `private`, `frontier` · `POST /v1/platform/ai/arena` |
+
+**Safety locks (non-negotiable):**
+
+- Not legal advice · `court_ready: false` unless full export gates pass  
+- OpenClaw never autonomously files, serves, settles, or waives privilege  
+- Server-side OpenAI/Anthropic/Moonshot require privacy review + `ALA_ALLOW_EXTERNAL_LLM=1`  
+- Puter/Kimi browser completions are still safety-gated and persisted by the API  
+
+Full provider matrix, env vars, and paths: **[docs/ENTERPRISE_AI_SUITE.md](docs/ENTERPRISE_AI_SUITE.md)**
+
+```bash
+# Defaults (see .env.example)
+ALA_MODEL_PROVIDER=puter
+ALA_PUTER_MODEL=gpt-5-nano
+ALA_KIMI_MODEL=moonshotai/kimi-k2.5
+# VITE_PUTER_MODEL / VITE_KIMI_MODEL for the platform UI build
+```
 
 ---
 
@@ -184,14 +214,17 @@ These six rules are **product locks** — demos and APIs must not reverse them.
 ## Project layout (high level)
 
 ```text
-backend/           FastAPI modular monolith (canonical API)
-skills/            Counsel / tenancy / JR operating procedures
-services/          Deterministic engines (deadlines, HITL, post-resolution)
-apps/platform-ui/  React workbench (chat, arena, org admin)
-frontend/client/   Lightweight static client served by API
-huggingface-space-static/  Public deterministic demo
-docs/              Engineering & ops documentation
-archive/           Non-canonical samples (do not use as entrypoint)
+backend/                    FastAPI modular monolith (canonical API)
+  platform/model_providers  Puter, Kimi, Ollama, OpenAI, Anthropic…
+  platform/openclaw.py      OpenClaw-style agent harness
+  platform/arena.py         Arena AI multi-model comparison
+skills/                     Counsel / tenancy / JR operating procedures
+services/                   Deterministic engines (deadlines, HITL, post-resolution)
+apps/platform-ui/           React workbench (Puter, OpenClaw, Kimi, Arena, org admin)
+frontend/client/            Lightweight static client served by API
+huggingface-space-static/   Public deterministic demo
+docs/                       Engineering & ops documentation
+archive/                    Non-canonical samples (do not use as entrypoint)
 ```
 
 ---

@@ -868,6 +868,8 @@ class ChatSendBody(BaseModel):
     provider: str = ""
     model: str = ""
     temperature: Optional[float] = None
+    # When provider is puter, UI supplies puter.ai.chat() output; server safety-gates + persists.
+    client_content: str = ""
 
 
 @router.get("/chat/capabilities")
@@ -961,6 +963,7 @@ def send_message(
             provider=body.provider,
             model=body.model,
             temperature=body.temperature,
+            client_content=body.client_content or "",
         )
     except AuthError as e:
         raise HTTPException(status_code=403, detail=str(e)) from e
@@ -1026,13 +1029,24 @@ class ArenaBody(BaseModel):
     prompt: str = Field(min_length=1, max_length=20_000)
     providers: list[str] = Field(default_factory=list)
     mode: str = "balanced"
+    preset: str = ""
+    # Client-side Puter/Kimi completions: [{provider, model, content, latency_ms?}]
+    client_runs: list[dict[str, Any]] = Field(default_factory=list)
+    models: dict[str, str] = Field(default_factory=dict)
+
+
+class OpenClawRunBody(BaseModel):
+    goal: str = Field(min_length=1, max_length=20_000)
+    auto_approve: bool = False
+    execute: bool = True
+    max_steps: int = 10
 
 
 class ProviderCompleteBody(BaseModel):
     messages: list[dict[str, str]]
     system_prompt: str = ""
-    provider: str = "safe_local"
-    model: str = "safe-orchestrator"
+    provider: str = ""  # empty → registry default (puter)
+    model: str = ""
     mode: str = "balanced"
     temperature: float = 0.2
     max_tokens: int = 2048
@@ -1049,14 +1063,40 @@ def ai_suite_manifest(current_user: CurrentUser) -> dict[str, Any]:
         "product": "BC Legal AI Associate — Enterprise AI Suite",
         "court_ready_default": False,
         "legal_advice": False,
+        "ai_base": "puter",
+        "ai_base_docs": "https://developer.puter.com/ai/",
+        "pillars": {
+            "openclaw": {
+                "enabled": True,
+                "docs": "https://openclaw.ai/",
+                "endpoints": [
+                    "/v1/platform/ai/openclaw/capabilities",
+                    "/v1/platform/ai/openclaw/run",
+                ],
+            },
+            "kimi": {
+                "enabled": True,
+                "provider": "kimi",
+                "default_model": "moonshotai/kimi-k2.5",
+                "puter_model": "moonshotai/kimi-k2.5",
+            },
+            "arena_ai": {
+                "enabled": True,
+                "endpoints": ["/v1/platform/ai/arena", "/v1/platform/ai/arena/presets"],
+                "presets": ["legal_core", "private", "frontier", "kimi_focus"],
+            },
+        },
         "inspirations": [
+            "Puter AI Gateway (500+ models, user-pays, no API keys)",
+            "OpenClaw agent harness (plans, tools, memory, HITL gates)",
+            "Kimi / Moonshot long-context intelligence",
+            "Arena AI multi-model comparison",
             "ChatGPT multi-turn chat",
             "Monica productivity tools",
             "Claude safety & reasoning",
             "Ollama local models",
             "Copilot code assist",
             "Grok live research (bounded)",
-            "Arena model comparison",
         ],
         "endpoints": {
             "chat": "/v1/platform/conversations",
@@ -1066,6 +1106,9 @@ def ai_suite_manifest(current_user: CurrentUser) -> dict[str, Any]:
             "code": "/v1/platform/ai/code",
             "web_research": "/v1/platform/ai/web-research",
             "arena": "/v1/platform/ai/arena",
+            "arena_presets": "/v1/platform/ai/arena/presets",
+            "openclaw_run": "/v1/platform/ai/openclaw/run",
+            "openclaw_tools": "/v1/platform/ai/openclaw/tools",
             "complete": "/v1/platform/ai/complete",
             "providers": "/v1/platform/workspace/model-providers",
         },
@@ -1137,6 +1180,13 @@ def ai_web_research(body: WebResearchBody, current_user: CurrentUser) -> dict[st
     return research(body.query, max_results=body.max_results).to_dict()
 
 
+@router.get("/ai/arena/presets")
+def ai_arena_presets(current_user: CurrentUser) -> dict[str, Any]:
+    from backend.platform.arena import list_presets
+
+    return {"presets": list_presets(), "arena_ai": True, "court_ready": False}
+
+
 @router.post("/ai/arena")
 def ai_arena(body: ArenaBody, current_user: CurrentUser) -> dict[str, Any]:
     from backend.platform.arena import compare_models
@@ -1146,8 +1196,79 @@ def ai_arena(body: ArenaBody, current_user: CurrentUser) -> dict[str, Any]:
         action="ai.arena",
         org_id=current_user.org_id,
         resource_type="arena",
+        resource_id=(body.preset or "custom")[:40],
     )
-    return compare_models(body.prompt, providers=body.providers or None, mode=body.mode)
+    return compare_models(
+        body.prompt,
+        providers=body.providers or None,
+        mode=body.mode,
+        preset=body.preset or "",
+        client_runs=body.client_runs or None,
+        models=body.models or None,
+    )
+
+
+@router.get("/ai/openclaw/capabilities")
+def openclaw_capabilities(current_user: CurrentUser) -> dict[str, Any]:
+    from backend.platform import openclaw as claw
+
+    return claw.capabilities()
+
+
+@router.get("/ai/openclaw/tools")
+def openclaw_tools(current_user: CurrentUser) -> dict[str, Any]:
+    from backend.platform import openclaw as claw
+
+    return {"tools": claw.list_tools(), "openclaw": True}
+
+
+@router.get("/ai/openclaw/memory")
+def openclaw_memory(current_user: CurrentUser) -> dict[str, Any]:
+    from backend.platform import openclaw as claw
+
+    return {"memory": claw.list_memory(current_user), "runs": claw.list_runs(current_user)}
+
+
+@router.post("/ai/openclaw/run")
+def openclaw_run(body: OpenClawRunBody, current_user: CurrentUser) -> dict[str, Any]:
+    from backend.platform import openclaw as claw
+    from backend.platform import org_admin
+
+    q = org_admin.check_quota(current_user, provider="openclaw")
+    # openclaw may not be in allowlist — treat as tool under puter/safe_local quota
+    if not q.get("allowed"):
+        q = org_admin.check_quota(current_user, provider="puter")
+    if not q.get("allowed"):
+        q = org_admin.check_quota(current_user, provider="safe_local")
+    if not q.get("allowed"):
+        raise HTTPException(status_code=429, detail=q.get("reason") or "quota denied")
+
+    get_audit_ledger().append(
+        actor_id=current_user.user_id,
+        action="ai.openclaw_run",
+        org_id=current_user.org_id,
+        resource_type="openclaw",
+        resource_id=body.goal[:80],
+    )
+    result = claw.run_agent(
+        current_user,
+        body.goal,
+        auto_approve=body.auto_approve,
+        execute=body.execute,
+        max_steps=body.max_steps,
+    )
+    try:
+        org_admin.record_usage(
+            current_user,
+            provider="openclaw",
+            model="legal-harness",
+            feature="openclaw",
+            input_tokens=max(20, len(body.goal) // 4),
+            output_tokens=max(20, len(result.get("summary") or "") // 4),
+        )
+    except Exception:
+        pass
+    return result
 
 
 @router.post("/ai/complete")
@@ -1157,12 +1278,12 @@ def ai_complete(body: ProviderCompleteBody, current_user: CurrentUser) -> dict[s
     from backend.platform.model_providers import ChatModelRequest, get_model_provider_registry
     from backend.platform import org_admin
 
-    pid = body.provider or "safe_local"
+    reg = get_model_provider_registry()
+    pid = body.provider or reg.default_provider_id()
     q = org_admin.check_quota(current_user, provider=pid)
     if not q.get("allowed"):
         raise HTTPException(status_code=429, detail=q.get("reason") or "quota denied")
 
-    reg = get_model_provider_registry()
     resp = reg.complete(
         ChatModelRequest(
             messages=body.messages,

@@ -48,7 +48,10 @@ def test_settings_and_telemetry(client: TestClient):
     h = _auth(client)
     g = client.get("/v1/platform/org/ai/settings", headers=h)
     assert g.status_code == 200
-    assert "safe_local" in g.json()["allowed_providers"]
+    allowed = g.json()["allowed_providers"]
+    assert "puter" in allowed
+    assert "safe_local" in allowed
+    assert g.json()["default_provider"] == "puter"
 
     u = client.put(
         "/v1/platform/org/ai/settings",
