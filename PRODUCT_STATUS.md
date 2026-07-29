@@ -6,11 +6,13 @@
 **Not:** a licensed lawyer, legal advice service, or representation  
 **Official product description (target platform):** [`docs/PRODUCT_DESCRIPTION.md`](docs/PRODUCT_DESCRIPTION.md)
 
-**Assessment date:** 2026-07-22  
+**Assessment date:** 2026-07-28 (repo finalize refresh)  
 **Verdict:** strong **prototype / counsel workbench** with **M1 platform core landed** (SQLite/Postgres-ready) — still **not** a completed Associate  
 **Release level:** **Prototype → Internal Alpha foundation** (~**30–35%**).  
 **Controlling roadmap:** `docs/PHASE_4_MASTER_ENGINEERING_PROGRAM.md`  
-**Full audit:** `architecture/AUDIT_P0_2026-07-21.md` — history rewrite + branch protection still human ops.
+**Full audit:** `architecture/AUDIT_P0_2026-07-21.md` — history rewrite + branch protection still human ops.  
+
+**Local verification (2026-07-28):** `197` pytest tests passed; confidential scan OK; public-demo deployment readiness OK. Legacy HITL routes require bearer auth (tests updated).
 
 **Note:** `PRODUCT_DESCRIPTION.md` describes the **completed supervised platform**. This file describes **what exists now**.
 

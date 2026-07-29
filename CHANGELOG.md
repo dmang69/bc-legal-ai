@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Repo finalize (2026-07-28)
+
+- Phase 3/4 HTTP tests updated for bearer auth after route hardening; anonymous HITL routes return 401
+- Confidential scanner green: removed accidental nested tree, synthetic demo placeholders, allowlist for public UI/docs paths
+- Restored `infra/secrets/*.example` scaffold (never commit real secrets)
+- Verified: `197 passed` pytest, confidential scan OK, deployment-readiness OK (public demo)
+
 ### Data model v1.0 (controlling)
 
 - `docs/DATA_MODEL_AND_EVIDENCE_SCHEMA.md` + `architecture/contracts/sql/v1_data_model.sql`

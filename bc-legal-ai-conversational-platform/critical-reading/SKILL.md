@@ -459,5 +459,5 @@ Match the number of reads to the stakes.
 - `supreme-court-litigation-counsel` → uses critical-reading for opposing submissions
 - `canlii-boa-builder` → uses critical-reading for authority verification
 - `bc-judicial-review-guide` → uses critical-reading on RTB decisions being reviewed
-- `owings-sanghera-jr-strategy` → uses critical-reading on the impugned decisions
+- `owings-landlord-jr-strategy` → uses critical-reading on the impugned decisions
 - `cognitive-awareness` → applies Module 2 (epistemic calibration) to interpretive claims

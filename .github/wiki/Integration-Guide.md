@@ -17,9 +17,9 @@ sources = reg.sources  # List of verified source definitions
 
 Configure via environment:
 ```
-SMTP_HOST=smtp.example.com
+SMTP_HOST=smtp.example.invalid
 SMTP_PORT=587
-SMTP_USER=notifications@ala.example.com
+SMTP_USER=notifications@synthetic.invalid
 SMTP_PASSWORD=***
 ```
 

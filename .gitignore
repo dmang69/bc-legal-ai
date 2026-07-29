@@ -78,6 +78,9 @@ logs/
 matters/**
 !matters/.gitkeep
 
+# Accidental nested clone of this repo (never commit)
+/bc-legal-ai/
+
 # Skill runtime downloads / search exports (keep code, not PDFs)
 skills/**/outputs/
 .pytest_cache/

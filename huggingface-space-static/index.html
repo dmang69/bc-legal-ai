@@ -222,7 +222,7 @@ const PII = [
   [/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/i, 'email address'],
   // North American phone with separators/brackets (avoids bare RTB file numbers)
   [/(?:\+?1[\s.\-]?)?(?:\(\d{3}\)|\d{3})[\s.\-]\d{3}[\s.\-]\d{4}\b/, 'phone number'],
-  // Canadian postal code (A1A 1A1)
+  // Canadian postal code (letter-digit-letter + digit-letter-digit)
   [/\b[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z][\s\-]?\d[ABCEGHJ-NPRSTV-Z]\d\b/i, 'postal code'],
 ];
 function screenText(t){

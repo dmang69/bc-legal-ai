@@ -120,6 +120,8 @@ The platform shell (web/desktop/mobile) is only the **container**. The product i
 | Auth, matter ACL, audit, quarantine, fail-closed citations (partial) | Full M1–M8 gates |
 | Unsigned Windows installers (local) | Signed multi-platform releases |
 
+**Verified local gates (2026-07-28):** full `pytest` suite green; confidential-data scan green; public-demo deployment readiness green. This is **not** production certification for real-client data.
+
 ## Quick start (local)
 
 **Canonical stack:** API = `backend/` · skills = `skills/` · services = `services/`.  

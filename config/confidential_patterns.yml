@@ -69,6 +69,10 @@ allowlist_prefixes:
   - skills/
   - apps/platform-ui/
   - apps/desktop-mobile/
+  - frontend/
+  - huggingface-space/
+  - huggingface-space-static/
+  - .github/
 
 # Filename suffixes / names always skipped
 ignore_filenames:
