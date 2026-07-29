@@ -91,6 +91,14 @@ TOOLS = [
     {"id": "evidence_linker", "label": "Evidence Linker", "enabled": True, "risk": "medium"},
     {"id": "privilege_guard", "label": "Privilege Guard", "enabled": True, "risk": "high"},
     {"id": "agent_planner", "label": "Agent Planner", "enabled": True, "risk": "high"},
+    {"id": "summarize", "label": "Summarize", "enabled": True, "risk": "low"},
+    {"id": "email_draft", "label": "Email Draft", "enabled": True, "risk": "low"},
+    {"id": "creative", "label": "Creative Writing", "enabled": True, "risk": "low"},
+    {"id": "research_plan", "label": "Research Plan", "enabled": True, "risk": "medium"},
+    {"id": "web_research", "label": "Web Research (allowlisted)", "enabled": True, "risk": "medium"},
+    {"id": "code_assistant", "label": "Code Assistant", "enabled": True, "risk": "low"},
+    {"id": "arena", "label": "Model Arena", "enabled": True, "risk": "medium"},
+    {"id": "ollama", "label": "Ollama Local Models", "enabled": True, "risk": "low"},
 ]
 
 
@@ -165,10 +173,17 @@ class ConversationService:
             "court_ready_default": False,
             "legal_advice": False,
             "supports_streaming": True,
+            "supports_multi_turn_memory": True,
             "supports_matter_scoping": True,
             "supports_agent_plans": True,
             "supports_settings": True,
             "supports_skill_loading": True,
+            "supports_ollama": True,
+            "supports_arena": True,
+            "supports_productivity_tools": True,
+            "supports_code_assistant": True,
+            "supports_web_research": True,
+            "enterprise_ai_suite": True,
             "skills_loaded_count": skills.get("count", 0),
             "specialists": self.list_specialists(),
             "modes": self.list_modes(),
@@ -314,14 +329,55 @@ class ConversationService:
         response_format: str = "message",
         temperature: Optional[float] = None,
     ) -> dict[str, Any]:
+        from backend.platform.ai_safety import assess_user_input
+
         conv = self.get(user, conversation_id)
         _assert_matter(user, conv.get("matter_id"))
         text = (content or "").strip()
         if not text and not attachments:
             raise ValueError("Empty message")
-        user_meta = {"attachments": attachments or []}
+        gate = assess_user_input(text)
+        if not gate.allowed:
+            user_msg_id = self._save_message(
+                conversation_id, "user", text or "[attachment]", {"attachments": attachments or []}
+            )
+            asst_id = self._save_message(
+                conversation_id,
+                "assistant",
+                gate.rewritten_content,
+                {
+                    "warnings": gate.reasons,
+                    "controls": {"court_ready": False, "blocked": True},
+                    "provider": "safety_gate",
+                    "model": "policy",
+                },
+            )
+            return {
+                "user_message_id": user_msg_id,
+                "assistant_message_id": asst_id,
+                "assistant": {
+                    "role": "assistant",
+                    "content": gate.rewritten_content,
+                    "meta": {"warnings": gate.reasons, "controls": {"blocked": True}},
+                },
+            }
+        user_meta = {
+            "attachments": attachments or [],
+            "provider_request": provider or "",
+            "model_request": model or "",
+        }
         user_msg_id = self._save_message(conversation_id, "user", text or "[attachment]", user_meta)
-        reply = self._orchestrate(user, conv, text)
+        # Multi-turn memory: prior messages (excluding the one just saved is ok — include all)
+        history = self.list_messages(user, conversation_id)
+        reply = self._orchestrate(
+            user,
+            conv,
+            text,
+            history=history,
+            provider=provider,
+            model=model,
+            temperature=temperature,
+        )
         asst_id = self._save_message(
             conversation_id, "assistant", reply.content, reply.to_meta()
         )
@@ -356,8 +412,25 @@ class ConversationService:
         yield "\n\n__META__" + json.dumps(result["assistant"]["meta"])
 
     def _orchestrate(
-        self, user: UserInfo, conv: dict[str, Any], text: str
+        self,
+        user: UserInfo,
+        conv: dict[str, Any],
+        text: str,
+        *,
+        history: Optional[list[dict[str, Any]]] = None,
+        provider: str = "",
+        model: str = "",
+        temperature: Optional[float] = None,
     ) -> AssistantReply:
+        from backend.platform.ai_safety import enforce_output_safety, reasoning_scaffold
+        from backend.platform.code_assistant import complete_code, debug_code, document_code
+        from backend.platform.productivity_tools import (
+            creative_writing,
+            draft_email,
+            research_plan,
+            summarize_text,
+        )
+
         low = text.lower()
         warnings = [
             "Not legal advice. Human supervision required for any filing, service, or advice.",
@@ -371,6 +444,7 @@ class ConversationService:
         ]
         work_panel: Optional[dict[str, Any]] = {"view": "sources", "title": "Sources"}
         controls: dict[str, Any] = {"court_ready": False, "legal_advice": False}
+        history = history or []
 
         # Load in-repo skills for this specialist + message
         specialist_id = conv.get("specialist") or "bc_legal_associate"
@@ -471,6 +545,48 @@ class ConversationService:
                 tool_activity=kwargs.get("tool_activity", tools),
                 controls=controls,
             )
+
+        # --- Productivity suite (Monica-style) ---
+        if low.startswith("/summarize") or low.startswith("summarize:"):
+            tools.append("summarize")
+            payload = text.split(":", 1)[-1] if ":" in text else text.replace("/summarize", "", 1)
+            # Use prior user message body if short command
+            if len(payload.strip()) < 20 and len(history) >= 2:
+                payload = history[-2].get("content") or payload
+            res = summarize_text(payload.strip())
+            return _pack(res.content, work_panel={"view": "productivity", "title": "Summary", "tool": "summarize"})
+
+        if low.startswith("/email") or "draft an email" in low or "draft email" in low:
+            tools.append("email_draft")
+            res = draft_email(purpose=text, audience="counsel", points=[])
+            return _pack(res.content, work_panel={"view": "productivity", "title": "Email draft", "tool": "email"})
+
+        if low.startswith("/creative") or low.startswith("write a story"):
+            tools.append("creative")
+            res = creative_writing(text)
+            return _pack(res.content, work_panel={"view": "productivity", "title": "Creative", "tool": "creative"})
+
+        if low.startswith("/research") or low.startswith("research plan"):
+            tools.append("research_plan")
+            res = research_plan(text)
+            return _pack(res.content, work_panel={"view": "research", "title": "Research plan", "tool": "research"})
+
+        # --- Copilot-style code ---
+        if low.startswith("/code") or low.startswith("/debug") or low.startswith("/document-code"):
+            tools.append("code_assistant")
+            if low.startswith("/debug"):
+                res = debug_code(text, error="")
+            elif low.startswith("/document-code"):
+                res = document_code(text)
+            else:
+                res = complete_code(text)
+            return _pack(res.content, work_panel={"view": "code", "title": "Code assist", "tool": res.mode})
+
+        # Deep analysis mode → structured reasoning scaffold prefix
+        deep_prefix = ""
+        if conv.get("model_mode") == "deep" or "think step by step" in low:
+            tools.append("extended_reasoning")
+            deep_prefix = reasoning_scaffold(text) + "\n\n"
 
         # Agent-style multi-step
         if any(k in low for k in ("book of authorities", "build the complete", "agent", "plan:")):
@@ -583,29 +699,82 @@ class ConversationService:
                 work_panel={"view": "deadlines", "title": "Deadline Review", "skills": skill_names},
             )
 
-        # Default conversational support — still skill-grounded
-        tools.append("general_support")
+        # Default: multi-turn provider completion (ChatGPT-style) + skill grounding
+        tools.append("multi_turn_chat")
         specialist_name = next(
             (s["name"] for s in SPECIALISTS if s["id"] == specialist_id),
             "BC Legal Associate",
         )
-        body = (
-            f"**{specialist_name}** (mode: {conv.get('model_mode', 'balanced')})\n\n"
-            "Supervised conversational workspace. I can organize research questions, "
-            "structure JR/RTB analysis, flag citation risks, and prepare drafts.\n\n"
-            f"You said:\n> {text[:800]}\n\n"
-            "Tell me the **matter**, **forum**, and whether you want research, "
-            "evidence review, drafting, or an agent plan. "
-            "I will not invent statute text — use BC Laws for official wording."
+        mode = conv.get("model_mode") or "balanced"
+        mode_meta = next((m for m in MODES if m["id"] == mode), MODES[1])
+        max_ctx = int(mode_meta.get("max_context_messages") or 16)
+        temp = (
+            float(temperature)
+            if temperature is not None
+            else float(mode_meta.get("temperature") or 0.3)
         )
-        if skill_block:
-            body += "\n\n" + skill_block[:1600]
+
+        # Build chat history for provider (exclude trailing assistant if any)
+        chat_msgs: list[dict[str, str]] = []
+        for m in history[-max_ctx:]:
+            role = m.get("role") or "user"
+            if role not in ("user", "assistant", "system"):
+                continue
+            chat_msgs.append({"role": role, "content": str(m.get("content") or "")[:8000]})
+        if not chat_msgs or chat_msgs[-1].get("role") != "user":
+            chat_msgs.append({"role": "user", "content": text})
+
+        system = (
+            f"You are {specialist_name} in the BC Legal AI Associate supervised workspace. "
+            "Be helpful, honest, and harmless. Never claim to be a lawyer or give legal advice. "
+            "Never mark outputs court-ready. Prefer structured answers. "
+            "For BC law, direct users to verify on BC Laws. "
+            "Form 66 = petition; Form 67 = response. "
+            f"Skills context:\n{skill_block[:3000]}"
+        )
+        reg = get_model_provider_registry()
+        pid = provider or reg.default_provider_id()
+        if mode == "private_local" and not provider:
+            pid = "ollama"
+        req = ChatModelRequest(
+            messages=chat_msgs,
+            system_prompt=system,
+            model=model or "safe-orchestrator",
+            mode=mode,
+            temperature=temp,
+            max_tokens=2048 if mode != "deep" else 4096,
+            metadata={"specialist": specialist_id, "conversation_id": conv.get("conversation_id")},
+        )
+        resp = reg.complete(req, provider_id=pid)
+        safe = enforce_output_safety(resp.content, mode=mode)
+        body = deep_prefix + (safe.rewritten_content or resp.content)
+        if skill_names and "skills loaded" not in body.lower():
+            body += (
+                "\n\n---\n"
+                f"**Skills loaded:** {', '.join(f'`{n}`' for n in skill_names)}"
+            )
         if re.search(r"\b(file|serve|settle|waive)\b", low):
             warnings.append(
                 "I cannot autonomously file, serve, settle, or waive rights. "
                 "Human authorization required."
             )
-        return _pack(body)
+        controls["provider"] = resp.provider
+        controls["model"] = resp.model
+        controls["finish_reason"] = resp.finish_reason
+        controls["safety_tags"] = safe.tags
+        controls["multi_turn_messages"] = len(chat_msgs)
+        return AssistantReply(
+            content=body + jr_clock_block,
+            citations=citations,
+            actions=actions,
+            warnings=warnings + [f"Provider: {resp.provider}/{resp.model}"],
+            work_panel=work_panel,
+            tool_activity=tools,
+            provider=resp.provider,
+            model=resp.model,
+            usage=resp.usage or {},
+            controls=controls,
+        )
 
 
 _svc: Optional[ConversationService] = None

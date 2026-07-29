@@ -120,9 +120,9 @@ The platform shell (web/desktop/mobile) is only the **container**. The product i
 | Auth, matter ACL, audit, quarantine, fail-closed citations (partial) | Full M1–M8 gates |
 | Unsigned Windows installers (local) | Signed multi-platform releases |
 
-**Release track:** v0.3.0-alpha foundations — Postgres multi-worker hooks, HttpOnly cookie sessions, OCR path, BC Laws fetch, court package export, installer signing scripts.  
-See [`docs/PRODUCTION_TRACKS_V03.md`](docs/PRODUCTION_TRACKS_V03.md).  
-This is **not** production certification for real-client data.
+**Release track:** v0.4.0-alpha — **Enterprise AI suite** (multi-turn chat, Ollama, productivity tools, code assist, arena, bounded web research) on the supervised legal platform.  
+See [`docs/ENTERPRISE_AI_SUITE.md`](docs/ENTERPRISE_AI_SUITE.md) and [`docs/PRODUCTION_TRACKS_V03.md`](docs/PRODUCTION_TRACKS_V03.md).  
+This is **not** production certification for real-client data and **not** a lawyer.
 
 ## Quick start (local)
 

@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+## v0.4.0-alpha — 2026-07-28
+
+### Enterprise AI suite
+
+- Multi-provider gateway: `safe_local`, **Ollama**, OpenAI-compatible, OpenRouter, Anthropic (external gated)
+- Multi-turn chat memory + provider selection on messages
+- Claude-style safety (`ai_safety.py`) + deep reasoning scaffold
+- Monica-style productivity: summarize, email, creative, research plan
+- Copilot-style code complete/debug/docs
+- Grok-style bounded web research (allowlisted; off by default)
+- Arena multi-model comparison with local quality heuristics
+- API: `/v1/platform/ai/*` + suite manifest; docs `docs/ENTERPRISE_AI_SUITE.md`
+
 ## v0.3.1-alpha — 2026-07-28
 
 ### Postgres integration + Form 66

@@ -865,6 +865,9 @@ class ConversationCreate(BaseModel):
 class ChatSendBody(BaseModel):
     content: str
     attachments: list[dict[str, Any]] = Field(default_factory=list)
+    provider: str = ""
+    model: str = ""
+    temperature: Optional[float] = None
 
 
 @router.get("/chat/capabilities")
@@ -955,6 +958,9 @@ def send_message(
             conversation_id=conversation_id,
             content=body.content,
             attachments=body.attachments,
+            provider=body.provider,
+            model=body.model,
+            temperature=body.temperature,
         )
     except AuthError as e:
         raise HTTPException(status_code=403, detail=str(e)) from e
@@ -980,4 +986,200 @@ def send_message_stream(
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
     return StreamingResponse(gen(), media_type="text/event-stream")
+
+
+# ----- Enterprise AI suite (productivity, code, arena, web, providers) -----
+
+
+class SummarizeBody(BaseModel):
+    text: str = Field(min_length=1, max_length=200_000)
+    max_bullets: int = 8
+
+
+class EmailDraftBody(BaseModel):
+    purpose: str
+    audience: str = "colleague"
+    tone: str = "professional"
+    points: list[str] = Field(default_factory=list)
+    matter_label: str = ""
+
+
+class CreativeBody(BaseModel):
+    prompt: str
+    style: str = "clear_prose"
+
+
+class CodeAssistBody(BaseModel):
+    code: str = ""
+    language: str = ""
+    mode: str = "complete"  # complete | debug | document
+    error: str = ""
+    intent: str = "continue"
+
+
+class WebResearchBody(BaseModel):
+    query: str = Field(min_length=1, max_length=500)
+    max_results: int = 5
+
+
+class ArenaBody(BaseModel):
+    prompt: str = Field(min_length=1, max_length=20_000)
+    providers: list[str] = Field(default_factory=list)
+    mode: str = "balanced"
+
+
+class ProviderCompleteBody(BaseModel):
+    messages: list[dict[str, str]]
+    system_prompt: str = ""
+    provider: str = "safe_local"
+    model: str = "safe-orchestrator"
+    mode: str = "balanced"
+    temperature: float = 0.2
+    max_tokens: int = 2048
+
+
+@router.get("/ai/suite")
+def ai_suite_manifest(current_user: CurrentUser) -> dict[str, Any]:
+    """Enterprise AI suite capability map (ChatGPT/Monica/Claude/Ollama/Copilot/Grok/Arena inspirations)."""
+    from backend.platform.model_providers import get_model_provider_registry
+    from backend.platform.web_research import web_research_enabled
+
+    reg = get_model_provider_registry()
+    return {
+        "product": "BC Legal AI Associate — Enterprise AI Suite",
+        "court_ready_default": False,
+        "legal_advice": False,
+        "inspirations": [
+            "ChatGPT multi-turn chat",
+            "Monica productivity tools",
+            "Claude safety & reasoning",
+            "Ollama local models",
+            "Copilot code assist",
+            "Grok live research (bounded)",
+            "Arena model comparison",
+        ],
+        "endpoints": {
+            "chat": "/v1/platform/conversations",
+            "summarize": "/v1/platform/ai/summarize",
+            "email": "/v1/platform/ai/email-draft",
+            "creative": "/v1/platform/ai/creative",
+            "code": "/v1/platform/ai/code",
+            "web_research": "/v1/platform/ai/web-research",
+            "arena": "/v1/platform/ai/arena",
+            "complete": "/v1/platform/ai/complete",
+            "providers": "/v1/platform/workspace/model-providers",
+        },
+        "providers": reg.list_providers(),
+        "default_provider": reg.default_provider_id(),
+        "web_research_enabled": web_research_enabled(),
+        "external_llm_gated": True,
+        "external_llm_enable_env": "ALA_ALLOW_EXTERNAL_LLM=1",
+        "ollama_url_env": "ALA_OLLAMA_URL",
+        "safety": [
+            "harmlessness_gate",
+            "honesty_disclaimers",
+            "no_lawyer_impersonation",
+            "court_ready_false",
+            "matter_acl",
+        ],
+    }
+
+
+@router.post("/ai/summarize")
+def ai_summarize(body: SummarizeBody, current_user: CurrentUser) -> dict[str, Any]:
+    from backend.platform.productivity_tools import summarize_text
+
+    return summarize_text(body.text, max_bullets=body.max_bullets).to_dict()
+
+
+@router.post("/ai/email-draft")
+def ai_email(body: EmailDraftBody, current_user: CurrentUser) -> dict[str, Any]:
+    from backend.platform.productivity_tools import draft_email
+
+    return draft_email(
+        purpose=body.purpose,
+        audience=body.audience,
+        tone=body.tone,
+        points=body.points,
+        matter_label=body.matter_label,
+    ).to_dict()
+
+
+@router.post("/ai/creative")
+def ai_creative(body: CreativeBody, current_user: CurrentUser) -> dict[str, Any]:
+    from backend.platform.productivity_tools import creative_writing
+
+    return creative_writing(body.prompt, style=body.style).to_dict()
+
+
+@router.post("/ai/code")
+def ai_code(body: CodeAssistBody, current_user: CurrentUser) -> dict[str, Any]:
+    from backend.platform.code_assistant import complete_code, debug_code, document_code
+
+    if body.mode == "debug":
+        return debug_code(body.code, body.error, language=body.language).to_dict()
+    if body.mode == "document":
+        return document_code(body.code, language=body.language).to_dict()
+    return complete_code(body.code, language=body.language, intent=body.intent).to_dict()
+
+
+@router.post("/ai/web-research")
+def ai_web_research(body: WebResearchBody, current_user: CurrentUser) -> dict[str, Any]:
+    from backend.platform.web_research import research
+
+    get_audit_ledger().append(
+        actor_id=current_user.user_id,
+        action="ai.web_research",
+        org_id=current_user.org_id,
+        resource_type="research",
+        resource_id=body.query[:80],
+    )
+    return research(body.query, max_results=body.max_results).to_dict()
+
+
+@router.post("/ai/arena")
+def ai_arena(body: ArenaBody, current_user: CurrentUser) -> dict[str, Any]:
+    from backend.platform.arena import compare_models
+
+    get_audit_ledger().append(
+        actor_id=current_user.user_id,
+        action="ai.arena",
+        org_id=current_user.org_id,
+        resource_type="arena",
+    )
+    return compare_models(body.prompt, providers=body.providers or None, mode=body.mode)
+
+
+@router.post("/ai/complete")
+def ai_complete(body: ProviderCompleteBody, current_user: CurrentUser) -> dict[str, Any]:
+    """Direct multi-provider completion with safety post-process."""
+    from backend.platform.ai_safety import enforce_output_safety
+    from backend.platform.model_providers import ChatModelRequest, get_model_provider_registry
+
+    reg = get_model_provider_registry()
+    resp = reg.complete(
+        ChatModelRequest(
+            messages=body.messages,
+            system_prompt=body.system_prompt
+            or (
+                "Helpful, honest, harmless assistant. Not a lawyer. Not legal advice. "
+                "court_ready remains false."
+            ),
+            model=body.model,
+            mode=body.mode,
+            temperature=body.temperature,
+            max_tokens=body.max_tokens,
+        ),
+        provider_id=body.provider,
+    )
+    safe = enforce_output_safety(resp.content, mode=body.mode)
+    return {
+        "provider": resp.provider,
+        "model": resp.model,
+        "content": safe.rewritten_content or resp.content,
+        "finish_reason": resp.finish_reason,
+        "usage": resp.usage,
+        "safety": safe.to_dict(),
+        "court_ready": False,
+    }
 
