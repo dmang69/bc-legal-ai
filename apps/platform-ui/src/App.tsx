@@ -22,6 +22,7 @@ import {
   listSpecialists,
   login,
   logout,
+  openClawRun,
   register,
   sendMessage,
   setToken,
@@ -32,6 +33,13 @@ import {
   updateOrgAiSettings,
   webResearch,
 } from "./lib/api";
+import {
+  DEFAULT_KIMI_MODEL,
+  DEFAULT_PUTER_MODEL,
+  LEGAL_PUTER_SYSTEM,
+  arenaClientRuns,
+  puterChat,
+} from "./lib/puterClient";
 import { findSensitiveText } from "./lib/security";
 import type {
   AppMode,
@@ -51,6 +59,8 @@ const SLASH_TOOLS = [
   { id: "/research", label: "Research", hint: "/research query…" },
   { id: "/code", label: "Code", hint: "/code snippet…" },
   { id: "/debug", label: "Debug", hint: "/debug error + code…" },
+  { id: "/claw", label: "OpenClaw", hint: "/claw goal for multi-step agent…" },
+  { id: "/kimi", label: "Kimi", hint: "/kimi deep long-context question…" },
 ];
 
 function nowTime(): string {
@@ -84,12 +94,14 @@ export default function App() {
   const [specialists, setSpecialists] = useState<Array<{ id: string; name: string }>>([]);
   const [selectedAgentId, setSelectedAgentId] = useState("bc_legal_associate");
   const [providers, setProviders] = useState<ProviderOption[]>([]);
-  const [providerId, setProviderId] = useState("safe_local");
+  const [providerId, setProviderId] = useState("puter");
+  const [modelId, setModelId] = useState(DEFAULT_PUTER_MODEL);
   const [activePanel, setActivePanel] = useState<WorkPanelType>("tools");
   const [health, setHealth] = useState<string>("checking…");
   const [suiteNote, setSuiteNote] = useState("");
   const [workPayload, setWorkPayload] = useState<Record<string, unknown> | null>(null);
   const [arenaResult, setArenaResult] = useState<Record<string, unknown> | null>(null);
+  const [openClawResult, setOpenClawResult] = useState<Record<string, unknown> | null>(null);
   const [orgSettings, setOrgSettings] = useState<OrgAiSettings | null>(null);
   const [telemetry, setTelemetry] = useState<Record<string, unknown> | null>(null);
   const [quotaLine, setQuotaLine] = useState("");
@@ -139,16 +151,28 @@ export default function App() {
           getOrgTelemetry().catch(() => null),
           checkQuota(providerId).catch(() => null),
         ]);
-      setProviders(
-        (prov.providers || []).map((p: ProviderMeta) => ({
+      const mappedProviders: ProviderOption[] = (prov.providers || []).map(
+        (p: ProviderMeta) => ({
           id: p.id,
           name: p.name,
           configured: p.configured,
           local: p.local,
+          client_side: p.client_side,
+          user_pays: p.user_pays,
           models: p.models,
-        })),
+          default_model: p.default_model,
+        }),
       );
-      if (settings?.default_provider) setProviderId(settings.default_provider);
+      setProviders(mappedProviders);
+      const nextProvider =
+        settings?.default_provider ||
+        mappedProviders.find((p) => p.id === "puter")?.id ||
+        mappedProviders[0]?.id ||
+        "puter";
+      setProviderId(nextProvider);
+      const selected = mappedProviders.find((p) => p.id === nextProvider);
+      if (selected?.default_model) setModelId(selected.default_model);
+      else if (selected?.models?.[0]) setModelId(selected.models[0]);
       setMatters(mats.matters || []);
       if ((mats.matters || [])[0]) setMatterId(mats.matters[0]!.matter_id);
       setModes((modeList.modes || []).map((m) => ({ id: m.id, label: m.label })));
@@ -328,10 +352,38 @@ export default function App() {
     setInput("");
     try {
       const cid = await ensureConversation();
+      let clientContent: string | undefined;
+      let usedModel = modelId || "";
+
+      // Puter / Kimi: browser puter.ai.chat() then persist via API with safety gates.
+      if (providerId === "puter" || providerId === "kimi") {
+        const historyMsgs = messages
+          .filter((m) => m.role === "user" || m.role === "assistant")
+          .slice(-16)
+          .map((m) => ({
+            role: m.role as "user" | "assistant",
+            content: m.content,
+          }));
+        const browserModel =
+          modelId ||
+          (providerId === "kimi" ? DEFAULT_KIMI_MODEL : DEFAULT_PUTER_MODEL);
+        const puterResult = await puterChat({
+          messages: [
+            { role: "system", content: LEGAL_PUTER_SYSTEM },
+            ...historyMsgs,
+            { role: "user", content: trimmed },
+          ],
+          model: browserModel,
+        });
+        clientContent = puterResult.content;
+        usedModel = puterResult.model;
+      }
+
       const res = await sendMessage(cid, {
         content: trimmed,
         provider: providerId,
-        model: "",
+        model: usedModel,
+        client_content: clientContent,
       });
       const meta = res.assistant.meta || {};
       setMessages((m) =>
@@ -345,7 +397,7 @@ export default function App() {
                 actions: meta.actions,
                 warnings: meta.warnings,
                 provider: meta.provider || String(meta.controls?.provider || providerId),
-                model: meta.model,
+                model: meta.model || usedModel,
                 toolActivity: meta.tool_activity,
                 workPanel: meta.work_panel as Record<string, unknown> | undefined,
               }
@@ -396,20 +448,79 @@ export default function App() {
     }
   }
 
-  async function runArena() {
+  async function runArena(preset?: string) {
     const prompt =
       input.trim() ||
       messages.filter((m) => m.role === "user").slice(-1)[0]?.content ||
-      "Explain JR Form 66 briefly.";
+      "Explain JR Form 66 briefly. Not legal advice.";
     setBusy(true);
     try {
-      const providersToRun = [providerId, "safe_local"].filter(
-        (v, i, a) => a.indexOf(v) === i,
-      );
-      const result = await arenaCompare(prompt, providersToRun);
+      const providersToRun = preset
+        ? []
+        : [providerId, "kimi", "safe_local"].filter((v, i, a) => a.indexOf(v) === i);
+      // Browser completions for puter/kimi (Arena AI client merge)
+      const clientTargets = preset
+        ? ["puter", "kimi"]
+        : providersToRun.filter((p) => p === "puter" || p === "kimi");
+      const client_runs = await arenaClientRuns(prompt, clientTargets, {
+        puter: modelId || DEFAULT_PUTER_MODEL,
+        kimi: DEFAULT_KIMI_MODEL,
+      }).catch(() => []);
+      const result = await arenaCompare(prompt, providersToRun, {
+        preset: preset || (providersToRun.length ? "" : "legal_core"),
+        client_runs,
+        models: {
+          puter: modelId || DEFAULT_PUTER_MODEL,
+          kimi: DEFAULT_KIMI_MODEL,
+        },
+      });
       setArenaResult(result as unknown as Record<string, unknown>);
       setActivePanel("arena");
-      setWorkPayload({ view: "arena", title: "Arena comparison" });
+      setWorkPayload({ view: "arena", title: "Arena AI comparison", preset: preset || "custom" });
+    } catch (e) {
+      setWarning(String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function runOpenClaw() {
+    const goal =
+      input.trim() ||
+      messages.filter((m) => m.role === "user").slice(-1)[0]?.content ||
+      "Triage a BC RTB judicial review workflow and list next steps.";
+    setBusy(true);
+    try {
+      const result = await openClawRun({ goal, auto_approve: false, execute: true });
+      setOpenClawResult(result as unknown as Record<string, unknown>);
+      setActivePanel("openclaw");
+      setWorkPayload({
+        view: "openclaw",
+        title: "OpenClaw agent",
+        run_id: result.run_id,
+        status: result.status,
+        plan: result.plan,
+        steps: result.steps,
+      });
+      setMessages((m) => [
+        ...m,
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: result.summary,
+          createdAt: nowTime(),
+          status: "complete",
+          provider: "openclaw",
+          model: "legal-harness",
+          warnings: result.warnings,
+          workPanel: {
+            view: "openclaw",
+            run_id: result.run_id,
+            plan: result.plan,
+            steps: result.steps,
+          },
+        },
+      ]);
     } catch (e) {
       setWarning(String(e));
     } finally {
@@ -460,7 +571,8 @@ export default function App() {
           <div className="brand-mark">BC</div>
           <h1>BC Legal AI Associate</h1>
           <p className="muted">
-            Conversational workspace with multi-provider AI suite. Not legal advice.
+            Conversational workspace with Puter AI base (500+ models, user-pays) and
+            multi-provider suite. Not legal advice.
           </p>
           <label>
             Organization
@@ -522,28 +634,38 @@ export default function App() {
           ]}
           providers={providers}
           providerId={providerId}
+          modelId={modelId}
           health={health}
           quotaLine={quotaLine}
           onMatterChange={setMatterId}
           onModeChange={(m) => setReasoningMode(m as ReasoningMode)}
-          onProviderChange={setProviderId}
+          onProviderChange={(id) => {
+            setProviderId(id);
+            const p = providers.find((x) => x.id === id);
+            if (p?.default_model) setModelId(p.default_model);
+            else if (p?.models?.[0]) setModelId(p.models[0]);
+          }}
+          onModelChange={setModelId}
           onNewMatter={() => void addSyntheticMatter()}
         />
         <div className="workspace-grid">
           <section className="conversation-column">
             <div className="conversation-banner">
               <div>
-                <span className="eyebrow">Enterprise AI suite · live API</span>
+                <span className="eyebrow">Puter · OpenClaw · Kimi · Arena AI</span>
                 <h1>Conversational Legal Workspace</h1>
                 <p>
                   {suiteNote ||
-                    "Providers, slash-tools, arena, and org admin on a supervised BC legal workbench."}
+                    "Puter AI base · OpenClaw agents · Kimi long-context · Arena AI comparison · legal safety gates."}
                 </p>
               </div>
               <div className="trust-stack">
                 <span>◈ {matter.privilege}</span>
                 <span>◈ court_ready: false</span>
-                <span>◈ {providerId}</span>
+                <span>
+                  ◈ {providerId}
+                  {modelId ? `/${modelId}` : ""}
+                </span>
               </div>
             </div>
             <div className="slash-bar" aria-label="Slash tools">
@@ -559,7 +681,10 @@ export default function App() {
                 </button>
               ))}
               <button type="button" className="slash-chip accent" onClick={() => void runArena()}>
-                Arena
+                Arena AI
+              </button>
+              <button type="button" className="slash-chip" onClick={() => void runOpenClaw()}>
+                OpenClaw
               </button>
               <button type="button" className="slash-chip" onClick={() => void runWebResearch()}>
                 Research
@@ -598,6 +723,7 @@ export default function App() {
             onPanelChange={setActivePanel}
             workPayload={workPayload}
             arenaResult={arenaResult}
+            openClawResult={openClawResult}
             orgSettings={orgSettings}
             telemetry={telemetry}
             providers={providers}
@@ -607,6 +733,8 @@ export default function App() {
                 .then((t) => setTelemetry(t as unknown as Record<string, unknown>))
                 .catch((e) => setWarning(String(e)));
             }}
+            onRunOpenClaw={() => void runOpenClaw()}
+            onRunArenaPreset={(p) => void runArena(p)}
           />
         </div>
       </main>

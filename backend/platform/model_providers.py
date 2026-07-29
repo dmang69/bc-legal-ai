@@ -1,7 +1,10 @@
 """Model provider abstraction — multi-vendor enterprise gateway.
 
-Default: safe deterministic local orchestrator (no external egress).
-Optional live providers:
+Default AI base: Puter (browser Puter.js — user-pays, no server API keys).
+  Docs: https://developer.puter.com/ai/
+
+Also available:
+  - safe_local: deterministic local orchestrator (no external egress)
   - ollama (ALA_OLLAMA_URL, default http://127.0.0.1:11434)
   - openai-compatible (OPENAI_API_KEY + OPENAI_BASE_URL)
   - anthropic (ANTHROPIC_API_KEY)
@@ -70,7 +73,7 @@ class SafeLocalProvider:
             "models": ["safe-orchestrator"],
             "supports_streaming": True,
             "supports_tools": True,
-            "default": True,
+            "default": False,
             "family": "deterministic",
         }
 
@@ -373,9 +376,227 @@ class AnthropicProvider:
             )
 
 
+class PuterProvider:
+    """Browser-first Puter.js AI gateway (500+ models, user-pays, no server keys).
+
+    Live inference runs in the Platform UI via ``puter.ai.chat()``.
+    Server ``complete()`` returns a client-side directive only — we do not
+    proxy Puter traffic so the User-Pays model and key-free backend stay intact.
+    Docs: https://developer.puter.com/ai/
+    """
+
+    provider_id = "puter"
+
+    DEFAULT_MODELS = [
+        "gpt-5-nano",
+        "gpt-4o-mini",
+        "claude-sonnet-4-6",
+        "gemini-2.5-flash",
+        "deepseek-chat",
+        "moonshotai/kimi-k2.5",
+        "meta-llama/llama-3.1-70b-instruct",
+    ]
+
+    def metadata(self) -> dict[str, Any]:
+        default_model = os.environ.get("ALA_PUTER_MODEL", "gpt-5-nano").strip() or "gpt-5-nano"
+        models = list(self.DEFAULT_MODELS)
+        if default_model not in models:
+            models.insert(0, default_model)
+        return {
+            "id": self.provider_id,
+            "name": "Puter AI Gateway",
+            "configured": True,
+            "external_network": True,
+            "local": False,
+            "client_side": True,
+            "user_pays": True,
+            "models": models,
+            "default_model": default_model,
+            "supports_streaming": True,
+            "supports_tools": True,
+            "default": True,
+            "family": "puter",
+            "docs": "https://developer.puter.com/ai/",
+            "script": "https://js.puter.com/v2/",
+            "note": "User-pays browser AI — no server API keys. Platform UI calls puter.ai.chat().",
+        }
+
+    def complete(self, request: ChatModelRequest) -> ChatModelResponse:
+        model = request.model if request.model and request.model != "safe-orchestrator" else (
+            os.environ.get("ALA_PUTER_MODEL", "gpt-5-nano").strip() or "gpt-5-nano"
+        )
+        content = (
+            "**Puter AI is the browser AI base** for this platform "
+            "(https://developer.puter.com/ai/).\n\n"
+            "Inference runs client-side with Puter.js — **no server API keys**, "
+            "users cover their own usage (User-Pays).\n\n"
+            f"Requested model: `{model}` · mode=`{request.mode}`.\n\n"
+            "Use the Platform UI with provider **Puter AI Gateway**, or call "
+            "`puter.ai.chat(messages, { model })` in the browser. "
+            "This server endpoint does not proxy Puter (keeps billing and keys off our backend).\n\n"
+            "Not legal advice. Outputs are never court-ready without human review."
+        )
+        return ChatModelResponse(
+            content=content,
+            provider=self.provider_id,
+            model=model,
+            finish_reason="client_side",
+            usage={"input_messages": len(request.messages), "output_chars": len(content)},
+            safety={
+                "court_ready": False,
+                "legal_advice": False,
+                "external_network": True,
+                "client_side": True,
+                "user_pays": True,
+            },
+        )
+
+
+class KimiProvider:
+    """Moonshot Kimi — long-context / agentic intelligence.
+
+    Primary path: browser via Puter.js model ``moonshotai/kimi-k2.5`` (user-pays).
+    Optional server path: Moonshot OpenAI-compatible API with MOONSHOT_API_KEY
+    + ALA_ALLOW_EXTERNAL_LLM=1.
+    Docs: https://platform.kimi.ai/ · Puter: https://developer.puter.com/ai/
+    """
+
+    provider_id = "kimi"
+
+    DEFAULT_MODELS = [
+        "moonshotai/kimi-k2.5",
+        "moonshot-v1-128k",
+        "moonshot-v1-32k",
+        "kimi-latest",
+    ]
+
+    def metadata(self) -> dict[str, Any]:
+        default_model = (
+            os.environ.get("ALA_KIMI_MODEL", "moonshotai/kimi-k2.5").strip()
+            or "moonshotai/kimi-k2.5"
+        )
+        models = list(self.DEFAULT_MODELS)
+        if default_model not in models:
+            models.insert(0, default_model)
+        has_key = bool(os.getenv("MOONSHOT_API_KEY") or os.getenv("KIMI_API_KEY"))
+        return {
+            "id": self.provider_id,
+            "name": "Kimi (Moonshot)",
+            "configured": True,  # browser Puter path always available
+            "external_network": True,
+            "local": False,
+            "client_side": True,
+            "user_pays": True,
+            "server_api_configured": has_key,
+            "models": models,
+            "default_model": default_model,
+            "supports_streaming": True,
+            "supports_tools": True,
+            "default": False,
+            "family": "kimi",
+            "docs": "https://www.moonshot.ai/",
+            "puter_model": "moonshotai/kimi-k2.5",
+            "env_var": "MOONSHOT_API_KEY",
+            "note": (
+                "Long-context Kimi via Puter (user-pays) or Moonshot API. "
+                "Ideal for deep analysis of long records and multi-document reasoning."
+            ),
+        }
+
+    def complete(self, request: ChatModelRequest) -> ChatModelResponse:
+        model = request.model if request.model and request.model != "safe-orchestrator" else (
+            os.environ.get("ALA_KIMI_MODEL", "moonshotai/kimi-k2.5").strip()
+            or "moonshotai/kimi-k2.5"
+        )
+        key = (os.getenv("MOONSHOT_API_KEY") or os.getenv("KIMI_API_KEY") or "").strip()
+        allow = os.environ.get("ALA_ALLOW_EXTERNAL_LLM", "").strip().lower() in ("1", "true", "yes")
+
+        if key and allow:
+            # OpenAI-compatible Moonshot endpoint
+            try:
+                import httpx
+            except ImportError:
+                return ChatModelResponse(
+                    content="httpx required for Moonshot Kimi server path",
+                    provider=self.provider_id,
+                    model=model,
+                    finish_reason="dependency_missing",
+                )
+            base = os.getenv("MOONSHOT_BASE_URL", "https://api.moonshot.ai/v1").rstrip("/")
+            # Map Puter-style ids to Moonshot API ids when needed
+            api_model = model
+            if model.startswith("moonshotai/"):
+                api_model = model.split("/", 1)[-1]
+            payload = {
+                "model": api_model if api_model != "kimi-k2.5" else "moonshot-v1-128k",
+                "messages": _messages_with_system(request),
+                "temperature": request.temperature,
+                "max_tokens": request.max_tokens,
+            }
+            try:
+                with httpx.Client(timeout=120.0) as client:
+                    r = client.post(
+                        f"{base}/chat/completions",
+                        headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+                        json=payload,
+                    )
+                    r.raise_for_status()
+                    data = r.json()
+                choice = (data.get("choices") or [{}])[0]
+                content = (choice.get("message") or {}).get("content") or ""
+                return ChatModelResponse(
+                    content=content,
+                    provider=self.provider_id,
+                    model=model,
+                    finish_reason=choice.get("finish_reason") or "stop",
+                    usage=data.get("usage") or {},
+                    safety={
+                        "court_ready": False,
+                        "legal_advice": False,
+                        "external_network": True,
+                        "kimi": True,
+                    },
+                )
+            except Exception as e:
+                return ChatModelResponse(
+                    content=f"Kimi/Moonshot API failed: {e}. Prefer browser Puter path.",
+                    provider=self.provider_id,
+                    model=model,
+                    finish_reason="error",
+                    safety={"court_ready": False, "external_network": True},
+                )
+
+        content = (
+            "**Kimi (Moonshot)** is available as a first-class provider.\n\n"
+            f"Model: `{model}` · long-context / deep analysis oriented.\n\n"
+            "**Browser path (recommended):** Platform UI provider **Kimi** uses "
+            f"`puter.ai.chat(..., {{ model: '{model}' }})` — user-pays, no server keys "
+            "(https://developer.puter.com/ai/).\n\n"
+            "**Server path (optional):** set `MOONSHOT_API_KEY` (or `KIMI_API_KEY`) and "
+            "`ALA_ALLOW_EXTERNAL_LLM=1` after privacy review.\n\n"
+            "Not legal advice. Outputs never court-ready without human review."
+        )
+        return ChatModelResponse(
+            content=content,
+            provider=self.provider_id,
+            model=model,
+            finish_reason="client_side",
+            usage={"input_messages": len(request.messages)},
+            safety={
+                "court_ready": False,
+                "legal_advice": False,
+                "client_side": True,
+                "user_pays": True,
+                "kimi": True,
+            },
+        )
+
+
 class ModelProviderRegistry:
     def __init__(self) -> None:
         self._providers: dict[str, ModelProvider] = {
+            "puter": PuterProvider(),
+            "kimi": KimiProvider(),
             "safe_local": SafeLocalProvider(),
             "ollama": OllamaProvider(),
             "openai": OpenAICompatibleProvider(),
@@ -385,20 +606,31 @@ class ModelProviderRegistry:
                 env_key="OPENROUTER_API_KEY",
                 base_env="OPENROUTER_BASE_URL",
                 default_base="https://openrouter.ai/api/v1",
-                models=["openai/gpt-4o-mini", "anthropic/claude-3.5-sonnet", "meta-llama/llama-3.1-70b-instruct"],
+                models=[
+                    "openai/gpt-4o-mini",
+                    "anthropic/claude-3.5-sonnet",
+                    "moonshotai/kimi-k2.5",
+                    "meta-llama/llama-3.1-70b-instruct",
+                ],
             ),
             "anthropic": AnthropicProvider(),
         }
 
     def list_providers(self) -> list[dict[str, Any]]:
-        return [provider.metadata() for provider in self._providers.values()]
+        default_id = self.default_provider_id()
+        out: list[dict[str, Any]] = []
+        for provider in self._providers.values():
+            meta = dict(provider.metadata())
+            meta["default"] = meta.get("id") == default_id
+            out.append(meta)
+        return out
 
-    def get(self, provider_id: str = "safe_local") -> ModelProvider:
-        return self._providers.get(provider_id) or self._providers["safe_local"]
+    def get(self, provider_id: str = "puter") -> ModelProvider:
+        return self._providers.get(provider_id) or self._providers["puter"]
 
     def default_provider_id(self) -> str:
-        configured = os.getenv("ALA_MODEL_PROVIDER", "safe_local").strip() or "safe_local"
-        return configured if configured in self._providers else "safe_local"
+        configured = os.getenv("ALA_MODEL_PROVIDER", "puter").strip() or "puter"
+        return configured if configured in self._providers else "puter"
 
     def complete(
         self,

@@ -97,7 +97,9 @@ TOOLS = [
     {"id": "research_plan", "label": "Research Plan", "enabled": True, "risk": "medium"},
     {"id": "web_research", "label": "Web Research (allowlisted)", "enabled": True, "risk": "medium"},
     {"id": "code_assistant", "label": "Code Assistant", "enabled": True, "risk": "low"},
-    {"id": "arena", "label": "Model Arena", "enabled": True, "risk": "medium"},
+    {"id": "arena", "label": "Arena AI", "enabled": True, "risk": "medium"},
+    {"id": "openclaw", "label": "OpenClaw Agent", "enabled": True, "risk": "high"},
+    {"id": "kimi", "label": "Kimi (Moonshot)", "enabled": True, "risk": "medium"},
     {"id": "ollama", "label": "Ollama Local Models", "enabled": True, "risk": "low"},
 ]
 
@@ -328,8 +330,9 @@ class ConversationService:
         tools: Optional[list[str]] = None,
         response_format: str = "message",
         temperature: Optional[float] = None,
+        client_content: str = "",
     ) -> dict[str, Any]:
-        from backend.platform.ai_safety import assess_user_input
+        from backend.platform.ai_safety import assess_user_input, enforce_output_safety
 
         conv = self.get(user, conversation_id)
         _assert_matter(user, conv.get("matter_id"))
@@ -379,15 +382,55 @@ class ConversationService:
         user_msg_id = self._save_message(conversation_id, "user", text or "[attachment]", user_meta)
         # Multi-turn memory: prior messages (excluding the one just saved is ok — include all)
         history = self.list_messages(user, conversation_id)
-        reply = self._orchestrate(
-            user,
-            conv,
-            text,
-            history=history,
-            provider=provider,
-            model=model,
-            temperature=temperature,
-        )
+
+        # Browser Puter / Kimi path: UI already called puter.ai.chat(); we persist + safety-gate only.
+        client_text = (client_content or "").strip()
+        if client_text and pid in ("puter", "kimi"):
+            mode = conv.get("model_mode") or "balanced"
+            safe = enforce_output_safety(client_text, mode=mode)
+            body = safe.rewritten_content or client_text
+            client_model = model or (
+                "moonshotai/kimi-k2.5" if pid == "kimi" else "gpt-5-nano"
+            )
+            warn = (
+                "Kimi / Moonshot (browser · user-pays via Puter). "
+                "Not legal advice. Outputs are never court-ready without human review."
+                if pid == "kimi"
+                else (
+                    "Puter AI (browser · user-pays · https://developer.puter.com/ai/). "
+                    "Not legal advice. Outputs are never court-ready without human review."
+                )
+            )
+            reply = AssistantReply(
+                content=body,
+                warnings=[warn],
+                provider=pid,
+                model=client_model,
+                usage={
+                    "input_tokens": max(20, len(text) // 4),
+                    "output_tokens": max(20, len(body) // 4),
+                },
+                controls={
+                    "court_ready": False,
+                    "legal_advice": False,
+                    "client_side": True,
+                    "user_pays": True,
+                    "provider": pid,
+                    "model": client_model,
+                    "kimi": pid == "kimi",
+                    "safety_tags": safe.tags,
+                },
+            )
+        else:
+            reply = self._orchestrate(
+                user,
+                conv,
+                text,
+                history=history,
+                provider=provider,
+                model=model,
+                temperature=temperature,
+            )
         # Telemetry (estimate tokens from usage or content length)
         in_t = int((reply.usage or {}).get("prompt_eval_count") or (reply.usage or {}).get("input_tokens") or max(20, len(text) // 4))
         out_t = int((reply.usage or {}).get("eval_count") or (reply.usage or {}).get("output_tokens") or max(20, len(reply.content) // 4))
@@ -605,6 +648,58 @@ class ConversationService:
             else:
                 res = complete_code(text)
             return _pack(res.content, work_panel={"view": "code", "title": "Code assist", "tool": res.mode})
+
+        # --- OpenClaw agent harness ---
+        if low.startswith("/claw") or low.startswith("/openclaw") or low.startswith("openclaw:"):
+            tools.append("openclaw")
+            from backend.platform import openclaw as claw
+
+            goal = text
+            for prefix in ("/openclaw", "/claw", "openclaw:"):
+                if low.startswith(prefix.lower()) or text.lower().startswith(prefix):
+                    goal = text[len(prefix) :].lstrip(" :")
+                    break
+            if len(goal.strip()) < 3:
+                goal = text
+            run = claw.run_agent(user, goal.strip(), auto_approve=False, execute=True)
+            return AssistantReply(
+                content=run.get("summary") or "OpenClaw run complete.",
+                warnings=warnings + list(run.get("warnings") or []),
+                work_panel={
+                    "view": "openclaw",
+                    "title": "OpenClaw agent",
+                    "run_id": run.get("run_id"),
+                    "status": run.get("status"),
+                    "plan": run.get("plan"),
+                    "steps": run.get("steps"),
+                },
+                tool_activity=tools + ["openclaw"],
+                provider="openclaw",
+                model="legal-harness",
+                controls={
+                    **controls,
+                    "openclaw": True,
+                    "court_ready": False,
+                    "run_id": run.get("run_id"),
+                },
+            )
+
+        # --- Kimi routing hint (browser path uses provider=kimi + client_content) ---
+        if low.startswith("/kimi"):
+            tools.append("kimi")
+            payload = text.split(":", 1)[-1].strip() if ":" in text else text.replace("/kimi", "", 1).strip()
+            body = (
+                "**Kimi (Moonshot)** is selected for deep / long-context work.\n\n"
+                f"Prompt queued: {payload[:1500] or '(empty — type your question after /kimi)'}\n\n"
+                "Switch provider to **Kimi** in the toolbar (or keep it selected) and send your "
+                "full question. Browser path uses Puter model `moonshotai/kimi-k2.5` (user-pays). "
+                "Optional server: `MOONSHOT_API_KEY` + `ALA_ALLOW_EXTERNAL_LLM=1`.\n\n"
+                "Not legal advice. court_ready=false."
+            )
+            return _pack(
+                body,
+                work_panel={"view": "kimi", "title": "Kimi routing", "model": "moonshotai/kimi-k2.5"},
+            )
 
         # Deep analysis mode → structured reasoning scaffold prefix
         deep_prefix = ""
