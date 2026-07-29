@@ -1,0 +1,41 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "API: uvicorn (debugpy)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": [
+        "backend.api.main:app",
+        "--reload",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8000"
+      ],
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "APP_MODE": "development",
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "jinja": true,
+      "justMyCode": true
+    },
+    {
+      "name": "UI: Vite dev (Chrome)",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://127.0.0.1:1420",
+      "webRoot": "${workspaceFolder}/apps/platform-ui/src",
+      "preLaunchTask": "platform-ui:dev"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Full stack: API + UI",
+      "configurations": ["API: uvicorn (debugpy)", "UI: Vite dev (Chrome)"],
+      "stopAll": true
+    }
+  ]
+}

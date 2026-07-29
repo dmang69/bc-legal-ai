@@ -1,0 +1,47 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "platform-ui:dev",
+      "type": "shell",
+      "command": "npm run dev",
+      "options": {
+        "cwd": "${workspaceFolder}/apps/platform-ui",
+        "env": {
+          "BROWSER": "none"
+        }
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "vite",
+        "pattern": { "regexp": "^$" },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".",
+          "endsPattern": "Local:|ready in"
+        }
+      }
+    },
+    {
+      "label": "api:uvicorn",
+      "type": "shell",
+      "command": "python -m uvicorn backend.api.main:app --reload --host 127.0.0.1 --port 8000",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "APP_MODE": "development"
+        }
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "uvicorn",
+        "pattern": { "regexp": "^$" },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".",
+          "endsPattern": "Application startup complete|Uvicorn running"
+        }
+      }
+    }
+  ]
+}
