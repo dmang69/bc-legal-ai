@@ -1,15 +1,15 @@
-import type { ChatThread } from "../types";
+import type { ThreadItem } from "../types";
 
 interface SidebarProps {
-  threads: ChatThread[];
+  threads: ThreadItem[];
   activeThreadId: string;
   collapsed: boolean;
   onToggle: () => void;
   onNewChat: () => void;
   onSelectThread: (id: string) => void;
+  userLabel?: string;
+  onLogout?: () => void;
 }
-
-const navigation = ["Chat", "Matters", "Documents", "Evidence", "Research", "Drafts", "Agents", "Calendar", "Tasks", "Downloads"];
 
 export function Sidebar({
   threads,
@@ -18,11 +18,15 @@ export function Sidebar({
   onToggle,
   onNewChat,
   onSelectThread,
+  userLabel,
+  onLogout,
 }: SidebarProps) {
   return (
     <aside className={`sidebar ${collapsed ? "sidebar--collapsed" : ""}`}>
       <div className="brand-row">
-        <div className="brand-mark" aria-hidden="true">BC</div>
+        <div className="brand-mark" aria-hidden="true">
+          BC
+        </div>
         {!collapsed && (
           <div>
             <strong>BC Legal AI</strong>
@@ -35,22 +39,19 @@ export function Sidebar({
       </div>
 
       <button className="new-chat-button" onClick={onNewChat}>
-        <span>＋</span>{!collapsed && "New chat"}
+        <span>＋</span>
+        {!collapsed && "New chat"}
       </button>
 
       {!collapsed && (
         <>
-          <nav className="primary-nav" aria-label="Primary">
-            {navigation.map((item, index) => (
-              <button className={index === 0 ? "nav-item nav-item--active" : "nav-item"} key={item}>
-                <span className="nav-dot" />
-                {item}
-              </button>
-            ))}
-          </nav>
-
           <div className="sidebar-section-title">Recent chats</div>
           <div className="thread-list">
+            {threads.length === 0 && (
+              <p className="thread-meta" style={{ padding: "0 12px" }}>
+                No chats yet — start one.
+              </p>
+            )}
             {threads.map((thread) => (
               <button
                 key={thread.id}
@@ -58,7 +59,7 @@ export function Sidebar({
                 onClick={() => onSelectThread(thread.id)}
               >
                 <span className="thread-title">{thread.title}</span>
-                <span className="thread-meta">{thread.pinned ? "Pinned · " : ""}{thread.updatedAt}</span>
+                <span className="thread-meta">{thread.updatedAt}</span>
               </button>
             ))}
           </div>
@@ -66,11 +67,16 @@ export function Sidebar({
       )}
 
       <div className="sidebar-footer">
-        <div className="user-avatar">DO</div>
+        <div className="user-avatar">AI</div>
         {!collapsed && (
           <div className="user-info">
-            <strong>Development User</strong>
-            <span>Public demo mode</span>
+            <strong>{userLabel || "User"}</strong>
+            <span>Not legal advice</span>
+            {onLogout && (
+              <button type="button" className="linkish" onClick={onLogout}>
+                Sign out
+              </button>
+            )}
           </div>
         )}
       </div>

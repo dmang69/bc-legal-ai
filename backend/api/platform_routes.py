@@ -1155,6 +1155,12 @@ def ai_complete(body: ProviderCompleteBody, current_user: CurrentUser) -> dict[s
     """Direct multi-provider completion with safety post-process."""
     from backend.platform.ai_safety import enforce_output_safety
     from backend.platform.model_providers import ChatModelRequest, get_model_provider_registry
+    from backend.platform import org_admin
+
+    pid = body.provider or "safe_local"
+    q = org_admin.check_quota(current_user, provider=pid)
+    if not q.get("allowed"):
+        raise HTTPException(status_code=429, detail=q.get("reason") or "quota denied")
 
     reg = get_model_provider_registry()
     resp = reg.complete(
@@ -1170,9 +1176,20 @@ def ai_complete(body: ProviderCompleteBody, current_user: CurrentUser) -> dict[s
             temperature=body.temperature,
             max_tokens=body.max_tokens,
         ),
-        provider_id=body.provider,
+        provider_id=pid,
     )
     safe = enforce_output_safety(resp.content, mode=body.mode)
+    usage = resp.usage or {}
+    in_t = int(usage.get("prompt_tokens") or usage.get("input_tokens") or usage.get("prompt_eval_count") or 50)
+    out_t = int(usage.get("completion_tokens") or usage.get("output_tokens") or usage.get("eval_count") or 100)
+    tel = org_admin.record_usage(
+        current_user,
+        provider=resp.provider,
+        model=resp.model,
+        feature="complete",
+        input_tokens=in_t,
+        output_tokens=out_t,
+    )
     return {
         "provider": resp.provider,
         "model": resp.model,
@@ -1180,6 +1197,69 @@ def ai_complete(body: ProviderCompleteBody, current_user: CurrentUser) -> dict[s
         "finish_reason": resp.finish_reason,
         "usage": resp.usage,
         "safety": safe.to_dict(),
+        "telemetry": tel,
         "court_ready": False,
     }
+
+
+class OrgSettingsBody(BaseModel):
+    allowed_providers: Optional[list[str]] = None
+    default_provider: Optional[str] = None
+    daily_request_quota: Optional[int] = None
+    monthly_token_budget: Optional[int] = None
+    allow_external_llm: Optional[bool] = None
+    allow_web_research: Optional[bool] = None
+
+
+@router.get("/org/ai/settings")
+def org_ai_settings(current_user: CurrentUser) -> dict[str, Any]:
+    from backend.platform import org_admin
+
+    return org_admin.get_settings(current_user.org_id).to_dict()
+
+
+@router.put("/org/ai/settings")
+def org_ai_settings_update(
+    body: OrgSettingsBody,
+    current_user: CurrentUser,
+) -> dict[str, Any]:
+    from backend.platform import org_admin
+
+    try:
+        settings = org_admin.update_settings(
+            current_user,
+            allowed_providers=body.allowed_providers,
+            default_provider=body.default_provider,
+            daily_request_quota=body.daily_request_quota,
+            monthly_token_budget=body.monthly_token_budget,
+            allow_external_llm=body.allow_external_llm,
+            allow_web_research=body.allow_web_research,
+        )
+    except AuthError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+    get_audit_ledger().append(
+        actor_id=current_user.user_id,
+        action="org.ai_settings_update",
+        org_id=current_user.org_id,
+        resource_type="org_ai_settings",
+        resource_id=current_user.org_id,
+    )
+    return settings.to_dict()
+
+
+@router.get("/org/ai/telemetry")
+def org_ai_telemetry(current_user: CurrentUser) -> dict[str, Any]:
+    from backend.platform import org_admin
+
+    try:
+        return org_admin.telemetry_summary(current_user)
+    except AuthError as e:
+        raise HTTPException(status_code=403, detail=str(e)) from e
+
+
+@router.get("/org/ai/quota")
+def org_ai_quota(current_user: CurrentUser, provider: str = "safe_local") -> dict[str, Any]:
+    from backend.platform import org_admin
+
+    return org_admin.check_quota(current_user, provider=provider)
 

@@ -366,6 +366,16 @@ class ConversationService:
             "provider_request": provider or "",
             "model_request": model or "",
         }
+        from backend.platform import org_admin
+        from backend.platform.model_providers import get_model_provider_registry
+
+        pid = provider or get_model_provider_registry().default_provider_id()
+        if (conv.get("model_mode") or "") == "private_local" and not provider:
+            pid = "ollama"
+        qcheck = org_admin.check_quota(user, provider=pid)
+        if not qcheck.get("allowed"):
+            raise ValueError(qcheck.get("reason") or "AI quota denied")
+
         user_msg_id = self._save_message(conversation_id, "user", text or "[attachment]", user_meta)
         # Multi-turn memory: prior messages (excluding the one just saved is ok — include all)
         history = self.list_messages(user, conversation_id)
@@ -378,6 +388,20 @@ class ConversationService:
             model=model,
             temperature=temperature,
         )
+        # Telemetry (estimate tokens from usage or content length)
+        in_t = int((reply.usage or {}).get("prompt_eval_count") or (reply.usage or {}).get("input_tokens") or max(20, len(text) // 4))
+        out_t = int((reply.usage or {}).get("eval_count") or (reply.usage or {}).get("output_tokens") or max(20, len(reply.content) // 4))
+        try:
+            org_admin.record_usage(
+                user,
+                provider=reply.provider or pid,
+                model=reply.model or model or "",
+                feature="chat",
+                input_tokens=in_t,
+                output_tokens=out_t,
+            )
+        except Exception:
+            pass
         asst_id = self._save_message(
             conversation_id, "assistant", reply.content, reply.to_meta()
         )

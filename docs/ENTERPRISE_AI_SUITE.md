@@ -74,9 +74,24 @@ export ALA_OLLAMA_MODEL=llama3.2
 
 This suite **implements architecture and working APIs** for industry-leading *classes* of features. It does **not** reproduce proprietary model weights, LMSYS Elo, full IDE plugins, or unrestricted real-time social firehoses. Production orgs must complete privacy review, DPA, data residency, and pen-test before external LLM traffic.
 
+## Platform UI (v0.4.1)
+
+```bash
+uvicorn backend.api.main:app --reload --port 8000
+cd apps/platform-ui && npm install && npm run dev
+# http://127.0.0.1:1420 — register synthetic org, pick provider, use slash tools / Arena / Admin
+```
+
+| UI control | Backend |
+|------------|---------|
+| Provider select | `ALA_MODEL_PROVIDER` + org allowlist |
+| Slash tools | chat orchestrator + `/v1/platform/ai/*` |
+| Arena button | `POST /v1/platform/ai/arena` |
+| Org Admin tab | `GET/PUT /v1/platform/org/ai/settings`, telemetry |
+
 ## Quick verify
 
 ```bash
-pytest tests/test_ai_suite.py tests/test_conversation.py -q
+pytest tests/test_ai_suite.py tests/test_conversation.py tests/test_org_admin.py -q
 curl -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8000/v1/platform/ai/suite
 ```

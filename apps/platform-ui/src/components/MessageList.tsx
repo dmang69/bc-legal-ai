@@ -5,15 +5,30 @@ interface MessageListProps {
 }
 
 function renderContent(content: string) {
-  return content.split("\n").map((line, index) => (
-    <span key={`${line}-${index}`}>
+  const lines = content.split("\n");
+  return lines.map((line, index) => (
+    <span key={`${index}-${line.slice(0, 12)}`}>
       {line}
-      {index < content.split("\n").length - 1 && <br />}
+      {index < lines.length - 1 && <br />}
     </span>
   ));
 }
 
 export function MessageList({ messages }: MessageListProps) {
+  if (messages.length === 0) {
+    return (
+      <section className="message-list empty-state">
+        <div className="empty-card">
+          <h2>Start a conversation</h2>
+          <p>
+            Use slash tools (<code>/summarize</code>, <code>/research</code>, <code>/code</code>), pick a
+            provider (Ollama / safe local), or open Arena and Org Admin in the work panel.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="message-list" aria-live="polite">
       {messages.map((message) => (
@@ -23,31 +38,50 @@ export function MessageList({ messages }: MessageListProps) {
           </div>
           <div className="message-body">
             <div className="message-heading">
-              <strong>{message.role === "assistant" ? "BC Legal AI Associate" : message.role === "user" ? "You" : "System notice"}</strong>
+              <strong>
+                {message.role === "assistant"
+                  ? "BC Legal AI Associate"
+                  : message.role === "user"
+                    ? "You"
+                    : "System"}
+              </strong>
               <span>{message.createdAt}</span>
+              {message.provider && (
+                <span className="provider-pill">
+                  {message.provider}
+                  {message.model ? `/${message.model}` : ""}
+                </span>
+              )}
             </div>
             <div className="message-content">{renderContent(message.content)}</div>
 
-            {message.citations && message.citations.length > 0 && (
-              <div className="citation-row">
-                {message.citations.map((citation) => (
-                  <button className="citation-card" key={citation.id}>
-                    <span className={`citation-status citation-status--${citation.status}`} />
-                    <span>
-                      <strong>{citation.title}</strong>
-                      <small>{citation.locator} · {citation.status}</small>
-                    </span>
-                  </button>
+            {message.warnings && message.warnings.length > 0 && (
+              <div className="warning-stack">
+                {message.warnings.map((w) => (
+                  <div className="inline-warning" key={w.slice(0, 40)}>
+                    {w}
+                  </div>
                 ))}
               </div>
             )}
 
-            {message.role === "assistant" && message.status !== "streaming" && (
+            {message.toolActivity && message.toolActivity.length > 0 && (
+              <div className="tool-row">
+                {message.toolActivity.map((t) => (
+                  <span className="tool-chip" key={t}>
+                    {t}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {message.actions && message.actions.length > 0 && (
               <div className="message-actions">
-                <button>Open analysis</button>
-                <button>Add to draft</button>
-                <button>Verify sources</button>
-                <button>Ask Devil's Advocate</button>
+                {message.actions.map((a) => (
+                  <button type="button" key={a.id}>
+                    {a.label}
+                  </button>
+                ))}
               </div>
             )}
           </div>

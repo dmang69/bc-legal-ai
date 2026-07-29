@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## v0.4.1-alpha — 2026-07-28
+
+### Platform UI chat shell + org admin
+
+- **Live platform-ui**: auth, multi-turn chat API, provider/mode pickers, slash-tool bar
+- **Work panel**: Tools, Sources, Arena comparison results, Org Admin, Agents, Draft
+- **Org admin API**: provider allowlists, daily quotas, monthly token budget, cost telemetry
+- Chat/complete paths enforce org quotas and record usage
+- Vite proxy `/v1` + `/health` for local dev; production build verified
+
 ## v0.4.0-alpha — 2026-07-28
 
 ### Enterprise AI suite
