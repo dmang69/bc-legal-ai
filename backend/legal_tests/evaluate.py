@@ -335,8 +335,6 @@ def evaluate_legal_test(
         if n.strength_score is None:
             apply_strength_to_node(n)
 
-    nodes_by_id = {n.node_id: n for n in nodes}
-
     citation_ok = False
     citation_flag = None
     if citation_db is not None:

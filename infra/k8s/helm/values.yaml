@@ -1,0 +1,80 @@
+# BC Legal AI — Helm Values
+# This is the default values file. Override per environment.
+
+replicaCount: 2
+
+api:
+  image:
+    repository: ghcr.io/dmang69/bc-legal-ai-api
+    tag: latest
+    pullPolicy: Always
+  port: 8000
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    limits:
+      cpu: "1"
+      memory: "1Gi"
+  env:
+    APP_MODE: development
+    PYTHONPATH: /app
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+postgresql:
+  enabled: true
+  image: pgvector/pgvector:pg16
+  storageSize: 50Gi
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "2"
+      memory: "4Gi"
+
+redis:
+  enabled: true
+  image: redis:7-alpine
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+
+minio:
+  enabled: true
+  image: minio/minio:latest
+  storageSize: 100Gi
+  resources:
+    requests:
+      cpu: "200m"
+      memory: "512Mi"
+    limits:
+      cpu: "1"
+      memory: "2Gi"
+
+ingress:
+  enabled: true
+  className: nginx
+  host: ala.example.com
+  tls:
+    enabled: true
+    secretName: ala-tls
+
+networkPolicy:
+  enabled: true
+
+monitoring:
+  enabled: false
+  prometheus:
+    enabled: false
+  grafana:
+    enabled: false

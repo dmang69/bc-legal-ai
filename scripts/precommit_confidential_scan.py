@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import importlib.util
-import sys
 from pathlib import Path
 
 _SCAN = Path(__file__).with_name("scan_confidential.py")

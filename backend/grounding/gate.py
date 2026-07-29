@@ -17,7 +17,6 @@ from architecture.grounding import (
     GroundedClaim,
     GroundingRefusalReason,
     GroundingResult,
-    InferenceStep,
     UnverifiedCitationFlag,
     build_unverified_citation_flag,
 )

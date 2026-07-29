@@ -14,7 +14,12 @@ from architecture.section_topic import (
     SectionTopicRecord,
     validate_section_topic,
 )
-from backend.api.public_demo import enforce_public_text, is_public_demo
+from backend.api.public_demo import (
+    assert_public_deployment_safe,
+    enforce_public_text,
+    is_public_demo,
+    public_deployment_safety,
+)
 from backend.legal_tests.evaluate import evaluate_legal_test
 from services.deadlines.states import DeadlineState, calculate_deadline
 
@@ -93,6 +98,35 @@ def test_public_demo_text_block(monkeypatch):
     assert bad["ok"] is False
     good = enforce_public_text("I got a two month notice for landlord use")
     assert good["ok"] is True
+
+
+def test_public_deployment_safety_defaults_safe(monkeypatch):
+    monkeypatch.setenv("APP_MODE", "public_demo")
+    for name in (
+        "ALLOW_PUBLIC_UPLOADS",
+        "ALLOW_CLIENT_DATA",
+        "ALLOW_COURT_READY_EXPORTS",
+        "ALLOW_PUBLIC_PERSISTENCE",
+        "ALLOW_PUBLIC_CONNECTORS",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    safety = public_deployment_safety()
+    assert safety["public_demo"] is True
+    assert safety["safe"] is True
+    assert safety["court_ready_forced_false"] is True
+    assert safety["synthetic_only"] is True
+    assert safety["violations"] == []
+    assert_public_deployment_safe()
+
+
+def test_public_deployment_safety_blocks_unsafe_flags(monkeypatch):
+    monkeypatch.setenv("APP_MODE", "public_demo")
+    monkeypatch.setenv("ALLOW_CLIENT_DATA", "true")
+    safety = public_deployment_safety()
+    assert safety["safe"] is False
+    assert any("ALLOW_CLIENT_DATA" in violation for violation in safety["violations"])
+    with pytest.raises(RuntimeError):
+        assert_public_deployment_safe()
 
 
 def test_synthetic_fixture_marker():

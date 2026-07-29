@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Enterprise AI Platform Prototype</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <h1>Enterprise AI</h1>
+        <p>Multi-model workspace</p>
+      </div>
+
+      <section class="panel-section">
+        <div class="section-head">
+          <h2>Workspaces</h2>
+          <button id="new-workspace-btn">+</button>
+        </div>
+        <div id="workspace-list" class="list"></div>
+      </section>
+
+      <section class="panel-section">
+        <div class="section-head">
+          <h2>Chats</h2>
+          <button id="new-chat-btn">+</button>
+        </div>
+        <div id="chat-list" class="list"></div>
+      </section>
+
+      <section class="panel-section small-note">
+        <h2>Modes</h2>
+        <div class="mode-grid">
+          <button class="mode-btn active" data-mode="general">General</button>
+          <button class="mode-btn" data-mode="legal">Legal</button>
+          <button class="mode-btn" data-mode="research">Research</button>
+          <button class="mode-btn" data-mode="code">Code</button>
+        </div>
+      </section>
+    </aside>
+
+    <main class="main-panel">
+      <header class="topbar">
+        <div>
+          <h2 id="chat-title">Chat</h2>
+          <p id="workspace-name">Workspace</p>
+        </div>
+        <div class="topbar-actions">
+          <select id="model-select"></select>
+          <button id="refresh-btn">Refresh</button>
+        </div>
+      </header>
+
+      <section id="message-thread" class="message-thread"></section>
+
+      <section class="composer-wrap">
+        <div class="composer-tools">
+          <label class="upload-label">
+            Upload file
+            <input type="file" id="file-input" />
+          </label>
+          <button id="use-prompt-btn">Insert prompt</button>
+        </div>
+        <textarea id="message-input" placeholder="Ask anything. Switch modes for legal, research, or code workflows."></textarea>
+        <div class="composer-actions">
+          <span id="status-text">Ready.</span>
+          <button id="send-btn">Send</button>
+        </div>
+      </section>
+    </main>
+
+    <aside class="right-panel">
+      <section class="panel-section">
+        <h2>Prompts</h2>
+        <div id="prompt-list" class="list compact"></div>
+        <button id="new-prompt-btn" class="wide-btn">New Prompt</button>
+      </section>
+
+      <section class="panel-section">
+        <h2>Workspace Files</h2>
+        <div id="file-list" class="list compact"></div>
+      </section>
+
+      <section class="panel-section">
+        <h2>Platform Notes</h2>
+        <ul class="notes">
+          <li>ChatGPT-style chat shell</li>
+          <li>Claude-style long-form workspaces</li>
+          <li>Copilot-style code mode</li>
+          <li>Monica-style prompt tools</li>
+          <li>Kimi-style research mode</li>
+          <li>Legal-mode structure and disclaimers</li>
+        </ul>
+      </section>
+    </aside>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

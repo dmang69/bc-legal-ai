@@ -1,42 +1,33 @@
-# Strata / Condo Rentals vs RTA
+# Strata / Condo Rentals and Residential Tenancies
 
-> Legal information only. Verify *Residential Tenancy Act* and *Strata Property Act* on [bclaws.gov.bc.ca](https://www.bclaws.gov.bc.ca).  
-> Section numbers marked **`[VERIFY]`**.
+> Legal information only. Verify the current Residential Tenancy Act, Strata Property Act, regulations, bylaws, and authorities on official sources.
 
-## Core principle
+## Multiple legal relationships
 
-| Layer | Relationship |
-|-------|----------------|
-| **SPA** | Strata corporation ↔ owner (landlord) |
-| **RTA** | Landlord ↔ tenant |
+A strata rental may engage separate relationships among the strata corporation, owner/landlord, tenant, occupants, and third parties. Do not assume that a rule binding one relationship has no effect in another, or that the RTA automatically overrides every strata obligation.
 
-Strata bylaws bind the **owner**. They do not automatically rewrite the RTA contract or create a direct RTA obligation on the tenant to the strata.
+## Issue matrix
 
-**Working rule:** Landlord cannot use strata bylaws as an **RTA workaround** to evade tenant protections.
-
-## Common conflict matrix
-
-| Situation | Working analysis | Action |
-|-----------|------------------|--------|
-| Strata fines owner for tenant conduct | Fine is typically owner’s strata liability; passing through as rent/charge may breach RTA rules on permitted charges (often discussed under RTA s. 8 — **`[VERIFY]`**) | Challenge illegal charge at RTB if levied against tenant |
-| Pet ban in bylaws | Landlord–tenant pet terms still under RTA (deposit rules, etc.) | RTA dispute; separate strata issues for owner |
-| Rental restriction bylaws | May limit owner’s ability to rent; existing tenancies need careful analysis | Do not assume automatic eviction |
-| Move-in/out windows | May interfere with quiet enjoyment | RTA quiet enjoyment (often s. 22 — **`[VERIFY]`**) |
-| Strata wants entry | Landlord must still follow RTA entry notice rules with tenant (often ss. 25–26 — **`[VERIFY]`**) | Written notice / consent / emergency only as statute allows |
-
-## Conflict of laws (working principle)
-
-For the **landlord–tenant relationship**, the RTA generally governs rights and remedies between those parties. SPA remedies between strata and owner are a different relationship. Confirm with current case law if conflict arises.
+| Situation | Required analysis |
+|---|---|
+| Strata fine/cost connected to tenant conduct | Current SPA/bylaws; notice and hearing procedure; who is primarily liable; tenancy agreement and any indemnity/allocation; RTA s. 5; proof, causation, and remedy. Current RTA s. 8 does not invalidate the amount. |
+| Pet restriction | SPA/bylaws, tenancy pet term, human-rights accommodation if engaged, and RTA deposit provisions. |
+| Rental restriction or prohibition | Current SPA provisions, bylaw validity, exemptions/transitions, dates, ownership structure, and effect on the existing tenancy. |
+| Move-in/out or amenity restrictions | Authority and reasonableness of the restriction; notice; actual interference/loss; RTA quiet enjoyment under s. 28 where engaged. |
+| Entry involving strata, manager, or contractor | Identity and authority of entrant; landlord/tenant route under RTA s. 29; consent, notice contents/timing, emergency, and other statutory exceptions. |
+| Damage or rule enforcement | Separate the strata proceeding from an RTB damages/tenancy proceeding; preserve both procedural records and avoid inconsistent admissions. |
 
 ## Evidence checklist
 
-- [ ] Tenancy agreement  
-- [ ] Strata bylaws (current)  
-- [ ] Notice of fine / correspondence  
-- [ ] Whether landlord passed charge to tenant  
-- [ ] Entry notices  
-- [ ] Move-in/out restrictions communications  
+- tenancy agreement and addenda;
+- current bylaws/rules and their effective dates;
+- Form K or other tenancy notices, if applicable;
+- fine/charge notice, hearing request, decision, and ledger;
+- proof of conduct, damage, causation, and mitigation;
+- communications among strata, owner, manager, tenant, and occupants;
+- entry notices, consent, contractor records, and emergency evidence;
+- current official RTA/SPA text and verified authorities.
 
-## Labels
+## Output discipline
 
-`[FACT]` bylaws text · `[ALLEGATION]` tenant “broke bylaw” · `[LAW]` RTA/SPA · `[ARGUMENT]` cannot pass fine · `[REMEDY]` order re illegal charge / quiet enjoyment  
+Separate `[FACT]` bylaw/contract text from `[ALLEGATION]` of breach, `[LAW]` for each legal relationship, `[ARGUMENT]` about enforceability or allocation, and `[REMEDY]` available in the correct forum.

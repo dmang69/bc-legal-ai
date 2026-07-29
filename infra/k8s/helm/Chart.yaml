@@ -1,0 +1,14 @@
+apiVersion: v2
+name: bc-legal-ai
+description: BC Legal AI Associate — Kubernetes Helm chart
+type: application
+version: 0.1.0
+appVersion: "0.4.0"
+keywords:
+  - legal
+  - ai
+  - bc
+  - litigation
+home: https://github.com/dmang69/bc-legal-ai
+sources:
+  - https://github.com/dmang69/bc-legal-ai

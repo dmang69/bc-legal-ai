@@ -1,58 +1,35 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import { VitePWA } from "vite-plugin-pwa";
 
-// Shared UI for Tauri shells + web portal / PWA.
-// Do not put secrets or matter data in the client bundle.
+const host = (globalThis as { process?: { env?: Record<string, string> } }).process?.env
+  ?.TAURI_DEV_HOST;
+
 export default defineConfig({
-  plugins: [
-    react(),
-    VitePWA({
-      registerType: "prompt",
-      includeAssets: ["favicon.svg"],
-      manifest: {
-        name: "BC Legal AI Portal",
-        short_name: "BC Legal AI",
-        description:
-          "BC Legal AI Associate — supervised legal research and drafting support. Not a lawyer.",
-        theme_color: "#1a2332",
-        background_color: "#0f1419",
-        display: "standalone",
-        start_url: "/",
-        icons: [
-          {
-            src: "icons/icon-192.png",
-            sizes: "192x192",
-            type: "image/png",
-          },
-          {
-            src: "icons/icon-512.png",
-            sizes: "512x512",
-            type: "image/png",
-          },
-        ],
-      },
-      workbox: {
-        // Never cache API/matter payloads offline as full matter dumps
-        navigateFallback: "/index.html",
-        runtimeCaching: [
-          {
-            urlPattern: /\/v1\//,
-            handler: "NetworkOnly",
-          },
-        ],
-      },
-    }),
-  ],
-  server: {
-    port: 5173,
-    strictPort: true,
-  },
+  plugins: [react()],
   clearScreen: false,
-  envPrefix: ["VITE_", "TAURI_"],
-  build: {
-    outDir: "dist",
-    emptyOutDir: true,
-    target: process.env.TAURI_ENV_PLATFORM === "windows" ? "chrome105" : "safari14",
+  server: {
+    port: 1420,
+    strictPort: true,
+    host: host || false,
+    hmr: host
+      ? {
+          protocol: "ws",
+          host,
+          port: 1421,
+        }
+      : undefined,
+    watch: {
+      ignored: ["**/src-tauri/**"],
+    },
+    proxy: {
+      "/v1": {
+        target: "http://127.0.0.1:8000",
+        changeOrigin: true,
+      },
+      "/health": {
+        target: "http://127.0.0.1:8000",
+        changeOrigin: true,
+      },
+    },
   },
 });

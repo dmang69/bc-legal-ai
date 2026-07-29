@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-import json
 import uuid
 from typing import Any, Optional
 
 from backend.audit import get_audit_ledger
 from backend.db import get_connection, init_db
+from backend.db.helpers import now_iso
 from backend.identity import AuthError, UserInfo, get_identity_service
 
 
@@ -32,13 +32,14 @@ class ConsentStore:
         if not get_identity_service().can_access_matter(user, matter_id, min_level="write"):
             raise AuthError("Matter access denied")
         consent_id = _cid()
+        now = now_iso()
         with get_connection() as conn:
             conn.execute(
                 """
                 INSERT INTO consents
                 (consent_id, matter_id, subject_id, category, purpose, model_scope,
-                 status, notice_version, granted_at, captured_by)
-                VALUES (?, ?, ?, ?, ?, ?, 'GRANTED', ?, datetime('now'), ?)
+                 status, notice_version, granted_at, captured_by, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, 'GRANTED', ?, ?, ?, ?, ?)
                 """,
                 (
                     consent_id,
@@ -48,7 +49,10 @@ class ConsentStore:
                     purpose.strip(),
                     model_scope,
                     notice_version,
+                    now,
                     user.user_id,
+                    now,
+                    now,
                 ),
             )
         get_audit_ledger().append(
@@ -63,6 +67,7 @@ class ConsentStore:
         return self.get(consent_id)
 
     def withdraw(self, *, user: UserInfo, consent_id: str) -> dict[str, Any]:
+        now = now_iso()
         with get_connection() as conn:
             row = conn.execute(
                 "SELECT * FROM consents WHERE consent_id = ?", (consent_id,)
@@ -75,10 +80,10 @@ class ConsentStore:
                 raise AuthError("Matter access denied")
             conn.execute(
                 """
-                UPDATE consents SET status = 'WITHDRAWN', withdrawn_at = datetime('now'),
-                updated_at = datetime('now') WHERE consent_id = ?
+                UPDATE consents SET status = 'WITHDRAWN', withdrawn_at = ?,
+                updated_at = ? WHERE consent_id = ?
                 """,
-                (consent_id,),
+                (now, now, consent_id),
             )
         get_audit_ledger().append(
             actor_id=user.user_id,

@@ -3,13 +3,18 @@
 **Public name:** BC Legal AI Associate  
 **Internal nickname only:** “AI Lawyer” (do **not** use publicly)  
 **Public positioning:** legal research, evidence analysis, and drafting **support**  
-**Not:** a licensed lawyer, legal advice service, or representation
+**Not:** a licensed lawyer, legal advice service, or representation  
+**Official product description (target platform):** [`docs/PRODUCT_DESCRIPTION.md`](docs/PRODUCT_DESCRIPTION.md)
 
-**Assessment date:** 2026-07-22  
-**Verdict:** strong **prototype / counsel workbench** with **M1 platform core landed** (SQLite/Postgres-ready) — still **not** a completed Associate  
-**Release level:** **Prototype → Internal Alpha foundation** (~**30–35%**).  
+**Assessment date:** 2026-07-28 (**v1.0.0** production-readiness gate)  
+**Verdict:** **v1.0.0 production-ready infrastructure** for supervised / synthetic deployment — still **not** unsupervised legal practice or a completed “AI lawyer.”  
+**Release level:** **Deployable platform v1.0** (infra + workbench). Further product depth remains on OCR hosts, official-law corpus, pen-test, signed installers.  
 **Controlling roadmap:** `docs/PHASE_4_MASTER_ENGINEERING_PROGRAM.md`  
-**Full audit:** `architecture/AUDIT_P0_2026-07-21.md` — history rewrite + branch protection still human ops.
+**Production gate:** `docs/PRODUCTION_READINESS.md`  
+
+**Local verification (2026-07-28):** 232 pytest; frontend production build; confidential scan; public-demo readiness; live API smoke. Tag: **`v1.0.0`**.
+
+**Note:** `PRODUCT_DESCRIPTION.md` describes the **completed supervised platform**. This file describes **what exists now**.
 
 ---
 

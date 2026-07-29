@@ -3,104 +3,342 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#1a2332" />
+  <meta name="theme-color" content="#0b1020" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="BC Legal AI" />
-  <meta name="description" content="BC Legal AI Associate — legal research and drafting support. Not a lawyer. Not legal advice." />
-  <title>BC Legal AI Associate</title>
+  <meta name="description" content="BC Legal AI Associate — AI-powered legal research, evidence analysis, and drafting platform." />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' http://localhost:8000; img-src 'self' data:; base-uri 'self'; form-action 'self';" />
+  <title>BC Legal AI — AI Legal Platform</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 </head>
 <body>
-  <a class="skip" href="#main">Skip to content</a>
-  <header>
-    <h1>BC Legal AI Associate</h1>
-    <p class="sub">Support tools only · Not legal advice · Human supervision required</p>
-    <p id="api-status" class="api-status" aria-live="polite">API: checking…</p>
-    <label for="lang">Language</label>
-    <select id="lang" aria-label="Language">
-      <option value="en">English</option>
-      <option value="zh-Hans">中文 (简体)</option>
-      <option value="pa">ਪੰਜਾਬੀ</option>
-      <option value="tl">Tagalog</option>
-    </select>
-  </header>
+  <div id="app-loading" class="loading-screen">
+    <div class="spinner"></div>
+    <p>Loading BC Legal AI...</p>
+  </div>
 
-  <main id="main">
-    <div class="warn" role="alert" id="disclaimer">
-      <strong>Scaffold / local platform.</strong> Do not put confidential client files on public demos.
-      Install as a PWA (Add to Home Screen) or use the desktop app. MFA and matter ACL required before real client use.
+  <div id="auth-screen" class="auth-screen" style="display:none">
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="auth-logo">
+          <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="10" fill="#4a67cf"/><path d="M12 14h16v4H12zM12 20h16v4H12zM12 26h12v4H12z" fill="#fff"/></svg>
+        </div>
+        <h1>BC Legal AI</h1>
+        <p class="auth-sub">AI-Powered Legal Research &amp; Drafting Platform</p>
+      </div>
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-tab="login">Sign In</button>
+        <button class="auth-tab" data-tab="register">Create Account</button>
+      </div>
+      <form id="login-form" class="auth-form">
+        <div class="form-group">
+          <label for="login-email">Email</label>
+          <input id="login-email" type="email" placeholder="you@synthetic.invalid" required autocomplete="email" />
+        </div>
+        <div class="form-group">
+          <label for="login-password">Password</label>
+          <input id="login-password" type="password" placeholder="••••••••" required autocomplete="current-password" />
+        </div>
+        <button type="submit" class="auth-submit">Sign In</button>
+        <p class="auth-error" id="auth-error"></p>
+      </form>
+      <form id="register-form" class="auth-form" style="display:none">
+        <div class="form-group">
+          <label for="reg-org">Organization Name</label>
+          <input id="reg-org" type="text" placeholder="My Law Firm" required />
+        </div>
+        <div class="form-group">
+          <label for="reg-email">Email</label>
+          <input id="reg-email" type="email" placeholder="you@synthetic.invalid" required autocomplete="email" />
+        </div>
+        <div class="form-group">
+          <label for="reg-password">Password (min 10 chars)</label>
+          <input id="reg-password" type="password" placeholder="••••••••" required minlength="10" autocomplete="new-password" />
+        </div>
+        <div class="form-group">
+          <label for="reg-display">Display Name</label>
+          <input id="reg-display" type="text" placeholder="Your Name" />
+        </div>
+        <button type="submit" class="auth-submit">Create Account</button>
+        <p class="auth-error" id="reg-error"></p>
+      </form>
     </div>
 
-    <section aria-labelledby="inst-h">
-      <h2 id="inst-h">Install this platform</h2>
-      <div class="card">
-        <ul>
-          <li><strong>Workbench:</strong> Windows/macOS Tauri — <code>apps/desktop-mobile</code> + <code>apps/platform-ui</code></li>
-          <li><strong>Client:</strong> Android/iOS Tauri — same shell, client mode</li>
-          <li><strong>Portal:</strong> secure web / PWA — <code>apps/platform-ui</code> (<code>VITE_APP_MODE=portal</code>)</li>
-          <li><strong>This page:</strong> interim static shell (FastAPI); prefer platform-ui</li>
-          <li><strong>API docs:</strong> <a id="docs-link" href="/docs">/docs</a></li>
-        </ul>
+  <div id="app-shell" class="app-shell" style="display:none">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-top">
+          <svg width="28" height="28" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="10" fill="#4a67cf"/><path d="M12 14h16v4H12zM12 20h16v4H12zM12 26h12v4H12z" fill="#fff"/></svg>
+          <h1>BC Legal AI</h1>
+        </div>
+        <button id="new-chat-btn" class="new-chat-btn">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          New Conversation
+        </button>
       </div>
-    </section>
 
-    <section aria-labelledby="tools-h">
-      <h2 id="tools-h">Phase tools (local API)</h2>
-      <div class="card">
-        <label for="jr-date">JR issuance date (demo)</label>
-        <input id="jr-date" type="date" value="2026-01-15" />
-        <button type="button" id="jr-btn">Calculate JR clock</button>
-        <pre id="jr-out" class="out" aria-live="polite"></pre>
+      <div class="panel-section">
+        <div class="section-head">
+          <h2>Conversations</h2>
+          <button id="refresh-chats-btn" title="Refresh">↻</button>
+        </div>
+        <div class="list" id="conversation-list">
+          <div class="empty">No conversations yet. Start a new one!</div>
       </div>
-    </section>
 
-    <section aria-labelledby="dash-h">
-      <h2 id="dash-h">Matter dashboard</h2>
-      <div id="dashboard" class="card">
-        <p id="dash-empty">Connects to <code>/health</code> when API is running.</p>
+      <div class="panel-section">
+        <h2>Quick Actions</h2>
+        <div class="list">
+          <button class="list-item" data-action="research">🔍 Legal Research</button>
+          <button class="list-item" data-action="draft">📝 Draft Document</button>
+          <button class="list-item" data-action="evidence">📎 Analyze Evidence</button>
+          <button class="list-item" data-action="citations">⚖️ Verify Citations</button>
+          <button class="list-item" data-action="deadlines">📅 Calculate Deadlines</button>
+        </div>
+
+      <div class="panel-section">
+        <h2>Matters</h2>
+        <div class="list" id="matter-list">
+          <div class="empty">No matters loaded.</div>
+        <button id="new-matter-btn" class="wide-btn">+ New Matter</button>
       </div>
-    </section>
 
-    <section aria-labelledby="ev-h">
-      <h2 id="ev-h">Evidence tracker</h2>
-      <ul id="evidence-list" class="card"></ul>
-    </section>
-
-    <section aria-labelledby="up-h">
-      <h2 id="up-h">Document upload</h2>
-      <form id="upload-form" class="card" onsubmit="return false;">
-        <label for="file">File</label>
-        <input id="file" type="file" />
-        <label for="class">Guided classification</label>
-        <select id="class">
-          <option>Photo</option>
-          <option>Email</option>
-          <option>RTB decision</option>
-          <option>Audio</option>
-          <option>Court filing</option>
-          <option>Other</option>
-        </select>
-        <label for="meta-date">Photo / document date</label>
-        <input id="meta-date" type="date" />
-        <button type="button" id="preview-btn">Preview &amp; confirm</button>
-        <p id="upload-status" aria-live="polite"></p>
-      </form>
-    </section>
-
-    <section aria-labelledby="con-h">
-      <h2 id="con-h">Consent management</h2>
-      <div id="consent" class="card">
-        <p>Consent API: <code>POST /v1/matters/&#123;id&#125;/consents</code> — consent ≠ privilege.</p>
+      <div class="sidebar-footer">
+        <div class="user-badge" id="user-badge">
+          <div class="user-avatar" id="user-avatar">U</div>
+          <div class="user-info">
+            <span id="user-name">User</span>
+            <span id="user-org" class="small-note"></span>
+          </div>
+        <button id="logout-btn" class="logout-btn" title="Sign Out">⏻</button>
       </div>
-    </section>
-  </main>
+    </aside>
 
-  <footer>
-    <p>Windows · macOS · iOS PWA · Android PWA · API · Not a lawyer</p>
-  </footer>
+    <!-- Main Panel -->
+    <div class="main-panel">
+      <!-- Top Bar -->
+      <div class="topbar">
+        <div>
+          <h2 id="current-conv-title">New Conversation</h2>
+          <p id="current-conv-meta" class="small-note">Select a mode to begin</p>
+        </div>
+        <div class="topbar-actions">
+          <select id="model-select">
+            <option value="balanced">⚖️ Balanced (Default)</option>
+            <option value="precise">🎯 Precise</option>
+            <option value="creative">✨ Creative</option>
+            <option value="research">📚 Research</option>
+          </select>
+          <select id="mode-select">
+            <option value="general">💬 General</option>
+            <option value="research">🔍 Research</option>
+            <option value="drafting">📝 Drafting</option>
+            <option value="evidence">📎 Evidence</option>
+            <option value="agent">🤖 Agent</option>
+          </select>
+          <button id="settings-btn" title="Settings">⚙️</button>
+          <button id="toggle-sidebar-btn" title="Toggle Sidebar">☰</button>
+        </div>
+
+      <!-- Messages -->
+      <div class="message-thread" id="message-thread">
+        <div class="welcome-screen" id="welcome-screen">
+          <div class="welcome-icon">
+            <svg width="48" height="48" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="10" fill="#4a67cf" opacity="0.2"/><path d="M12 14h16v4H12zM12 20h16v4H12zM12 26h12v4H12z" fill="#4a67cf"/></svg>
+          </div>
+          <h2>Welcome to BC Legal AI</h2>
+          <p>Your AI-powered legal research and drafting assistant. Choose a mode or start typing below.</p>
+          <div class="welcome-modes">
+            <div class="mode-card" data-mode="general">
+              <span class="mode-icon">💬</span>
+              <strong>General</strong>
+              <span>Legal questions &amp; analysis</span>
+            </div>
+            <div class="mode-card" data-mode="research">
+              <span class="mode-icon">🔍</span>
+              <strong>Research</strong>
+              <span>Deep legal research</span>
+            </div>
+            <div class="mode-card" data-mode="drafting">
+              <span class="mode-icon">📝</span>
+              <strong>Drafting</strong>
+              <span>Form 66/67 documents</span>
+            </div>
+            <div class="mode-card" data-mode="evidence">
+              <span class="mode-icon">📎</span>
+              <strong>Evidence</strong>
+              <span>Analyze &amp; organize</span>
+            </div>
+            <div class="mode-card" data-mode="agent">
+              <span class="mode-icon">🤖</span>
+              <strong>Agent</strong>
+              <span>Multi-step tasks</span>
+            </div>
+        </div>
+
+      <!-- Composer -->
+      <div class="composer-wrap">
+        <div class="composer-tools">
+          <div class="tool-group">
+            <label class="upload-label" for="file-input">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              Attach File
+              <input id="file-input" type="file" multiple style="display:none" />
+            </label>
+            <span id="file-count" class="small-note"></span>
+          </div>
+          <div class="tool-group">
+            <button id="citation-btn" class="tool-btn" title="Add Citation">📜</button>
+            <button id="evidence-btn" class="tool-btn" title="Add Evidence Reference">📎</button>
+            <button id="template-btn" class="tool-btn" title="Use Template">📋</button>
+          </div>
+        <div class="composer-actions">
+          <textarea id="composer" placeholder="Ask a legal question, request a draft, or analyze evidence..." rows="3"></textarea>
+          <button id="send-btn" disabled>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M2 10l16-8-8 16-2-6-6-2z" fill="currentColor"/></svg>
+          </button>
+        </div>
+        <p class="small-note" style="margin:6px 0 0;text-align:center">BC Legal AI is not a lawyer. Human supervision required. Not legal advice.</p>
+      </div>
+
+    <!-- Right Panel -->
+    <div class="right-panel" id="right-panel">
+      <div class="panel-section">
+        <h2>Context Panel</h2>
+        <div id="context-content">
+          <div class="empty">Select a conversation or message to see context.</div>
+      </div>
+
+      <div class="panel-section">
+        <h2>Attached Files</h2>
+        <div id="attached-files" class="list">
+          <div class="empty">No files attached.</div>
+      </div>
+
+      <div class="panel-section">
+        <h2>Citation Check</h2>
+        <div id="citation-results" class="list">
+          <div class="empty">Citations will appear here.</div>
+      </div>
+
+      <div class="panel-section">
+        <h2>Evidence Matrix</h2>
+        <div id="evidence-summary" class="list">
+          <div class="empty">Evidence tracking available.</div>
+        <button id="new-prop-btn" class="wide-btn">+ Add Proposition</button>
+      </div>
+
+      <div class="panel-section">
+        <h2>System Status</h2>
+        <div id="system-status">
+          <div class="file-item"><span>API:</span> <span id="api-status" class="status-dot status-checking">Checking...</span></div>
+          <div class="file-item"><span>Auth:</span> <span id="auth-status" class="status-dot status-idle">Not authenticated</span></div>
+          <div class="file-item"><span>DB:</span> <span id="db-status" class="status-dot status-checking">...</span></div>
+      </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" class="modal-overlay" style="display:none">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Settings</h2>
+        <button class="modal-close" id="settings-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Language</label>
+          <select id="settings-lang">
+            <option value="en">English</option>
+            <option value="zh-Hans">中文 (简体)</option>
+            <option value="pa">ਪੰਜਾਬੀ</option>
+            <option value="tl">Tagalog</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Theme</label>
+          <select id="settings-theme">
+            <option value="dark">Dark</option>
+            <option value="light">Light</option>
+            <option value="system">System</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Default Model</label>
+          <select id="settings-model">
+            <option value="balanced">Balanced</option>
+            <option value="precise">Precise</option>
+            <option value="creative">Creative</option>
+            <option value="research">Research</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Streaming Responses</label>
+          <select id="settings-stream">
+            <option value="true">Enabled</option>
+            <option value="false">Disabled</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Temperature</label>
+          <input type="range" id="settings-temp" min="0" max="2" step="0.1" value="0.7" />
+          <span id="settings-temp-val">0.7</span>
+        </div>
+    </div>
+
+  <!-- New Matter Modal -->
+  <div id="matter-modal" class="modal-overlay" style="display:none">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>New Matter</h2>
+        <button class="modal-close" id="matter-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Matter Title</label>
+          <input id="matter-title" type="text" placeholder="e.g., Smith v. Landlord" />
+        </div>
+        <div class="form-group">
+          <label>Client Label</label>
+          <input id="matter-client" type="text" placeholder="Client name or reference" />
+        </div>
+        <button id="matter-create-btn" class="auth-submit">Create Matter</button>
+      </div>
+  </div>
+
+  <!-- Proposition Modal -->
+  <div id="prop-modal" class="modal-overlay" style="display:none">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Add Proposition</h2>
+        <button class="modal-close" id="prop-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Text</label>
+          <textarea id="prop-text" rows="3" placeholder="Proposition text..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Classification</label>
+          <select id="prop-class">
+            <option>UNCLASSIFIED</option>
+            <option>FACT</option>
+            <option>ALLEGATION</option>
+            <option>LAW</option>
+            <option>ARGUMENT</option>
+            <option>INFERENCE</option>
+          </select>
+        </div>
+        <button id="prop-create-btn" class="auth-submit">Add Proposition</button>
+      </div>
+  </div>
+
   <script src="app.js"></script>
 </body>
 </html>

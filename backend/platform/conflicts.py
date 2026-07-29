@@ -60,8 +60,9 @@ class ConflictService:
         with get_connection() as conn:
             conn.execute(
                 """
-                INSERT OR IGNORE INTO matter_parties (matter_id, party_id, role)
+                INSERT INTO matter_parties (matter_id, party_id, role)
                 VALUES (?, ?, ?)
+                ON CONFLICT(matter_id, party_id, role) DO NOTHING
                 """,
                 (matter_id, party_id, role),
             )

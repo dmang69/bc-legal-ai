@@ -3,7 +3,8 @@
 **Not a lawyer. Not legal advice.**  
 Do not use public demos for confidential client files.
 
-**Controlling architecture:** [`docs/SECTION_G_PLATFORM_AND_DISTRIBUTION.md`](docs/SECTION_G_PLATFORM_AND_DISTRIBUTION.md)
+**Controlling architecture:** [`docs/SECTION_G_PLATFORM_AND_DISTRIBUTION.md`](docs/SECTION_G_PLATFORM_AND_DISTRIBUTION.md)  
+**Installer status:** [`docs/INSTALLABLE_CLIENT_STATUS.md`](docs/INSTALLABLE_CLIENT_STATUS.md) — **source exists**; signed Release binaries **not published yet**.
 
 | Product surface | Name |
 |-----------------|------|

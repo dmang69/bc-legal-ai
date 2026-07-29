@@ -14,7 +14,7 @@ from services.post_resolution.escalation_router import EscalationPath, Escalatio
 from services.post_resolution.jr_pipeline import JrPipeline
 from services.post_resolution.obligation_parser import parse_decision_text
 from services.post_resolution.outcome_tracker import OutcomeTracker
-from services.post_resolution.retention import RetentionCategory, RetentionScheduleEngine
+from services.post_resolution.retention import RetentionScheduleEngine
 from services.post_resolution.stay_generator import StayGenerator
 
 

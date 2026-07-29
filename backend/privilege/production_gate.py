@@ -7,14 +7,11 @@ Court destination does not bypass this gate.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Iterable, Optional
+from typing import Iterable
 
 from architecture.privilege_schemas import (
     PROTECTED_FOR_EXPORT,
-    PrincipalRole,
     PrivilegeMetadata,
-    PrivilegeStatus,
-    WaiverEvent,
 )
 from architecture.schemas import ApprovalAction
 from agents.supervisor_gate import require_approval

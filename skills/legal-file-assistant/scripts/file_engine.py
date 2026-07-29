@@ -193,7 +193,6 @@ def parse_nl(query: str) -> SearchParams:
             p.extension = [".pdf", ".docx", ".txt"]
 
     # content search phrase
-    m = re.search(r"(?:inside|within|containing|content|for)\s+[\"']?([\w\-\.]+)[\"']?", low)
     if "search inside" in low or "inside my" in low or "content" in low:
         # take last meaningful token
         tokens = re.findall(r"[a-z0-9\-]{2,}", low)

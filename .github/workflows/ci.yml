@@ -1,35 +1,160 @@
-name: CI
+name: CI — Production gates
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, develop, 'release/**']
   pull_request:
-    branches: [main, master]
+    branches: [main, develop]
+
+env:
+  PYTHON_VERSION: '3.12'
+  NODE_VERSION: '20'
+  IMAGE_NAME: bc-legal-ai
 
 jobs:
-  test:
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
-      - name: Install
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install ruff
         run: |
           python -m pip install --upgrade pip
-          pip install pytest fastapi "uvicorn[standard]" pydantic httpx pyyaml
-      - name: Confidential scan
-        run: python scripts/scan_confidential.py
-      - name: Unit tests
-        run: python -m pytest tests/ -q --tb=line
-        env:
-          PYTHONPATH: .
-          ALA_SQLITE_PATH: /tmp/ala_ci.sqlite3
+          pip install ruff
+      - name: Ruff check (runtime packages)
+        run: ruff check backend/ services/ knowledgebase/ middleware/ scripts/ --exclude archive
+      - name: Ruff format check
+        run: ruff format --check backend/ services/ knowledgebase/ middleware/ scripts/ --exclude archive || true
 
-  docker:
+  test:
+    name: Tests (SQLite) + smoke script unit path
     runs-on: ubuntu-latest
-    needs: test
     steps:
       - uses: actions/checkout@v4
-      - name: Docker build
-        run: docker build -t bc-legal-ai:ci .
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,export,pdf]"
+          pip install pypdf python-docx httpx pyyaml fastapi "uvicorn[standard]" pydantic pytest "psycopg[binary]"
+      - name: Confidential scan
+        run: python scripts/scan_confidential.py .
+      - name: Pytest
+        env:
+          APP_MODE: development
+          ALA_RATE_LIMIT_DISABLED: "1"
+        run: pytest tests/ -q --tb=short -m "not postgres_required"
+      - name: Public demo readiness
+        env:
+          APP_MODE: public_demo
+        run: python scripts/validate_deployment_readiness.py
+      - name: Start API and run production smoke
+        env:
+          APP_MODE: development
+          ALA_RATE_LIMIT_DISABLED: "1"
+        run: |
+          uvicorn backend.api.main:app --host 127.0.0.1 --port 8000 &
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:8000/health/live && break
+            sleep 1
+          done
+          python scripts/production_smoke.py --base http://127.0.0.1:8000
+
+  test-postgres:
+    name: PostgreSQL integration
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: ala
+          POSTGRES_PASSWORD: ala_test
+          POSTGRES_DB: ala_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ala -d ala_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install with Postgres
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,postgres,export,pdf]"
+          pip install "psycopg[binary]>=3.1" pypdf python-docx httpx pyyaml fastapi uvicorn pydantic pytest
+      - name: Postgres tests
+        env:
+          APP_MODE: development
+          ALA_RATE_LIMIT_DISABLED: "1"
+          ALA_PG_POOL: "0"
+          ALA_POSTGRES_URL: postgresql://ala:ala_test@localhost:5432/ala_test
+        run: pytest tests/test_postgres_integration.py -v --tb=short
+
+  frontend:
+    name: Frontend production build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/platform-ui
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: apps/platform-ui/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+        env:
+          VITE_APP_MODE: private
+          VITE_API_BASE_URL: https://api.example.com
+
+  security-scan:
+    name: Security scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: pip install bandit
+      - name: Bandit
+        run: bandit -r backend/ -ll -x '**/__pycache__/*' -f json -o bandit-report.json || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bandit-report
+          path: bandit-report.json
+
+  docker-build:
+    name: Docker build + smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build . --file Dockerfile --tag ${{ env.IMAGE_NAME }}:ci
+      - name: Run container smoke
+        run: |
+          docker run -d --name ala-test -p 8000:8000 \
+            -e APP_MODE=development \
+            -e ALA_RATE_LIMIT_DISABLED=1 \
+            ${{ env.IMAGE_NAME }}:ci
+          for i in $(seq 1 40); do
+            curl -sf http://127.0.0.1:8000/health/live && break
+            sleep 1
+          done
+          curl -sf http://127.0.0.1:8000/health
+          python scripts/production_smoke.py --base http://127.0.0.1:8000
+          docker stop ala-test
+          docker rm ala-test

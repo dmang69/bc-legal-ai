@@ -13,7 +13,6 @@ from dataclasses import dataclass, field
 from datetime import date, timedelta
 from enum import Enum
 from typing import Any, Optional
-from uuid import uuid4
 
 
 class JrErrorGround(str, Enum):

@@ -10,7 +10,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import Optional
-from uuid import uuid4
 
 from architecture.grounding import Citation, CitationType, JurisdictionScope
 from architecture.schemas import AuthorityStatus

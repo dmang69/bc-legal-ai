@@ -1,210 +1,614 @@
-import { FormEvent, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Composer } from "./components/Composer";
+import { MessageList } from "./components/MessageList";
+import { Sidebar } from "./components/Sidebar";
+import { TopBar } from "./components/TopBar";
+import { WorkPanel } from "./components/WorkPanel";
 import {
+  aiSuite,
+  arenaCompare,
+  chatCapabilities,
+  checkQuota,
+  createConversation,
   createMatter,
-  getApiBase,
+  getOrgAiSettings,
+  getOrgTelemetry,
   getToken,
   healthCheck,
+  listConversations,
   listMatters,
+  listModelProviders,
+  listModes,
+  listSpecialists,
   login,
+  logout,
   register,
+  sendMessage,
   setToken,
-  verifyCitation,
+  type Matter as ApiMatter,
+  type OrgAiSettings,
+  type ProviderMeta,
+  type Session,
+  updateOrgAiSettings,
+  webResearch,
 } from "./lib/api";
-import { getAppMode, type AppMode } from "./lib/mode";
+import { findSensitiveText } from "./lib/security";
+import type {
+  AppMode,
+  AttachmentItem,
+  ChatMessage,
+  ProviderOption,
+  ReasoningMode,
+  ThreadItem,
+  WorkPanel as WorkPanelType,
+} from "./types";
 import "./styles.css";
 
-const MODE_LABEL: Record<AppMode, string> = {
-  workbench: "BC Legal AI Workbench",
-  client: "BC Legal AI Client",
-  self_rep: "Self-Represented Workbench",
-  portal: "BC Legal AI Portal",
-};
+const SLASH_TOOLS = [
+  { id: "/summarize", label: "Summarize", hint: "/summarize: text…" },
+  { id: "/email", label: "Email", hint: "/email purpose…" },
+  { id: "/creative", label: "Creative", hint: "/creative prompt…" },
+  { id: "/research", label: "Research", hint: "/research query…" },
+  { id: "/code", label: "Code", hint: "/code snippet…" },
+  { id: "/debug", label: "Debug", hint: "/debug error + code…" },
+];
 
-export function App() {
-  const mode = getAppMode();
-  const [health, setHealth] = useState("checking…");
-  const [offline, setOffline] = useState(!navigator.onLine);
-  const [email, setEmail] = useState("demo@synthetic.invalid");
-  const [password, setPassword] = useState("securepass99");
-  const [orgName, setOrgName] = useState("Demo Org");
-  const [token, setTok] = useState<string | null>(getToken());
-  const [matters, setMatters] = useState<Array<{ matter_id: string; title: string }>>([]);
-  const [msg, setMsg] = useState("");
-  const [citeIn, setCiteIn] = useState("RTA s.56 retaliation");
-  const [citeOut, setCiteOut] = useState("");
+function nowTime(): string {
+  return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
 
-  useEffect(() => {
-    const on = () => setOffline(false);
-    const off = () => setOffline(true);
-    window.addEventListener("online", on);
-    window.addEventListener("offline", off);
-    return () => {
-      window.removeEventListener("online", on);
-      window.removeEventListener("offline", off);
-    };
-  }, []);
+export default function App() {
+  const [appMode] = useState<AppMode>(
+    import.meta.env.VITE_APP_MODE === "public_demo" ? "public_demo" : "private",
+  );
+  const [session, setSession] = useState<Session | null>(null);
+  const [authEmail, setAuthEmail] = useState("demo@synthetic.invalid");
+  const [authPassword, setAuthPassword] = useState("securepass99");
+  const [authOrg, setAuthOrg] = useState("Demo Firm");
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authBusy, setAuthBusy] = useState(false);
 
-  useEffect(() => {
-    healthCheck().then((h) => {
-      setHealth(
-        h.ok
-          ? `API OK · ${h.phase ?? ""} · db=${h.db_backend ?? "?"} · ${getApiBase()}`
-          : `API unreachable · ${getApiBase()}`,
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [threads, setThreads] = useState<ThreadItem[]>([]);
+  const [activeThreadId, setActiveThreadId] = useState("");
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState("");
+  const [attachments, setAttachments] = useState<AttachmentItem[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [warning, setWarning] = useState<string | null>(null);
+
+  const [matters, setMatters] = useState<ApiMatter[]>([]);
+  const [matterId, setMatterId] = useState("");
+  const [reasoningMode, setReasoningMode] = useState<ReasoningMode>("balanced");
+  const [modes, setModes] = useState<Array<{ id: string; label: string }>>([]);
+  const [specialists, setSpecialists] = useState<Array<{ id: string; name: string }>>([]);
+  const [selectedAgentId, setSelectedAgentId] = useState("bc_legal_associate");
+  const [providers, setProviders] = useState<ProviderOption[]>([]);
+  const [providerId, setProviderId] = useState("safe_local");
+  const [activePanel, setActivePanel] = useState<WorkPanelType>("tools");
+  const [health, setHealth] = useState<string>("checking…");
+  const [suiteNote, setSuiteNote] = useState("");
+  const [workPayload, setWorkPayload] = useState<Record<string, unknown> | null>(null);
+  const [arenaResult, setArenaResult] = useState<Record<string, unknown> | null>(null);
+  const [orgSettings, setOrgSettings] = useState<OrgAiSettings | null>(null);
+  const [telemetry, setTelemetry] = useState<Record<string, unknown> | null>(null);
+  const [quotaLine, setQuotaLine] = useState("");
+
+  const matter = useMemo(() => {
+    const m = matters.find((x) => x.matter_id === matterId);
+    return m
+      ? {
+          id: m.matter_id,
+          name: m.title,
+          synthetic: m.synthetic,
+          privilege: "Matter ACL enforced",
+          matter_id: m.matter_id,
+        }
+      : { id: "", name: "No matter selected", synthetic: true, privilege: "General chat" };
+  }, [matters, matterId]);
+
+  const agents = useMemo(
+    () =>
+      specialists.map((s) => ({
+        id: s.id,
+        name: s.name,
+        description: s.id,
+      })),
+    [specialists],
+  );
+
+  const bootstrap = useCallback(async () => {
+    const h = await healthCheck();
+    setHealth(
+      h.ok
+        ? `API ok · ${h.phase || "m1"} · db ${h.db_backend || "?"} · ${h.session_auth || "auth"}`
+        : "API offline — start uvicorn backend.api.main:app",
+    );
+    if (!getToken()) return;
+    try {
+      const [prov, caps, suite, mats, convs, modeList, specs, settings, tel, q] =
+        await Promise.all([
+          listModelProviders(),
+          chatCapabilities().catch(() => ({})),
+          aiSuite().catch(() => ({})),
+          listMatters().catch(() => ({ matters: [] as ApiMatter[] })),
+          listConversations().catch(() => ({ conversations: [] })),
+          listModes().catch(() => ({ modes: [] })),
+          listSpecialists().catch(() => ({ specialists: [] })),
+          getOrgAiSettings().catch(() => null),
+          getOrgTelemetry().catch(() => null),
+          checkQuota(providerId).catch(() => null),
+        ]);
+      setProviders(
+        (prov.providers || []).map((p: ProviderMeta) => ({
+          id: p.id,
+          name: p.name,
+          configured: p.configured,
+          local: p.local,
+          models: p.models,
+        })),
       );
-    });
-  }, []);
+      if (settings?.default_provider) setProviderId(settings.default_provider);
+      setMatters(mats.matters || []);
+      if ((mats.matters || [])[0]) setMatterId(mats.matters[0]!.matter_id);
+      setModes((modeList.modes || []).map((m) => ({ id: m.id, label: m.label })));
+      setSpecialists(specs.specialists || []);
+      setOrgSettings(settings);
+      setTelemetry(tel as Record<string, unknown> | null);
+      if (q) {
+        setQuotaLine(
+          q.allowed
+            ? `Quota OK · ${q.usage_today?.remaining ?? "?"} remaining today`
+            : `Quota blocked: ${q.reason}`,
+        );
+      }
+      const insp = (suite as { inspirations?: string[] }).inspirations;
+      setSuiteNote(
+        insp?.length
+          ? `Suite: ${insp.slice(0, 4).join(" · ")}…`
+          : String((caps as { product?: string }).product || "BC Legal AI"),
+      );
+      const mapped: ThreadItem[] = (convs.conversations || []).map((c) => ({
+        id: c.conversation_id,
+        title: c.title || "Chat",
+        matterId: c.matter_id,
+        updatedAt: c.updated_at || "",
+      }));
+      setThreads(mapped);
+      if (mapped[0]) setActiveThreadId(mapped[0].id);
+    } catch (e) {
+      setWarning(String(e));
+    }
+  }, [providerId]);
 
   useEffect(() => {
-    if (!token) return;
-    listMatters()
-      .then((r) => setMatters(r.matters))
-      .catch((e: Error) => setMsg(e.message));
-  }, [token]);
+    if (getToken()) {
+      setSession({
+        token: getToken()!,
+        user: {
+          user_id: "",
+          org_id: "",
+          email: "session",
+          display_name: "Signed in",
+          role: "owner",
+        },
+      });
+    }
+    void bootstrap();
+  }, [bootstrap]);
 
-  async function onRegister(e: FormEvent) {
-    e.preventDefault();
-    setMsg("");
+  async function handleLogin(isRegister: boolean) {
+    setAuthBusy(true);
+    setAuthError(null);
     try {
-      const s = await register({ org_name: orgName, email, password, display_name: "Demo" });
-      setToken(s.token);
-      setTok(s.token);
-      setMsg(`Registered as ${s.user.email}`);
-    } catch (err) {
-      setMsg(String(err));
+      const s = isRegister
+        ? await register({
+            org_name: authOrg,
+            email: authEmail,
+            password: authPassword,
+            display_name: authEmail.split("@")[0],
+          })
+        : await login(authEmail, authPassword);
+      setSession(s);
+      await bootstrap();
+    } catch (e) {
+      setAuthError(String(e));
+    } finally {
+      setAuthBusy(false);
     }
   }
 
-  async function onLogin(e: FormEvent) {
-    e.preventDefault();
-    setMsg("");
-    try {
-      const s = await login(email, password);
-      setToken(s.token);
-      setTok(s.token);
-      setMsg(`Logged in as ${s.user.email}`);
-    } catch (err) {
-      setMsg(String(err));
-    }
-  }
-
-  async function onNewMatter() {
-    setMsg("");
-    try {
-      const m = await createMatter("Synthetic demo matter");
-      setMatters((prev) => [{ matter_id: m.matter_id, title: m.title }, ...prev]);
-      setMsg(`Created ${m.matter_id}`);
-    } catch (err) {
-      setMsg(String(err));
-    }
-  }
-
-  async function onCite() {
-    setCiteOut("…");
-    try {
-      const r = await verifyCitation(citeIn, "retaliatory_eviction");
-      setCiteOut(`${r.status} · court_ready=${r.court_ready}\n${r.reasons.join("\n")}`);
-    } catch (err) {
-      setCiteOut(String(err));
-    }
-  }
-
-  function logout() {
+  async function handleLogout() {
+    await logout();
+    setSession(null);
+    setThreads([]);
+    setMessages([]);
     setToken(null);
-    setTok(null);
-    setMatters([]);
+  }
+
+  async function createNewChat() {
+    if (!getToken()) {
+      setWarning("Sign in to create a live conversation.");
+      return;
+    }
+    try {
+      const c = await createConversation({
+        title: "New conversation",
+        chat_type: matterId ? "matter" : "general",
+        matter_id: matterId || undefined,
+        model_mode: reasoningMode,
+        specialist: selectedAgentId,
+      });
+      const item: ThreadItem = {
+        id: c.conversation_id,
+        title: c.title,
+        matterId: c.matter_id,
+        updatedAt: "Now",
+      };
+      setThreads((t) => [item, ...t]);
+      setActiveThreadId(c.conversation_id);
+      setMessages([
+        {
+          id: crypto.randomUUID(),
+          role: "system",
+          content:
+            "Live conversation. Not legal advice. Slash tools: /summarize /email /research /code · providers in toolbar · Arena & Admin in work panel.",
+          createdAt: nowTime(),
+          status: "complete",
+        },
+      ]);
+      setInput("");
+    } catch (e) {
+      setWarning(String(e));
+    }
+  }
+
+  async function ensureConversation(): Promise<string> {
+    if (activeThreadId) return activeThreadId;
+    const c = await createConversation({
+      title: "New conversation",
+      chat_type: "general",
+      model_mode: reasoningMode,
+      specialist: selectedAgentId,
+    });
+    setActiveThreadId(c.conversation_id);
+    setThreads((t) => [
+      { id: c.conversation_id, title: c.title, updatedAt: "Now" },
+      ...t,
+    ]);
+    return c.conversation_id;
+  }
+
+  function handleFilesSelected(files: FileList) {
+    const next: AttachmentItem[] = Array.from(files).map((file) => ({
+      id: crypto.randomUUID(),
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      state: appMode === "public_demo" ? "blocked" : "queued",
+      reason: appMode === "public_demo" ? "Uploads disabled in public demo" : undefined,
+    }));
+    setAttachments((c) => [...c, ...next]);
+  }
+
+  async function sendChat() {
+    const trimmed = input.trim();
+    if (!trimmed || busy) return;
+    if (appMode === "public_demo") {
+      const sens = findSensitiveText(trimmed);
+      if (sens.length) {
+        setWarning(`Blocked: ${sens.join(", ")}`);
+        return;
+      }
+    }
+    if (!getToken()) {
+      setWarning("Sign in to use the live chat API.");
+      return;
+    }
+    setWarning(null);
+    setBusy(true);
+    const pendingId = crypto.randomUUID();
+    setMessages((m) => [
+      ...m,
+      {
+        id: crypto.randomUUID(),
+        role: "user",
+        content: trimmed,
+        createdAt: nowTime(),
+        status: "complete",
+      },
+      {
+        id: pendingId,
+        role: "assistant",
+        content: "Thinking…",
+        createdAt: nowTime(),
+        status: "streaming",
+      },
+    ]);
+    setInput("");
+    try {
+      const cid = await ensureConversation();
+      const res = await sendMessage(cid, {
+        content: trimmed,
+        provider: providerId,
+        model: "",
+      });
+      const meta = res.assistant.meta || {};
+      setMessages((m) =>
+        m.map((msg) =>
+          msg.id === pendingId
+            ? {
+                ...msg,
+                content: res.assistant.content,
+                status: "complete",
+                citations: meta.citations,
+                actions: meta.actions,
+                warnings: meta.warnings,
+                provider: meta.provider || String(meta.controls?.provider || providerId),
+                model: meta.model,
+                toolActivity: meta.tool_activity,
+                workPanel: meta.work_panel as Record<string, unknown> | undefined,
+              }
+            : msg,
+        ),
+      );
+      if (meta.work_panel) {
+        setWorkPayload(meta.work_panel as Record<string, unknown>);
+        setActivePanel("tools");
+      }
+      setThreads((t) =>
+        t.map((th) =>
+          th.id === cid
+            ? {
+                ...th,
+                title:
+                  th.title === "New conversation" || th.title === "New chat"
+                    ? trimmed.slice(0, 48)
+                    : th.title,
+                updatedAt: "Now",
+              }
+            : th,
+        ),
+      );
+      const q = await checkQuota(providerId).catch(() => null);
+      if (q) {
+        setQuotaLine(
+          q.allowed
+            ? `Quota OK · ${q.usage_today?.remaining ?? "?"} remaining`
+            : `Quota: ${q.reason}`,
+        );
+      }
+    } catch (e) {
+      setMessages((m) =>
+        m.map((msg) =>
+          msg.id === pendingId
+            ? {
+                ...msg,
+                content: `Error: ${String(e)}`,
+                status: "warning",
+              }
+            : msg,
+        ),
+      );
+    } finally {
+      setBusy(false);
+      setAttachments([]);
+    }
+  }
+
+  async function runArena() {
+    const prompt =
+      input.trim() ||
+      messages.filter((m) => m.role === "user").slice(-1)[0]?.content ||
+      "Explain JR Form 66 briefly.";
+    setBusy(true);
+    try {
+      const providersToRun = [providerId, "safe_local"].filter(
+        (v, i, a) => a.indexOf(v) === i,
+      );
+      const result = await arenaCompare(prompt, providersToRun);
+      setArenaResult(result as unknown as Record<string, unknown>);
+      setActivePanel("arena");
+      setWorkPayload({ view: "arena", title: "Arena comparison" });
+    } catch (e) {
+      setWarning(String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function runWebResearch() {
+    const q = input.trim() || "Residential Tenancy Act BC";
+    setBusy(true);
+    try {
+      const r = await webResearch(q);
+      setWorkPayload({ view: "research", title: "Web research", ...r });
+      setActivePanel("sources");
+    } catch (e) {
+      setWarning(String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveOrgSettings(patch: Partial<OrgAiSettings>) {
+    try {
+      const s = await updateOrgAiSettings(patch);
+      setOrgSettings(s);
+      setWarning(null);
+      const tel = await getOrgTelemetry().catch(() => null);
+      if (tel) setTelemetry(tel as Record<string, unknown>);
+    } catch (e) {
+      setWarning(String(e));
+    }
+  }
+
+  async function addSyntheticMatter() {
+    try {
+      const m = await createMatter(`Synthetic matter ${new Date().toLocaleDateString()}`);
+      setMatters((x) => [m, ...x]);
+      setMatterId(m.matter_id);
+    } catch (e) {
+      setWarning(String(e));
+    }
+  }
+
+  if (!session && !getToken()) {
+    return (
+      <div className="auth-shell">
+        <div className="auth-card">
+          <div className="brand-mark">BC</div>
+          <h1>BC Legal AI Associate</h1>
+          <p className="muted">
+            Conversational workspace with multi-provider AI suite. Not legal advice.
+          </p>
+          <label>
+            Organization
+            <input value={authOrg} onChange={(e) => setAuthOrg(e.target.value)} />
+          </label>
+          <label>
+            Email
+            <input value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} />
+          </label>
+          <label>
+            Password (10+ chars)
+            <input
+              type="password"
+              value={authPassword}
+              onChange={(e) => setAuthPassword(e.target.value)}
+            />
+          </label>
+          {authError && <div className="composer-warning">{authError}</div>}
+          <div className="auth-actions">
+            <button disabled={authBusy} onClick={() => void handleLogin(false)}>
+              Sign in
+            </button>
+            <button disabled={authBusy} className="secondary" onClick={() => void handleLogin(true)}>
+              Register org
+            </button>
+          </div>
+          <p className="muted tiny">{health}</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="shell">
-      <header className="header">
-        <h1>{MODE_LABEL[mode]}</h1>
-        <p className="sub">
-          Family: BC Legal AI Associate · Not a lawyer · Not legal advice · Human supervision
-          required
-        </p>
-        <p className="api-status" aria-live="polite">
-          {health}
-        </p>
-      </header>
-
-      {offline && (
-        <div className="banner offline" role="status">
-          <strong>OFFLINE</strong> — legal sources, deadlines, and matter status may be outdated.
-          Reconnect before relying on or filing this material.
-        </div>
-      )}
-
-      <main>
-        <section className="card warn" role="note">
-          <strong>M1 platform build.</strong> Auth, org/matter isolation, hash-chained audit,
-          document quarantine, and fail-closed citations. Synthetic data only for demos. No
-          court-ready export without privilege gates.
-        </section>
-
-        {!token ? (
-          <section className="card">
-            <h2>Sign in (private API)</h2>
-            <form className="form" onSubmit={onLogin}>
-              <label>
-                Org (register only)
-                <input value={orgName} onChange={(e) => setOrgName(e.target.value)} />
-              </label>
-              <label>
-                Email
-                <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" />
-              </label>
-              <label>
-                Password
-                <input
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  type="password"
-                />
-              </label>
-              <div className="row">
-                <button type="submit">Log in</button>
-                <button type="button" onClick={onRegister}>
-                  Register org
-                </button>
+    <div className="app-shell">
+      <Sidebar
+        threads={threads}
+        activeThreadId={activeThreadId}
+        collapsed={sidebarCollapsed}
+        onToggle={() => setSidebarCollapsed((v) => !v)}
+        onNewChat={() => void createNewChat()}
+        onSelectThread={setActiveThreadId}
+        userLabel={session?.user.email || "Signed in"}
+        onLogout={() => void handleLogout()}
+      />
+      <main className="main-shell">
+        <TopBar
+          appMode={appMode}
+          matter={matter}
+          matters={matters.map((m) => ({
+            id: m.matter_id,
+            name: m.title,
+            synthetic: m.synthetic,
+          }))}
+          reasoningMode={reasoningMode}
+          modes={modes.length ? modes : [
+            { id: "balanced", label: "Balanced" },
+            { id: "deep", label: "Deep" },
+            { id: "private_local", label: "Private Local" },
+          ]}
+          providers={providers}
+          providerId={providerId}
+          health={health}
+          quotaLine={quotaLine}
+          onMatterChange={setMatterId}
+          onModeChange={(m) => setReasoningMode(m as ReasoningMode)}
+          onProviderChange={setProviderId}
+          onNewMatter={() => void addSyntheticMatter()}
+        />
+        <div className="workspace-grid">
+          <section className="conversation-column">
+            <div className="conversation-banner">
+              <div>
+                <span className="eyebrow">Enterprise AI suite · live API</span>
+                <h1>Conversational Legal Workspace</h1>
+                <p>
+                  {suiteNote ||
+                    "Providers, slash-tools, arena, and org admin on a supervised BC legal workbench."}
+                </p>
               </div>
-            </form>
-          </section>
-        ) : (
-          <section className="card">
-            <h2>Matters</h2>
-            <div className="row">
-              <button type="button" onClick={onNewMatter}>
-                New synthetic matter
+              <div className="trust-stack">
+                <span>◈ {matter.privilege}</span>
+                <span>◈ court_ready: false</span>
+                <span>◈ {providerId}</span>
+              </div>
+            </div>
+            <div className="slash-bar" aria-label="Slash tools">
+              {SLASH_TOOLS.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  className="slash-chip"
+                  title={t.hint}
+                  onClick={() => setInput((v) => (v ? v : `${t.id} `))}
+                >
+                  {t.label}
+                </button>
+              ))}
+              <button type="button" className="slash-chip accent" onClick={() => void runArena()}>
+                Arena
               </button>
-              <button type="button" onClick={logout}>
-                Log out
+              <button type="button" className="slash-chip" onClick={() => void runWebResearch()}>
+                Research
+              </button>
+              <button
+                type="button"
+                className="slash-chip"
+                onClick={() => setActivePanel("admin")}
+              >
+                Org Admin
               </button>
             </div>
-            <ul>
-              {matters.map((m) => (
-                <li key={m.matter_id}>
-                  <code>{m.matter_id}</code> — {m.title}
-                </li>
-              ))}
-              {matters.length === 0 && <li>No matters yet.</li>}
-            </ul>
+            <MessageList messages={messages} />
+            <Composer
+              value={input}
+              appMode={appMode}
+              busy={busy}
+              attachments={attachments}
+              agents={agents.length ? agents : [{ id: "bc_legal_associate", name: "BC Legal Associate" }]}
+              selectedAgentId={selectedAgentId}
+              warning={warning}
+              onChange={setInput}
+              onAgentChange={setSelectedAgentId}
+              onFilesSelected={handleFilesSelected}
+              onRemoveAttachment={(id) =>
+                setAttachments((c) => c.filter((a) => a.id !== id))
+              }
+              onSend={() => void sendChat()}
+            />
           </section>
-        )}
-
-        <section className="card">
-          <h2>Citation check (fail-closed)</h2>
-          <input value={citeIn} onChange={(e) => setCiteIn(e.target.value)} className="wide" />
-          <button type="button" onClick={onCite}>
-            Verify
-          </button>
-          <pre className="out">{citeOut}</pre>
-        </section>
-
-        {msg && (
-          <section className="card">
-            <pre className="out">{msg}</pre>
-          </section>
-        )}
+          <WorkPanel
+            activePanel={activePanel}
+            matter={matter}
+            agents={agents}
+            selectedAgentId={selectedAgentId}
+            onPanelChange={setActivePanel}
+            workPayload={workPayload}
+            arenaResult={arenaResult}
+            orgSettings={orgSettings}
+            telemetry={telemetry}
+            providers={providers}
+            onSaveSettings={(p) => void saveOrgSettings(p)}
+            onRefreshTelemetry={() => {
+              void getOrgTelemetry()
+                .then((t) => setTelemetry(t as unknown as Record<string, unknown>))
+                .catch((e) => setWarning(String(e)));
+            }}
+          />
+        </div>
       </main>
     </div>
   );

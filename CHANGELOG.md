@@ -2,6 +2,95 @@
 
 ## Unreleased
 
+## v1.0.0 — 2026-07-28
+
+### Production readiness milestone
+
+- Complete env template + `docs/ENVIRONMENT.md`, `DEPLOYMENT.md`, `PRODUCTION_READINESS.md`, `SECURITY_REVIEW_V1.md`
+- `scripts/production_smoke.py` — health, auth, matter, chat, logout
+- Hardened `Dockerfile` (non-root, slim runtime deps, healthcheck)
+- `docker-compose.yml` — Postgres health dependency; removed conflicting SQL init mount
+- CI: fail lint on ruff errors; frontend typecheck/build; API smoke in CI; Docker smoke with production_smoke
+- README install/deploy section for v1.0
+
+## v0.4.1-alpha — 2026-07-28
+
+### Platform UI chat shell + org admin
+
+- **Live platform-ui**: auth, multi-turn chat API, provider/mode pickers, slash-tool bar
+- **Work panel**: Tools, Sources, Arena comparison results, Org Admin, Agents, Draft
+- **Org admin API**: provider allowlists, daily quotas, monthly token budget, cost telemetry
+- Chat/complete paths enforce org quotas and record usage
+- Vite proxy `/v1` + `/health` for local dev; production build verified
+
+## v0.4.0-alpha — 2026-07-28
+
+### Enterprise AI suite
+
+- Multi-provider gateway: `safe_local`, **Ollama**, OpenAI-compatible, OpenRouter, Anthropic (external gated)
+- Multi-turn chat memory + provider selection on messages
+- Claude-style safety (`ai_safety.py`) + deep reasoning scaffold
+- Monica-style productivity: summarize, email, creative, research plan
+- Copilot-style code complete/debug/docs
+- Grok-style bounded web research (allowlisted; off by default)
+- Arena multi-model comparison with local quality heuristics
+- API: `/v1/platform/ai/*` + suite manifest; docs `docs/ENTERPRISE_AI_SUITE.md`
+
+## v0.3.1-alpha — 2026-07-28
+
+### Postgres integration + Form 66
+
+- **Postgres CI:** `test-postgres` job runs `tests/test_postgres_integration.py` against `pgvector/pgvector:pg16`
+- **Unified migrations:** portable DDL applied for both SQLite and Postgres (app SQL paths align)
+- **Form 66 scaffold:** `backend/platform/form66.py` — Parts 1–4 DOCX (orders, facts, legal basis, materials)
+- **API:** `GET /v1/platform/matters/{id}/drafts/form-66.docx` (`X-Form-Number: 66`, never court-ready alone)
+- **Court package:** embeds Form 66 under `forms/` when export manifest is APPROVED
+- Session expiry compare handles Postgres `timestamptz` objects
+
+## v0.3.0-alpha — 2026-07-28
+
+### Production track foundations
+
+- **Postgres multi-worker:** `CompatCursor` `?`→`%s`, optional `psycopg_pool`, SQLite WAL, `/health.multi_worker`
+- **Cookie sessions:** HttpOnly `ala_session` + CSRF double-submit; Bearer still supported; logout clears cookies
+- **OCR:** `backend/platform/ocr.py` native+OCR pipeline; API `…/documents/pdf-extract`
+- **Official law:** BC Laws fetcher (host allowlist, currency line, snapshots); never auto `court_ready`
+- **Court export:** ZIP package (DOCX summary + manifest) only after APPROVED export manifest
+- **Signed installers:** `scripts/sign_windows_installer.ps1` + `docs/SIGNING_AND_DISTRIBUTION.md` (certs human-gated)
+- Docs: `docs/PRODUCTION_TRACKS_V03.md`
+
+## v0.2.0-alpha — 2026-07-28
+
+### Monorepo archive
+
+- Moved non-canonical trees to `archive/non-canonical/`:
+  `eap-monorepo`, `enterprise_ai_platform`, `apps/api`→`apps-api`, `apps/web`→`apps-web`,
+  `bc-legal-ai-conversational-platform`, root skill zip blobs
+- Root `package.json` is now `bc-legal-ai` with scripts for `backend/` + platform-ui
+- Documented archive policy in `archive/non-canonical/README.md` and `docs/CANONICAL_STACK.md`
+
+### P0 security hardening
+
+- Legacy HITL / post-resolution matter routes enforce `require_matter_access` (deny cross-org)
+- In-process sliding-window rate limits on `/auth/login` and `/auth/register`
+- Security headers middleware: CSP, X-Frame-Options DENY, nosniff, Referrer-Policy
+- Tests: ethical wall, cross-matter authz, rate limit 429, security headers
+
+### Repo finalize (prior same-day commit)
+
+- Phase 3/4 HTTP tests for bearer auth; anonymous HITL routes return 401
+- Confidential scanner green; deployment-readiness OK (public demo)
+- Release notes: `releases/v0.2.0-alpha.md`
+
+### Data model v1.0 (controlling)
+
+- `docs/DATA_MODEL_AND_EVIDENCE_SCHEMA.md` + `architecture/contracts/sql/v1_data_model.sql`
+- Postgres 16 + pgvector: users/roles/devices/sessions, matters/participants,
+  evidence documents/pages/OCR/embeddings/privilege/custody, evidence items + links,
+  authorities + verification, deadlines, drafts, communications, consent, physical files,
+  conversations, hash-chained audit_entries
+- docker-compose Postgres image: `pgvector/pgvector:pg16`
+
 ### M1 platform core (build in progress)
 
 - SQLite default + Postgres SQL (`m1_platform.sql`): orgs, users, sessions, matters,

@@ -343,7 +343,6 @@ class MatterSession:
 
     def add_examination_outline(self, outline) -> "Path":
         """Save an ExaminationOutline under this matter."""
-        from pathlib import Path
 
         from backend.examination.service import save_outline
 

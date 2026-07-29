@@ -1,4 +1,10 @@
-"""Drafting scaffolds (M5 start) — Form 66/67 outlines; not court-ready without gates."""
+"""Drafting scaffolds (M5 start) — Form 66/67 outlines; not court-ready without gates.
+
+IMPORTANT: Exception handling is intentionally narrow. Failures surface explicit
+degraded/error states, NOT success-shaped fallback scaffolds. A missing template,
+import error, or implementation defect will be visible as a degraded or error status,
+not masked as functioning behavior.
+"""
 
 from __future__ import annotations
 
@@ -15,19 +21,31 @@ def petition_outline(user: UserInfo, matter_id: str) -> dict[str, Any]:
 
         outline = rtb_jr_petition_outline(matter_id=matter_id)
         payload = outline.to_dict() if hasattr(outline, "to_dict") else {"raw": str(outline)}
-    except Exception as e:
-        payload = {
+        payload["status"] = "ok"
+    except ImportError as e:
+        # Template module not available — return explicit degraded state
+        return {
+            "status": "degraded",
             "form_number": "66",
             "document_type": "PETITION",
-            "title": "Petition scaffold (Form 66)",
-            "error": str(e),
-            "sections": [
-                "Style of cause (synthetic parties only in public demos)",
-                "Orders sought",
-                "Grounds (patent unreasonableness / procedural fairness — confirm counsel)",
-                "Material facts (source-linked only)",
-                "Legal basis (verified authorities only)",
+            "title": "Petition scaffold (Form 66) — unavailable",
+            "error": f"Drafting template not available: {e}",
+            "court_ready": False,
+            "requires": [
+                "privilege review",
+                "citation verification",
+                "HUMAN_CONFIRMED facts",
+                "supervising lawyer approval",
             ],
+        }
+    except (AttributeError, TypeError, ValueError) as e:
+        # Template loaded but returned unexpected structure
+        return {
+            "status": "error",
+            "form_number": "66",
+            "document_type": "PETITION",
+            "error": f"Drafting template returned unexpected format: {e}",
+            "court_ready": False,
         }
     payload["court_ready"] = False
     payload["requires"] = [

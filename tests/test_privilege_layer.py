@@ -21,8 +21,6 @@ from architecture.privilege_schemas import (
 from backend.privilege.access_control import (
     AuthorizationContext,
     DocumentView,
-    PrivilegeAccessDenied,
-    assert_document_readable,
     filter_documents_for_principal,
     storage_key_prefix,
 )
