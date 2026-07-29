@@ -1,5 +1,5 @@
 ---
-title: BC Legal AI Associate
+title: BC Legal AI Associate (Gradio source — not primary Space)
 emoji: ⚖️
 colorFrom: blue
 colorTo: gray
@@ -10,19 +10,18 @@ pinned: false
 license: mit
 ---
 
-# BC Legal AI Associate
+# Gradio demo source (optional / private)
 
-Public deterministic Gradio demonstration for the BC Legal AI Associate project. Model inference is disabled by default; the public Space performs rule-based synthetic triage and links to official sources.
+The **public** Space is static and free:
 
-**Not a lawyer. Not legal advice.** Do not upload confidential client files here.
+**https://huggingface.co/spaces/Dmang69/bc-legal-ai**
+
+Source for that deployment: monorepo `huggingface-space-static/` (triage, JR clock, tagger, guardrails).
+
+This folder (`huggingface-space/`) is the optional Gradio-based demo. It is **not** what runs on the primary public Space (static SDK). Do not upload Gradio apps to free static Spaces.
 
 - **GitHub:** https://github.com/dmang69/bc-legal-ai  
 - **Dataset:** https://huggingface.co/datasets/Dmang69/bc-legal-ai  
-- **Model documentation:** https://huggingface.co/Dmang69/bc-legal-ai-base  
 - **BC Laws:** https://www.bclaws.gov.bc.ca/  
 
-The linked model repository must not be loaded as a Transformers checkpoint unless it contains a complete standard configuration, tokenizer, and compatible weights. A policy card is not a model architecture. Optional private inference requires `ENABLE_TRANSFORMERS_INFERENCE=true`, a reviewed standard `HF_MODEL_ID`, and an immutable commit SHA in `HF_MODEL_REVISION`; remote repository code is blocked.
-
-The public deployment uses the Gradio SDK and remains synthetic-only. It must not accept confidential files or represent outputs as legal advice or court-ready work.
-
-Private product delivery: Tauri 2 Workbench / Client / Portal against a private backend (see repo `docs/SECTION_G_PLATFORM_AND_DISTRIBUTION.md`).
+Not a lawyer. Not legal advice. Synthetic data only on public demos.

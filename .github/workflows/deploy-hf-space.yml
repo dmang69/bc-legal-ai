@@ -1,6 +1,8 @@
 name: Deploy HF Space (static demo)
 
-# Deploys huggingface-space-static/ → Hugging Face Space Dmang69/bc-legal-ai-demo
+# Deploys huggingface-space-static/ → Hugging Face static Spaces:
+#   - Dmang69/bc-legal-ai       (primary public URL)
+#   - Dmang69/bc-legal-ai-demo  (mirror)
 # on every push to main that touches the demo folder (or manual run).
 #
 # Prerequisites (repo secret):
@@ -8,8 +10,8 @@ name: Deploy HF Space (static demo)
 #   Create/refresh at: https://huggingface.co/settings/tokens
 #   GitHub: Settings → Secrets and variables → Actions → New repository secret
 #
-# Target Space must be SDK=static (free). Gradio/Docker Spaces need HF PRO.
-# If the Space does not exist yet, this workflow creates it as static.
+# Target Spaces must be SDK=static (free). Gradio/Docker Spaces need HF PRO.
+# If a Space does not exist yet, this workflow creates it as static.
 
 on:
   push:
@@ -33,13 +35,14 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  HF_SPACE_ID: Dmang69/bc-legal-ai-demo
   DEMO_DIR: huggingface-space-static
   PYTHON_VERSION: "3.12"
+  # Primary public Space first, then mirror
+  HF_SPACE_IDS: Dmang69/bc-legal-ai Dmang69/bc-legal-ai-demo
 
 jobs:
   deploy:
-    name: Upload static demo to Hugging Face Space
+    name: Upload static demo to Hugging Face Spaces
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -74,7 +77,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install "huggingface_hub>=0.26.0"
 
-      - name: Ensure Space exists (static SDK) and upload demo folder
+      - name: Ensure Spaces exist (static SDK) and upload demo folder
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
@@ -83,12 +86,13 @@ jobs:
           import sys
           from pathlib import Path
 
-          from huggingface_hub import HfApi
+          from huggingface_hub import CommitOperationDelete, HfApi
           from huggingface_hub.utils import HfHubHTTPError
 
-          space_id = os.environ["HF_SPACE_ID"]
+          space_ids = os.environ["HF_SPACE_IDS"].split()
           demo_dir = Path(os.environ["DEMO_DIR"])
           token = os.environ["HF_TOKEN"]
+          keep = {"index.html", "README.md", ".gitattributes"}
 
           if not demo_dir.is_dir():
               print(f"::error::Demo directory missing: {demo_dir}", file=sys.stderr)
@@ -96,70 +100,85 @@ jobs:
 
           api = HfApi(token=token)
 
-          # Create Space if needed; ignore 409 "already exists".
-          try:
-              api.create_repo(
+          for space_id in space_ids:
+              print(f"=== Deploying {space_id} ===")
+              try:
+                  api.create_repo(
+                      repo_id=space_id,
+                      repo_type="space",
+                      space_sdk="static",
+                      private=False,
+                      exist_ok=True,
+                  )
+                  print(f"Space ready: {space_id} (static)")
+              except HfHubHTTPError as exc:
+                  status = getattr(getattr(exc, "response", None), "status_code", None)
+                  if status in {409, 403}:
+                      print(f"create_repo returned {status}; continuing with upload. Detail: {exc}")
+                  elif status == 402:
+                      print(
+                          "::error title=HF 402 Payment Required::"
+                          "Hugging Face rejected Space create/use. Static Spaces are free, but "
+                          "some accounts need verified email / billing method on file, or the Space "
+                          "may still be Gradio. Fix at https://huggingface.co/settings/billing "
+                          f"and ensure the Space SDK is static: https://huggingface.co/spaces/{space_id}/settings",
+                          file=sys.stderr,
+                      )
+                      sys.exit(1)
+                  else:
+                      raise
+
+              try:
+                  info = api.space_info(space_id)
+                  sdk = (getattr(info, "sdk", None) or getattr(info, "cardData", {}) or {})
+                  if isinstance(sdk, dict):
+                      sdk = sdk.get("sdk")
+                  sdk = (sdk or "").lower()
+                  print(f"Space SDK reported as: {sdk or '(unknown)'}")
+                  if sdk and sdk != "static":
+                      print(
+                          f"::error title=Wrong Space SDK::Target Space is sdk={sdk!r}, expected static. "
+                          f"Refusing upload for {space_id}.",
+                          file=sys.stderr,
+                      )
+                      sys.exit(1)
+              except Exception as exc:
+                  print(f"Warning: could not validate SDK via space_info: {exc}")
+
+              commit = api.upload_folder(
+                  folder_path=str(demo_dir),
                   repo_id=space_id,
                   repo_type="space",
-                  space_sdk="static",
-                  private=False,
-                  exist_ok=True,
+                  path_in_repo=".",
+                  commit_message=(
+                      f"ci: deploy static demo from GitHub "
+                      f"{os.environ.get('GITHUB_SHA', '')[:7]} "
+                      f"({os.environ.get('GITHUB_REF_NAME', 'main')})"
+                  ),
+                  allow_patterns=["index.html", "README.md", "*.css", "*.js", "*.svg", "*.png", "*.ico"],
+                  delete_patterns=["app.py", "requirements.txt", "style.css"],
               )
-              print(f"Space ready: {space_id} (static)")
-          except HfHubHTTPError as exc:
-              status = getattr(getattr(exc, "response", None), "status_code", None)
-              # Account may already own the Space under a slightly different creation path.
-              if status in {409, 403}:
-                  print(f"create_repo returned {status}; continuing with upload. Detail: {exc}")
-              elif status == 402:
-                  print(
-                      "::error title=HF 402 Payment Required::"
-                      "Hugging Face rejected Space create/use. Static Spaces are free, but "
-                      "some accounts need verified email / billing method on file, or the Space "
-                      "may still be Gradio. Fix at https://huggingface.co/settings/billing "
-                      "and ensure the Space SDK is static: "
-                      f"https://huggingface.co/spaces/{space_id}/settings",
-                      file=sys.stderr,
-                  )
-                  sys.exit(1)
-              else:
-                  raise
+              print(f"Upload commit: {commit}")
 
-          # Refuse to clobber a non-static Space accidentally.
-          try:
-              info = api.space_info(space_id)
-              sdk = (getattr(info, "sdk", None) or getattr(info, "cardData", {}) or {})
-              if isinstance(sdk, dict):
-                  sdk = sdk.get("sdk")
-              sdk = (sdk or "").lower()
-              print(f"Space SDK reported as: {sdk or '(unknown)'}")
-              if sdk and sdk != "static":
-                  print(
-                      f"::error title=Wrong Space SDK::Target Space is sdk={sdk!r}, expected static. "
-                      f"Create a dedicated static Space or change SDK in Space settings. "
-                      f"Refusing upload to avoid turning a Gradio/Docker Space into a static strip.",
-                      file=sys.stderr,
-                  )
-                  sys.exit(1)
-          except Exception as exc:
-              print(f"Warning: could not validate SDK via space_info: {exc}")
+              # Drop leftover non-demo paths (e.g. old Gradio/dataset mirrors)
+              try:
+                  files = api.list_repo_files(repo_id=space_id, repo_type="space")
+                  to_delete = [f for f in files if f not in keep]
+                  for i in range(0, len(to_delete), 40):
+                      batch = to_delete[i : i + 40]
+                      if not batch:
+                          continue
+                      api.create_commit(
+                          repo_id=space_id,
+                          repo_type="space",
+                          operations=[CommitOperationDelete(path_in_repo=f) for f in batch],
+                          commit_message=f"ci: prune non-demo Space files ({i // 40 + 1})",
+                      )
+                      print(f"Pruned {len(batch)} files from {space_id}")
+              except Exception as exc:
+                  print(f"Warning: prune failed for {space_id}: {exc}")
 
-          commit = api.upload_folder(
-              folder_path=str(demo_dir),
-              repo_id=space_id,
-              repo_type="space",
-              path_in_repo=".",
-              commit_message=(
-                  f"ci: deploy static demo from GitHub "
-                  f"{os.environ.get('GITHUB_SHA', '')[:7]} "
-                  f"({os.environ.get('GITHUB_REF_NAME', 'main')})"
-              ),
-              allow_patterns=["index.html", "README.md", "*.css", "*.js", "*.svg", "*.png", "*.ico"],
-              # Drop Gradio leftovers and the HF static template CSS if still present.
-              delete_patterns=["app.py", "requirements.txt", "style.css"],
-          )
-          print(f"Upload commit: {commit}")
-          print(f"Live URL: https://huggingface.co/spaces/{space_id}")
+              print(f"Live URL: https://huggingface.co/spaces/{space_id}")
           PY
 
       - name: Summary
@@ -167,7 +186,8 @@ jobs:
           {
             echo "## HF Space deploy"
             echo ""
-            echo "- **Space:** [\`${{ env.HF_SPACE_ID }}\`](https://huggingface.co/spaces/${{ env.HF_SPACE_ID }})"
+            echo "- **Spaces:** \`Dmang69/bc-legal-ai\`, \`Dmang69/bc-legal-ai-demo\`"
+            echo "- **Primary:** https://huggingface.co/spaces/Dmang69/bc-legal-ai"
             echo "- **Source:** \`${{ env.DEMO_DIR }}/\`"
             echo "- **Commit:** \`${GITHUB_SHA}\`"
             echo ""

@@ -103,7 +103,8 @@ ALA_KIMI_MODEL=moonshotai/kimi-k2.5
 
 | Surface | URL |
 |---------|-----|
-| **Static HF Space** | https://huggingface.co/spaces/Dmang69/bc-legal-ai-demo |
+| **Static HF Space (primary)** | https://huggingface.co/spaces/Dmang69/bc-legal-ai |
+| Mirror | https://huggingface.co/spaces/Dmang69/bc-legal-ai-demo |
 | Dataset | https://huggingface.co/datasets/Dmang69/bc-legal-ai |
 | Model card (docs) | https://huggingface.co/Dmang69/bc-legal-ai-base |
 
@@ -114,7 +115,7 @@ Demo features (deterministic, client-side, **no confidential uploads**):
 - FACT / ALLEGATION / ARGUMENT tagging
 - Design guardrails panel and BC Laws / form links
 
-Source: [`huggingface-space-static/`](huggingface-space-static/)
+Source: [`huggingface-space-static/`](huggingface-space-static/) · CI: `.github/workflows/deploy-hf-space.yml`
 
 ---
 

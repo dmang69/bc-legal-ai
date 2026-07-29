@@ -1,5 +1,5 @@
 ---
-title: BC Legal AI Associate — Demo
+title: BC Legal AI Associate
 emoji: ⚖️
 colorFrom: blue
 colorTo: gray
@@ -16,7 +16,8 @@ Deterministic demonstration for the **BC Legal AI Associate** project. No model
 inference. No statute text from memory. All logic runs **in the visitor's
 browser** (on-device — consistent with design correction #5).
 
-**Demo version:** static-v1.1
+**Space:** https://huggingface.co/spaces/Dmang69/bc-legal-ai  
+**Demo version:** static-v1.2
 
 ## Features
 
@@ -32,6 +33,9 @@ browser** (on-device — consistent with design correction #5).
 
 **Not a lawyer. Not legal advice.** Do not enter confidential client details.
 
+Private product (GitHub) adds Puter AI base, OpenClaw agents, Kimi, and Arena AI —
+those require a private backend and are **not** enabled on this public Space.
+
 ## Locked design guardrails (encoded in this demo)
 
 1. **Consent is not privilege** — consent authorizes specified processing; it never creates, waives, or determines privilege.
@@ -43,6 +47,7 @@ browser** (on-device — consistent with design correction #5).
 
 ## Links
 
+- **This Space:** https://huggingface.co/spaces/Dmang69/bc-legal-ai
 - **GitHub:** https://github.com/dmang69/bc-legal-ai
 - **Dataset:** https://huggingface.co/datasets/Dmang69/bc-legal-ai
 - **Model documentation:** https://huggingface.co/Dmang69/bc-legal-ai-base

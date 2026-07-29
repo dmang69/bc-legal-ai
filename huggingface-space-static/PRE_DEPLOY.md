@@ -1,9 +1,10 @@
 # Pre-deployment checklist — public static demo
 
-**Target Space:** https://huggingface.co/spaces/Dmang69/bc-legal-ai-demo  
+**Primary Space:** https://huggingface.co/spaces/Dmang69/bc-legal-ai  
+**Mirror:** https://huggingface.co/spaces/Dmang69/bc-legal-ai-demo  
 **Source:** `huggingface-space-static/`  
 **Workflow:** `.github/workflows/deploy-hf-space.yml`  
-**Demo version:** static-v1.1
+**Demo version:** static-v1.2
 
 ## Design lock (six corrections) — verified in demo
 
