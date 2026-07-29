@@ -75,6 +75,25 @@ Scaffold manifests live under `infra/k8s/`. Treat as starting point:
 3. Probe `/health/live` and `/health/ready`.  
 4. Do not run multiple replicas against SQLite.
 
+## Cloud deploy (recommended path)
+
+Full runbook: **[`docs/CLOUD_DEPLOY.md`](CLOUD_DEPLOY.md)**
+
+| Piece | How |
+|-------|-----|
+| Secrets | `.env.production` from `.env.production.example` |
+| Postgres | `ALA_POSTGRES_URL` (compose service or managed DB) |
+| CORS | `CORS_ORIGINS=https://app.example.com` |
+| TLS | Reverse proxy → API; static UI on app host |
+| UI build | `VITE_API_BASE_URL=https://api.example.com` |
+| Helper | `scripts/cloud-deploy.ps1` |
+| Overlay | `docker-compose.prod.yml` |
+
+```powershell
+# Docker Desktop must be running
+.\scripts\cloud-deploy.ps1 -PublicApiUrl https://api.example.com -PublicUiUrl https://app.example.com
+```
+
 ## Cloud checklist (Azure / AWS / GCP / VPS)
 
 | Step | Action |

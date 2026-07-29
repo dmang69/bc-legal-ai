@@ -99,3 +99,6 @@ apps/desktop-mobile/.env
 apps/tauri/node_modules/
 apps/tauri/src-tauri/target/
 apps/tauri/.env
+
+.env.production
+.env.staging
