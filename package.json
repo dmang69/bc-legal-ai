@@ -1,19 +1,22 @@
 {
   "name": "bc-legal-ai",
-  "version": "0.2.0-alpha",
+  "version": "1.0.1",
   "private": true,
-  "packageManager": "pnpm@9.15.0",
-  "description": "BC Legal AI Associate — canonical monorepo (backend + platform-ui)",
+  "description": "BC Legal AI Associate — monorepo root (API + platform-ui)",
   "scripts": {
     "dev": "npm run dev --prefix apps/platform-ui",
-    "dev:api": "uvicorn backend.api.main:app --reload --host 127.0.0.1 --port 8000",
     "dev:ui": "npm run dev --prefix apps/platform-ui",
+    "dev:api": "python -m uvicorn backend.api.main:app --reload --host 127.0.0.1 --port 8000",
+    "debug:ui": "npm run debug --prefix apps/platform-ui",
+    "build": "npm run build --prefix apps/platform-ui",
     "build:ui": "npm run build --prefix apps/platform-ui",
-    "test:api": "python -m pytest tests -q",
-    "scan:confidential": "python scripts/scan_confidential.py ."
+    "preview:ui": "npm run preview --prefix apps/platform-ui",
+    "typecheck": "npm run typecheck --prefix apps/platform-ui",
+    "test:api": "python -m pytest tests -q -m \"not postgres_required\"",
+    "scan:confidential": "python scripts/scan_confidential.py .",
+    "smoke": "python scripts/production_smoke.py --base http://127.0.0.1:8000"
   },
   "engines": {
-    "node": ">=20.0.0",
-    "pnpm": ">=9.0.0"
+    "node": ">=20.0.0"
   }
 }
