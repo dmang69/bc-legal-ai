@@ -22,10 +22,12 @@ import {
   listSpecialists,
   login,
   logout,
+  listFeatures,
   openClawRun,
   register,
   sendMessage,
   setToken,
+  type FeaturesManifest,
   type Matter as ApiMatter,
   type OrgAiSettings,
   type ProviderMeta,
@@ -102,6 +104,7 @@ export default function App() {
   const [workPayload, setWorkPayload] = useState<Record<string, unknown> | null>(null);
   const [arenaResult, setArenaResult] = useState<Record<string, unknown> | null>(null);
   const [openClawResult, setOpenClawResult] = useState<Record<string, unknown> | null>(null);
+  const [featuresManifest, setFeaturesManifest] = useState<FeaturesManifest | null>(null);
   const [orgSettings, setOrgSettings] = useState<OrgAiSettings | null>(null);
   const [telemetry, setTelemetry] = useState<Record<string, unknown> | null>(null);
   const [quotaLine, setQuotaLine] = useState("");
@@ -138,7 +141,7 @@ export default function App() {
     );
     if (!getToken()) return;
     try {
-      const [prov, caps, suite, mats, convs, modeList, specs, settings, tel, q] =
+      const [prov, caps, suite, mats, convs, modeList, specs, settings, tel, q, feats] =
         await Promise.all([
           listModelProviders(),
           chatCapabilities().catch(() => ({})),
@@ -150,7 +153,11 @@ export default function App() {
           getOrgAiSettings().catch(() => null),
           getOrgTelemetry().catch(() => null),
           checkQuota(providerId).catch(() => null),
+          listFeatures().catch(() => null),
         ]);
+      if (feats && "features" in feats) {
+        setFeaturesManifest(feats as FeaturesManifest);
+      }
       const mappedProviders: ProviderOption[] = (prov.providers || []).map(
         (p: ProviderMeta) => ({
           id: p.id,
@@ -724,6 +731,7 @@ export default function App() {
             workPayload={workPayload}
             arenaResult={arenaResult}
             openClawResult={openClawResult}
+            featuresManifest={featuresManifest}
             orgSettings={orgSettings}
             telemetry={telemetry}
             providers={providers}

@@ -204,6 +204,39 @@ export function aiSuite(): Promise<Record<string, unknown>> {
   return api("/v1/platform/ai/suite");
 }
 
+export type FeatureOption = {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  status: string;
+  default_enabled: boolean;
+  org_toggleable: boolean;
+  enabled: boolean;
+  env_gate?: string;
+  endpoints?: string[];
+  providers?: string[];
+  platforms?: string[];
+  safety_locks?: string[];
+  docs?: string;
+};
+
+export type FeaturesManifest = {
+  product: string;
+  categories: Array<{ id: string; label: string; description?: string }>;
+  features: FeatureOption[];
+  by_category?: Record<string, FeatureOption[]>;
+  selection_guide?: Record<string, string[]>;
+  locks?: string[];
+  court_ready_default?: boolean;
+  legal_advice?: boolean;
+};
+
+export function listFeatures(category?: string): Promise<FeaturesManifest | { features: FeatureOption[] }> {
+  const q = category ? `?category=${encodeURIComponent(category)}` : "";
+  return api(`/v1/platform/features${q}`);
+}
+
 export type Conversation = {
   conversation_id: string;
   title: string;

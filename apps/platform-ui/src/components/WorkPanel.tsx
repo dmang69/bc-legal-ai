@@ -1,4 +1,4 @@
-import type { OrgAiSettings } from "../lib/api";
+import type { FeatureOption, FeaturesManifest, OrgAiSettings } from "../lib/api";
 import type { AgentDefinition, Matter, ProviderOption, WorkPanel } from "../types";
 
 interface WorkPanelProps {
@@ -10,6 +10,7 @@ interface WorkPanelProps {
   workPayload?: Record<string, unknown> | null;
   arenaResult?: Record<string, unknown> | null;
   openClawResult?: Record<string, unknown> | null;
+  featuresManifest?: FeaturesManifest | null;
   orgSettings?: OrgAiSettings | null;
   telemetry?: Record<string, unknown> | null;
   providers?: ProviderOption[];
@@ -22,6 +23,7 @@ interface WorkPanelProps {
 const panels: Array<{ id: WorkPanel; label: string }> = [
   { id: "tools", label: "Tools" },
   { id: "sources", label: "Sources" },
+  { id: "features", label: "Features" },
   { id: "arena", label: "Arena AI" },
   { id: "openclaw", label: "OpenClaw" },
   { id: "admin", label: "Admin" },
@@ -38,6 +40,7 @@ export function WorkPanel({
   workPayload,
   arenaResult,
   openClawResult,
+  featuresManifest,
   orgSettings,
   telemetry,
   providers = [],
@@ -131,6 +134,65 @@ export function WorkPanel({
                   </a>
                 </div>
               </>
+            )}
+          </>
+        )}
+
+        {activePanel === "features" && (
+          <>
+            <h2>Feature options</h2>
+            <p className="muted">
+              Structured platform capabilities — install clients, AI suite, legal tools, productivity,
+              governance. Not legal advice · court_ready always false by default.
+            </p>
+            {(featuresManifest?.locks || []).length > 0 && (
+              <div className="panel-card">
+                <strong>Locks</strong>
+                <p className="muted tiny">{(featuresManifest?.locks || []).join(" · ")}</p>
+              </div>
+            )}
+            {(featuresManifest?.categories || []).map((cat) => {
+              const items =
+                featuresManifest?.by_category?.[cat.id] ||
+                (featuresManifest?.features || []).filter((f) => f.category === cat.id);
+              if (!items?.length) return null;
+              return (
+                <div key={cat.id} className="panel-card">
+                  <strong>{cat.label}</strong>
+                  {cat.description ? <p className="muted tiny">{cat.description}</p> : null}
+                  <ul className="feature-options-list">
+                    {items.map((f: FeatureOption) => (
+                      <li key={f.id} className={f.enabled ? "feature-on" : "feature-off"}>
+                        <span className="feature-name">
+                          {f.enabled ? "●" : "○"} {f.name}
+                        </span>
+                        <span className="tag">{f.status}</span>
+                        {f.org_toggleable ? <span className="tag">org</span> : null}
+                        <p className="muted tiny">{f.description}</p>
+                        {(f.platforms || []).length > 0 ? (
+                          <p className="muted tiny">Platforms: {(f.platforms || []).join(", ")}</p>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
+            {!featuresManifest?.features?.length && (
+              <div className="panel-card">
+                <p>Sign in to load structured feature options from the API.</p>
+              </div>
+            )}
+            {featuresManifest?.selection_guide && (
+              <div className="panel-card">
+                <strong>Recommended bundles</strong>
+                {Object.entries(featuresManifest.selection_guide).map(([k, ids]) => (
+                  <div key={k} style={{ marginTop: 8 }}>
+                    <code>{k}</code>
+                    <p className="muted tiny">{(ids as string[]).join(", ")}</p>
+                  </div>
+                ))}
+              </div>
             )}
           </>
         )}

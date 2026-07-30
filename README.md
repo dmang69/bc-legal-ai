@@ -69,6 +69,21 @@ Canonical path: [docs/CANONICAL_STACK.md](docs/CANONICAL_STACK.md)
 
 ---
 
+## Structured feature options
+
+Canonical catalog of install, AI, legal, productivity, and governance capabilities:
+
+| | |
+|--|--|
+| **API** | `GET /v1/platform/features` (optional `?category=ai`) |
+| **UI** | Work panel → **Features** |
+| **Source** | `backend/platform/feature_options.py` |
+| **Docs** | [docs/FEATURE_OPTIONS.md](docs/FEATURE_OPTIONS.md) |
+
+Bundles: `pilot_synthetic` · `private_sensitive` · `full_desktop` (see API `selection_guide`).
+
+---
+
 ## AI suite (four pillars)
 
 Default AI base is **[Puter](https://developer.puter.com/ai/)** (browser Puter.js, user-pays, no server API keys). Three complementary pillars expand agent, long-context, and multi-model workflows — all under legal fail-closed gates.

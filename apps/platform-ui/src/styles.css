@@ -166,6 +166,13 @@ button { cursor: pointer; }
 .panel-card, .quality-card, .agent-focus { margin-bottom: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 11px; background: var(--panel); }
 .panel-card-heading { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 800; }
 .panel-card p { margin: 7px 0 10px; color: var(--muted); font-size: 10px; line-height: 1.5; }
+.feature-options-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 10px; }
+.feature-options-list li { padding: 8px 0; border-top: 1px solid rgba(40,50,71,.45); }
+.feature-options-list li:first-child { border-top: 0; padding-top: 0; }
+.feature-name { display: block; font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.feature-on .feature-name { color: var(--success); }
+.feature-off .feature-name { color: var(--muted); }
+.feature-options-list .tag { display: inline-block; margin: 0 4px 4px 0; padding: 1px 6px; border-radius: 999px; font-size: 9px; font-weight: 800; background: #24304a; color: #b8c6ff; text-transform: uppercase; }
 .verified-dot, .pending-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); }
 .pending-dot { background: var(--warning); }
 .quality-card { margin-top: 18px; }

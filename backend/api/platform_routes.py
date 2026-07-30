@@ -1052,19 +1052,57 @@ class ProviderCompleteBody(BaseModel):
     max_tokens: int = 2048
 
 
+@router.get("/features")
+def platform_features(
+    current_user: CurrentUser,
+    category: str = "",
+) -> dict[str, Any]:
+    """Structured feature options catalog (install, AI, legal, productivity, governance)."""
+    from backend.platform import org_admin
+    from backend.platform.feature_options import features_manifest, list_feature_options
+
+    settings = org_admin.get_settings(current_user.org_id)
+    if category:
+        return {
+            "category": category,
+            "features": list_feature_options(
+                category=category,
+                allowed_providers=settings.allowed_providers,
+                allow_external_llm=settings.allow_external_llm,
+                allow_web_research=settings.allow_web_research,
+            ),
+            "court_ready_default": False,
+            "legal_advice": False,
+        }
+    return features_manifest(
+        allowed_providers=settings.allowed_providers,
+        allow_external_llm=settings.allow_external_llm,
+        allow_web_research=settings.allow_web_research,
+    )
+
+
 @router.get("/ai/suite")
 def ai_suite_manifest(current_user: CurrentUser) -> dict[str, Any]:
     """Enterprise AI suite capability map (ChatGPT/Monica/Claude/Ollama/Copilot/Grok/Arena inspirations)."""
+    from backend.platform import org_admin
+    from backend.platform.feature_options import features_manifest
     from backend.platform.model_providers import get_model_provider_registry
     from backend.platform.web_research import web_research_enabled
 
     reg = get_model_provider_registry()
+    settings = org_admin.get_settings(current_user.org_id)
+    features = features_manifest(
+        allowed_providers=settings.allowed_providers,
+        allow_external_llm=settings.allow_external_llm,
+        allow_web_research=settings.allow_web_research,
+    )
     return {
         "product": "BC Legal AI Associate — Enterprise AI Suite",
         "court_ready_default": False,
         "legal_advice": False,
         "ai_base": "puter",
         "ai_base_docs": "https://developer.puter.com/ai/",
+        "feature_options": features,
         "pillars": {
             "openclaw": {
                 "enabled": True,
@@ -1111,6 +1149,7 @@ def ai_suite_manifest(current_user: CurrentUser) -> dict[str, Any]:
             "openclaw_tools": "/v1/platform/ai/openclaw/tools",
             "complete": "/v1/platform/ai/complete",
             "providers": "/v1/platform/workspace/model-providers",
+            "features": "/v1/platform/features",
         },
         "providers": reg.list_providers(),
         "default_provider": reg.default_provider_id(),

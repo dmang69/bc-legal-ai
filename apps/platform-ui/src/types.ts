@@ -7,6 +7,7 @@ export type WorkPanel =
   | "tools"
   | "arena"
   | "openclaw"
+  | "features"
   | "admin"
   | "evidence"
   | "draft"
