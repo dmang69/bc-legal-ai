@@ -12,6 +12,11 @@ powershell -ExecutionPolicy Bypass -File scripts\build_windows_installer.ps1
 
 Artifacts land in `releases/windows/` with `checksums.txt` (SHA-256).
 
+**In-place upgrades:** same product id `ca.bclegalai.associate` + higher version.  
+Verified 0.1.1 → 0.1.2 silent upgrade — see [INSTALLER_UPGRADE_SMOKE.md](INSTALLER_UPGRADE_SMOKE.md) and [UPGRADES.md](UPGRADES.md).
+
+**Auto-updater packages:** set `"createUpdaterArtifacts": true` in `tauri.conf.json`, export org minisign private key as `TAURI_SIGNING_PRIVATE_KEY`, rebuild, upload `latest.json` + `.sig` to GitHub Releases.
+
 ### Signing (requires certificate)
 
 1. Obtain an Authenticode code-signing cert (org EV/OV as required by your policy).

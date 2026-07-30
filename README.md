@@ -115,6 +115,8 @@ ALA_KIMI_MODEL=moonshotai/kimi-k2.5
 
 All native/PWA clients need a **private API** (Docker or uvicorn). Signed store binaries are **built from this repo**; public GitHub Release signing is org-gated ([docs/SIGNING_AND_DISTRIBUTION.md](docs/SIGNING_AND_DISTRIBUTION.md)).
 
+**Upgrades:** Windows/macOS/Linux use the same product id + higher version (NSIS/MSI in-place or Tauri auto-updater via GitHub `latest.json`). Android/iOS use store version codes. Chrome PWA updates when you redeploy the Portal. Details: **[docs/UPGRADES.md](docs/UPGRADES.md)** · verify: `cd apps/desktop-mobile && npm run verify:config`.
+
 ### Windows Setup.exe (Workbench)
 
 ```powershell

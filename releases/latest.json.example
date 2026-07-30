@@ -1,0 +1,23 @@
+{
+  "version": "0.1.1",
+  "notes": "Upgrade-ready release: in-place Windows/macOS installers + desktop auto-updater. Not legal advice.",
+  "pub_date": "2026-07-29T00:00:00Z",
+  "platforms": {
+    "windows-x86_64": {
+      "signature": "REPLACE_WITH_CONTENTS_OF_SETUP_EXE_SIG",
+      "url": "https://github.com/dmang69/bc-legal-ai/releases/download/v0.1.1/BC-Legal-AI-Associate_0.1.1_x64-setup.exe"
+    },
+    "darwin-aarch64": {
+      "signature": "REPLACE_WITH_CONTENTS_OF_APP_TAR_GZ_SIG",
+      "url": "https://github.com/dmang69/bc-legal-ai/releases/download/v0.1.1/BC-Legal-AI-Associate_aarch64.app.tar.gz"
+    },
+    "darwin-x86_64": {
+      "signature": "REPLACE_WITH_CONTENTS_OF_APP_TAR_GZ_SIG",
+      "url": "https://github.com/dmang69/bc-legal-ai/releases/download/v0.1.1/BC-Legal-AI-Associate_x64.app.tar.gz"
+    },
+    "linux-x86_64": {
+      "signature": "REPLACE_WITH_CONTENTS_OF_APPIMAGE_SIG",
+      "url": "https://github.com/dmang69/bc-legal-ai/releases/download/v0.1.1/BC-Legal-AI-Associate_0.1.1_amd64.AppImage"
+    }
+  }
+}

@@ -1,1 +1,1 @@
-{"default":{"identifier":"default","description":"Minimal capabilities for BC Legal AI shell — expand only with security review","local":true,"windows":["main"],"permissions":["core:default","shell:allow-open"]}}
+{"default":{"identifier":"default","description":"Minimum permissions for the BC Legal AI client shell (desktop updater + process restart)","local":true,"windows":["main"],"permissions":["core:default","updater:default","process:default"]}}

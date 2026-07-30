@@ -392,7 +392,29 @@ GitHub Releases (example)
 
 ---
 
-## 9. Security & legal locks
+## 9. Upgrades (how installs update)
+
+Full detail: **[docs/UPGRADES.md](docs/UPGRADES.md)**
+
+| Platform | Upgrade path |
+|----------|----------------|
+| **Windows** | Re-run newer Setup `.exe` (same product id) **or** in-app auto-updater |
+| **macOS / Linux** | New installer / in-app auto-updater via GitHub `latest.json` |
+| **Android / iOS** | Store version bump (Play / App Store) |
+| **Chrome PWA** | Redeploy Portal on same HTTPS origin → refresh app |
+
+Stable identity (do not change): `ca.bclegalai.associate` · product name **BC Legal AI Associate**.
+
+Verify config:
+
+```bash
+cd apps/desktop-mobile
+npm run verify:config
+```
+
+---
+
+## 10. Security & legal locks
 
 - Installers contain **no** client data or production secrets  
 - External LLMs stay gated (`ALA_ALLOW_EXTERNAL_LLM=0` by default)  
@@ -402,7 +424,7 @@ GitHub Releases (example)
 
 ---
 
-## 10. Quick matrix — what to run today
+## 11. Quick matrix — what to run today
 
 | You want… | Do this |
 |-----------|---------|
