@@ -8,14 +8,16 @@
 
 | Platform | Source | Installer binary |
 |----------|--------|------------------|
-| Shared React UI | **Exists** — `apps/platform-ui/` | n/a (PWA/web) |
-| Tauri 2 shell | **Exists** — `apps/desktop-mobile/` + `src-tauri/` | Not published |
-| Windows | Config: `tauri.windows.conf.json` | **Built locally (unsigned)** — `releases/windows/` (not GitHub Release / not signed) |
-| macOS | Config: `tauri.macos.conf.json` | **Not built** (needs Mac) |
-| Android | Config: `tauri.android.conf.json` | **Not built** (needs Android SDK) |
-| iOS | Config: `tauri.ios.conf.json` | **Not built** (needs Mac + Xcode) |
-| App signing / stores | Process documented | **Not started** |
-| Web / Gradio / static Space | Exists | Public Space is static (Gradio needs HF PRO) |
+| Shared React UI | **Exists** — `apps/platform-ui/` | Web + **PWA** (`public/manifest.webmanifest`) |
+| Tauri 2 shell | **Exists** — `apps/desktop-mobile/` + `src-tauri/` | Not published on Releases |
+| Windows | Config: `tauri.windows.conf.json` + `scripts/build_windows_installer.ps1` | **Build locally (unsigned)** → `releases/windows/*.exe` |
+| macOS | Config: `tauri.macos.conf.json` | **Build on Mac** → `.dmg` / `.app` |
+| Linux | Tauri / Docker | **Build on Linux** or run API via Docker |
+| Android | Config: `tauri.android.conf.json` | **Build with Android SDK** → `.aab` / `.apk` |
+| iOS | Config: `tauri.ios.conf.json` | **Build on Mac + Xcode** → TestFlight `.ipa` |
+| Chrome / Edge | Manifest + icons in platform-ui | **Install as app** when hosted on HTTPS |
+| App signing / stores | Process documented | Org certs required — see SIGNING_AND_DISTRIBUTION |
+| Public demo Space | `huggingface-space-static/` | Live: spaces/Dmang69/bc-legal-ai |
 
 ## Source tree (required components — present)
 

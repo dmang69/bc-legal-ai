@@ -99,6 +99,88 @@ ALA_KIMI_MODEL=moonshotai/kimi-k2.5
 
 ---
 
+## Install on every platform
+
+**Full guide:** **[INSTALL.md](INSTALL.md)** · Status: [docs/INSTALLABLE_CLIENT_STATUS.md](docs/INSTALLABLE_CLIENT_STATUS.md)
+
+| Platform | Install method | Build / run |
+|----------|----------------|-------------|
+| **Windows** | Setup **`.exe`** (NSIS) · optional **`.msi`** | `scripts\build_windows_installer.ps1` → `releases\windows\` |
+| **macOS** | **`.dmg`** / **`.app`** | Tauri on a Mac: `npx tauri build --config src-tauri/tauri.macos.conf.json` |
+| **Linux** | Docker API · Tauri AppImage/deb · browser | `docker compose up` or `npx tauri build` on Linux |
+| **Android** | Play **`.aab`** · test **`.apk`** | `apps/desktop-mobile` → `npm run android:init` / `android:dev` / `tauri android build` |
+| **iPhone / iPad** | TestFlight / App Store **`.ipa`** | Mac + Xcode → `npm run ios:init` / `ios:dev` / `tauri ios build` |
+| **Google Chrome / Edge** | **Install as app (PWA)** | Host `apps/platform-ui` on **HTTPS** → Chrome ⋮ → Install page as app |
+| **No install (demo)** | Browser only | https://huggingface.co/spaces/Dmang69/bc-legal-ai |
+
+All native/PWA clients need a **private API** (Docker or uvicorn). Signed store binaries are **built from this repo**; public GitHub Release signing is org-gated ([docs/SIGNING_AND_DISTRIBUTION.md](docs/SIGNING_AND_DISTRIBUTION.md)).
+
+### Windows Setup.exe (Workbench)
+
+```powershell
+# Prerequisites: Node 20+, Rust, WebView2, VS C++ build tools, API on :8000
+powershell -ExecutionPolicy Bypass -File scripts\build_windows_installer.ps1
+# → releases\windows\*.exe (+ checksums.txt)
+# Sign before distribution: scripts\sign_windows_installer.ps1
+```
+
+Dev without installer:
+
+```text
+START-API.cmd
+START-UI.cmd
+```
+
+### macOS
+
+```bash
+cd apps/platform-ui && npm ci && npm run build
+cd ../desktop-mobile && npm ci
+npx tauri build --config src-tauri/tauri.macos.conf.json
+# → src-tauri/target/release/bundle/dmg/
+```
+
+### Linux
+
+```bash
+# Server API
+docker run --rm -p 8000:8000 -e APP_MODE=development ghcr.io/dmang69/bc-legal-ai:latest
+# Desktop (optional, on a Linux builder)
+cd apps/desktop-mobile && npx tauri build
+```
+
+### Android
+
+```bash
+cd apps/desktop-mobile
+npm ci
+npm run android:init   # first time
+# set VITE_API_BASE_URL to a URL the phone can reach (not 127.0.0.1)
+npm run android:dev
+# release: npx tauri android build  → .aab / .apk
+```
+
+### iPhone / iPad
+
+```bash
+# Requires Mac + Xcode + Apple Developer Program
+cd apps/desktop-mobile
+npm run ios:init       # first time
+npm run ios:dev
+# release: npx tauri ios build → Archive → TestFlight
+```
+
+### Google Chrome (installable Portal)
+
+```bash
+cd apps/platform-ui
+npm ci && npm run build
+# serve dist/ over HTTPS, then Chrome → Install page as app
+# manifest: public/manifest.webmanifest
+```
+
+---
+
 ## Public demo (no install)
 
 | Surface | URL |
@@ -124,8 +206,8 @@ Source: [`huggingface-space-static/`](huggingface-space-static/) · CI: `.github
 ### Prerequisites
 
 - Python **3.11+** (CI: 3.12)
-- Node **20+** (for platform-ui)
-- Optional: Docker, Postgres, [Ollama](https://ollama.com)
+- Node **20+** (for platform-ui / Tauri)
+- Optional: Docker, Postgres, [Ollama](https://ollama.com), Rust (desktop/mobile installers)
 
 ### API
 
