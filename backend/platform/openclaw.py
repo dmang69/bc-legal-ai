@@ -200,6 +200,34 @@ def list_tools() -> list[dict[str, Any]]:
             risk="medium",
             category="models",
         ),
+        ClawTool(
+            "hearing_record_map",
+            "Hearing record map",
+            "Structured RECORD_MAP / error / fairness logs for tribunal or JR prep.",
+            risk="medium",
+            category="hearing",
+        ),
+        ClawTool(
+            "hearing_binder_index",
+            "Hearing binder index",
+            "Tabbed binder index for physical or digital hearing materials.",
+            risk="low",
+            category="hearing",
+        ),
+        ClawTool(
+            "hearing_outline",
+            "Hearing outline",
+            "Opening, core facts, and submissions outline for tribunal/JR hearing.",
+            risk="medium",
+            category="hearing",
+        ),
+        ClawTool(
+            "hearing_witness_qa",
+            "Hearing witness Q&A sim",
+            "Witness coaching rules and simulated hard tribunal/cross questions.",
+            risk="medium",
+            category="hearing",
+        ),
     ]
     return [t.to_dict() for t in tools]
 
@@ -233,6 +261,22 @@ def plan_goal(goal: str) -> list[dict[str, str]]:
         steps.append({"tool_id": "kimi_deep", "title": "Route to Kimi long-context"})
     if any(k in g for k in ("arena", "compare models", "which model")):
         steps.append({"tool_id": "arena_hint", "title": "Suggest Arena comparison"})
+    if any(
+        k in g
+        for k in (
+            "hearing",
+            "witness",
+            "binder",
+            "tribunal",
+            "cross-exam",
+            "opening statement",
+            "dissect",
+        )
+    ):
+        steps.append({"tool_id": "hearing_record_map", "title": "Map record / fairness / fact errors"})
+        steps.append({"tool_id": "hearing_binder_index", "title": "Draft tabbed binder index"})
+        steps.append({"tool_id": "hearing_outline", "title": "Opening + submissions outline"})
+        steps.append({"tool_id": "hearing_witness_qa", "title": "Witness coach + hard Q&A sim"})
     steps.append({"tool_id": "memory_write", "title": "Persist goal snapshot to memory"})
     # de-dupe by tool_id preserve order
     seen: set[str] = set()
@@ -431,6 +475,78 @@ def _run_tool(tool_id: str, goal: str, user: UserInfo, auto_approve: bool) -> Cl
                 "- Provider: `kimi` · model: `moonshotai/kimi-k2.5` (via Puter user-pays)\n"
                 "- Or set `MOONSHOT_API_KEY` + `ALA_ALLOW_EXTERNAL_LLM=1` for server path\n"
                 "Switch the toolbar provider to **Kimi** for the next chat turn."
+            )
+            return ClawStep(tool_id, meta_tool.label, "ran", out, meta_tool.risk)
+
+        if tool_id == "hearing_record_map":
+            out = (
+                "**RECORD_MAP (scaffold)** — not legal advice\n\n"
+                f"Goal: {goal[:800]}\n\n"
+                "### Pass 1 — inventory\n"
+                "- [ ] Decision + reasons (para numbers)\n"
+                "- [ ] Notices / service\n"
+                "- [ ] Party evidence as filed below\n"
+                "- [ ] Transcript / notes / recording extract\n"
+                "- [ ] Prior interim / review steps (finality)\n\n"
+                "### Pass 2 — error log\n"
+                "| Type | Note | Pin |\n|------|------|-----|\n"
+                "| FACT_ERROR | | |\n"
+                "| FAIRNESS | | |\n"
+                "| IGNORED_EVIDENCE | | |\n\n"
+                "Labels: `FACT` (pinned) · `ALLEGATION` · `ASSUMPTION` · `ARGUMENT`\n"
+                "Skill: `tribunal-hearing-prep`."
+            )
+            return ClawStep(tool_id, meta_tool.label, "ran", out, meta_tool.risk)
+
+        if tool_id == "hearing_binder_index":
+            out = (
+                "**BINDER_INDEX (scaffold)**\n\n"
+                "| Tab | Label | Page range | Key pins |\n"
+                "|-----|-------|------------|----------|\n"
+                "| 1 | Index + chronology | | |\n"
+                "| 2 | Decision / claim | | |\n"
+                "| 3 | Notices / applications | | |\n"
+                "| 4 | Our evidence | | |\n"
+                "| 5 | Opposing evidence | | |\n"
+                "| 6 | Transcript / notes | | |\n"
+                "| 7 | Official legislation (BC Laws) | | |\n"
+                "| 8 | Authorities (CanLII) | | |\n"
+                "| 9 | Opening + submissions | | |\n"
+                "| 10 | Witness scripts + hard Q | | |\n\n"
+                "Template: `skills/tribunal-hearing-prep/templates/binder-index.md`."
+            )
+            return ClawStep(tool_id, meta_tool.label, "ran", out, meta_tool.risk)
+
+        if tool_id == "hearing_outline":
+            out = (
+                "**OPENING + SUBMISSIONS (scaffold)**\n\n"
+                "### Opening (2–4 min)\n"
+                "1. Introduction / role honesty\n"
+                "2. Decision or claim ID\n"
+                "3. One-sentence issue\n"
+                "4. Two strongest points + remedy\n"
+                "5. Roadmap\n\n"
+                "### Legal submissions spine\n"
+                "ISSUE → TEST/STANDARD (verify statute) → APPLICATION (record pins) → REMEDY\n\n"
+                "JR note: not a new trial; patent unreasonableness is a high bar (verify ATA).\n"
+                "Template: `skills/tribunal-hearing-prep/templates/hearing-outline.md`."
+            )
+            return ClawStep(tool_id, meta_tool.label, "ran", out, meta_tool.risk)
+
+        if tool_id == "hearing_witness_qa":
+            out = (
+                "**WITNESS COACH + QA_SIM (scaffold)** — no false testimony\n\n"
+                "### Rules for the witness\n"
+                "1. Answer only what is asked.\n"
+                "2. “I don’t recall” > guessing.\n"
+                "3. Personal knowledge only.\n"
+                "4. Pause OK; use tab numbers for documents.\n\n"
+                "### Hard tribunal Qs\n"
+                "| Q | Recovery |\n|---|----------|\n"
+                "| Where in the record? | Tab X pin |\n"
+                "| What order do you want today? | Precise remedy |\n"
+                "| Why isn’t this just credibility? | Fairness / record error |\n\n"
+                "Template: `skills/tribunal-hearing-prep/templates/witness-qa-sim.md`."
             )
             return ClawStep(tool_id, meta_tool.label, "ran", out, meta_tool.risk)
 

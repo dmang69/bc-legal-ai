@@ -240,6 +240,21 @@ FEATURE_CATALOG: list[FeatureOption] = [
         platforms=["api"],
         safety_locks=["always_on"],
     ),
+    FeatureOption(
+        id="legal.hearing_prep",
+        name="Tribunal hearing preparation",
+        category="legal",
+        description=(
+            "Structured prep: dissect record, legal test, tabbed binders, "
+            "opening/submissions, witness coaching, Q&A simulation (RTB/BCHRT/JR)."
+        ),
+        status="live",
+        org_toggleable=True,
+        endpoints=[],
+        platforms=["api", "chrome", "windows", "macos"],
+        docs="skills/tribunal-hearing-prep/SKILL.md",
+        safety_locks=["not_legal_advice", "no_false_testimony", "hitl_strategy"],
+    ),
     # Productivity
     FeatureOption(
         id="prod.summarize",
@@ -447,6 +462,16 @@ def features_manifest(
                 "ai.arena",
                 "legal.jr_clock",
                 "legal.citations",
+                "legal.hearing_prep",
+                "gov.court_ready_fail_closed",
+            ],
+            "hearing_prep_rtb_jr": [
+                "legal.hearing_prep",
+                "legal.jr_clock",
+                "legal.citations",
+                "legal.form66",
+                "legal.skills_packs",
+                "ai.openclaw",
                 "gov.court_ready_fail_closed",
             ],
             "private_sensitive": [

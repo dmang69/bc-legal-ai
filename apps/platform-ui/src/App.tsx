@@ -63,6 +63,7 @@ const SLASH_TOOLS = [
   { id: "/debug", label: "Debug", hint: "/debug error + code…" },
   { id: "/claw", label: "OpenClaw", hint: "/claw goal for multi-step agent…" },
   { id: "/kimi", label: "Kimi", hint: "/kimi deep long-context question…" },
+  { id: "/hearing", label: "Hearing prep", hint: "/hearing prep RTB JR record + binder…" },
 ];
 
 function nowTime(): string {

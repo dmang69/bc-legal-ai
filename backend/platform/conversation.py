@@ -63,6 +63,7 @@ SPECIALISTS = [
     {"id": "affidavit_drafter", "name": "Affidavit Drafter", "description": "Fact/evidence-separated affidavit outline support.", "capabilities": ["affidavits", "evidence", "drafting"]},
     {"id": "boa_builder", "name": "Book of Authorities Builder", "description": "Authority extraction, verification plan, and BOA assembly workflow.", "capabilities": ["authorities", "boa", "pinpoints"]},
     {"id": "cross_exam_planner", "name": "Cross-Examination Planner", "description": "Issue-driven cross-examination topics and impeachment planning.", "capabilities": ["cross_examination", "witnesses", "impeachment"]},
+    {"id": "hearing_prep", "name": "Tribunal Hearing Prep", "description": "Record dissection, legal test, binders, outlines, witness coaching, Q&A simulation for RTB/BCHRT/JR.", "capabilities": ["hearing_prep", "record_review", "witnesses", "binders", "submissions"]},
     {"id": "devils_advocate", "name": "Devil's Advocate", "description": "Opposing-position stress testing and weakness detection.", "capabilities": ["risk_review", "opposing_arguments", "strategy"]},
     {"id": "privilege_sentinel", "name": "Privilege Sentinel", "description": "Privilege, waiver, confidentiality, and disclosure risk warnings.", "capabilities": ["privilege", "confidentiality", "disclosure_risk"]},
     {"id": "client_intake", "name": "Client Intake Assistant", "description": "Structured intake questions and missing-fact collection.", "capabilities": ["intake", "facts", "client_questions"]},
@@ -100,6 +101,7 @@ TOOLS = [
     {"id": "arena", "label": "Arena AI", "enabled": True, "risk": "medium"},
     {"id": "openclaw", "label": "OpenClaw Agent", "enabled": True, "risk": "high"},
     {"id": "kimi", "label": "Kimi (Moonshot)", "enabled": True, "risk": "medium"},
+    {"id": "hearing_prep", "label": "Tribunal Hearing Prep", "enabled": True, "risk": "medium"},
     {"id": "ollama", "label": "Ollama Local Models", "enabled": True, "risk": "low"},
 ]
 
@@ -682,6 +684,55 @@ class ConversationService:
                     "court_ready": False,
                     "run_id": run.get("run_id"),
                 },
+            )
+
+        # --- Tribunal hearing prep workflow ---
+        if (
+            low.startswith("/hearing")
+            or low.startswith("/hearing-prep")
+            or low.startswith("hearing prep")
+            or "dissect the decision" in low
+            or "tabbed binder" in low
+        ):
+            tools.append("hearing_prep")
+            skills = resolve_skills(specialist="hearing_prep", message=text, limit=4)
+            skill_names = [s.name for s in skills]
+            skill_block = build_skill_context_block(skills, per_skill_chars=1200)
+            body = (
+                "# Tribunal / JR hearing preparation (structured)\n\n"
+                "**Not legal advice.** Human counsel owns strategy and any filing.\n\n"
+                "## A — Dissect the record and the law\n"
+                "1. **Read the whole record** — decision, transcripts/notes, exhibits filed below.\n"
+                "2. Log **factual errors** (finding vs evidence) and **procedural unfairness**.\n"
+                "3. State the **legal test / standard of review** for this forum "
+                "(e.g. patent unreasonableness / fairness-correctness for RTB JR — verify ATA).\n"
+                "4. Map **governing legislation** via BC Laws only; plan authorities on CanLII.\n\n"
+                "## B — Organize materials\n"
+                "1. Build a **tabbed binder index** (physical or PDF bookmarks).\n"
+                "2. Draft **opening**, **core facts** (pinned), **concise submissions**.\n\n"
+                "## C — Witnesses and arguments\n"
+                "1. Coach witnesses: answer only the question; don’t guess; personal knowledge.\n"
+                "2. **Simulate hard Q&A** (tribunal + cross).\n"
+                "3. Day-of checklist: tabs open, quiet connection, accommodations.\n\n"
+                f"**Your request:** {text[:2000]}\n\n"
+                "### Next structured outputs you can request\n"
+                "- `RECORD_MAP` · `BINDER_INDEX` · `OPENING` · `SUBMISSIONS` · `QA_SIM`\n"
+                "- Or run OpenClaw: `/claw hearing prep binder and witness Q&A for this RTB JR`\n"
+                "- Specialist: select **Tribunal Hearing Prep** in the UI\n\n"
+                f"{skill_block[:2500]}\n\n"
+                "Templates: `skills/tribunal-hearing-prep/templates/` "
+                "(binder-index, hearing-outline, witness-qa-sim).\n\n"
+                "If you name the tribunal (**RTB**, **BCHRT**, **JR**, other), steps will be tailored further."
+            )
+            return _pack(
+                body,
+                work_panel={
+                    "view": "hearing_prep",
+                    "title": "Tribunal hearing preparation",
+                    "phases": ["dissect_record", "organize_binder", "witness_qa"],
+                    "skills": skill_names,
+                },
+                tool_activity=tools + skill_names,
             )
 
         # --- Kimi routing hint (browser path uses provider=kimi + client_content) ---

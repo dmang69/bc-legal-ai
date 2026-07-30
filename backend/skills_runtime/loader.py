@@ -69,6 +69,15 @@ SPECIALIST_SKILLS: dict[str, list[str]] = {
     "cross_exam_planner": [
         "evidence-law-canada",
         "critical-reading",
+        "tribunal-hearing-prep",
+    ],
+    "hearing_prep": [
+        "tribunal-hearing-prep",
+        "bc-tenancy-procedure",
+        "bc-judicial-review-guide",
+        "evidence-law-canada",
+        "critical-reading",
+        "supreme-court-civil-counsel",
     ],
     "devils_advocate": [
         "argument-architecture",
@@ -93,7 +102,24 @@ SPECIALIST_SKILLS: dict[str, list[str]] = {
 KEYWORD_SKILLS: list[tuple[tuple[str, ...], list[str]]] = [
     (
         ("judicial review", "form 66", "form 67", "jrpa", "petition", "order of possession", "patent unreason"),
-        ["bc-judicial-review-guide", "supreme-court-civil-counsel"],
+        ["bc-judicial-review-guide", "supreme-court-civil-counsel", "tribunal-hearing-prep"],
+    ),
+    (
+        (
+            "hearing prep",
+            "hearing preparation",
+            "witness prep",
+            "witness coach",
+            "tabbed binder",
+            "binder index",
+            "dissect the decision",
+            "dissect the record",
+            "tribunal hearing",
+            "simulate q&a",
+            "cross-examination prep",
+            "opening statement",
+        ),
+        ["tribunal-hearing-prep", "evidence-law-canada", "critical-reading"],
     ),
     (
         ("rtb", "tenancy", "landlord", "tenant", "notice to end", "residential tenancy"),
