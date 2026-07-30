@@ -27,7 +27,7 @@
 | 4 | Docker image | **CI** | Dockerfile hardened; CI `docker-build` job; local Docker Desktop may be stopped |
 | 5 | Database init / migrations | **PASS** | `init_db()` portable DDL; Postgres integration tests in CI |
 | 6 | Auth flows | **PASS** | register → me → logout smoke; cookie + CSRF unit tests |
-| 7 | API endpoints | **PASS** | pytest **232** (+ 5 Postgres when DSN set); smoke suite |
+| 7 | API endpoints | **PASS** | pytest **239** (+ 5 Postgres when DSN set); smoke suite; OpenClaw/Kimi/Arena pillars |
 | 8 | CI pipeline | **PASS** | `.github/workflows/ci.yml` — lint, test, postgres, security, docker, **frontend** |
 | 9 | Deploy docs | **PASS** | `docs/DEPLOYMENT.md` |
 | 10 | Security review | **PASS (baseline)** | `docs/SECURITY_REVIEW_V1.md` |
@@ -40,7 +40,8 @@
 # Tests
 APP_MODE=development ALA_RATE_LIMIT_DISABLED=1 \
   pytest tests/ -q -m "not postgres_required"
-# → 232 passed
+# → 239 passed
+# See also docs/VERIFICATION_REPORT.md (full functional gate)
 
 # Frontend
 cd apps/platform-ui && npm ci && npm run typecheck && npm run build

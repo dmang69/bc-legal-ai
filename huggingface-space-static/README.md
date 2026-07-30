@@ -31,7 +31,9 @@ browser** (on-device — consistent with design correction #5).
 - **Official legislation** — fail-closed links to BC Laws, ATA, PIPA, court forms
 - **RTA pin self-check** — common wrong-memory section pins
 
-**Not a lawyer. Not legal advice.** Do not enter confidential client details.
+**Not a lawyer. Not legal advice.**  
+**Do not upload confidential** client or litigation files to this public Space.  
+Use synthetic data only.
 
 Private product (GitHub) adds Puter AI base, OpenClaw agents, Kimi, and Arena AI —
 those require a private backend and are **not** enabled on this public Space.
